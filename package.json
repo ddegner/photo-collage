@@ -1,10 +1,14 @@
 {
 	"name": "photo-collage",
 	"version": "0.1.0",
-	"description": "A block for creating photo collages with overlapping images.",
+	"description": "Create stunning photo collages with overlapping images, advanced positioning controls, and professional layout presets for WordPress.",
 	"author": "The WordPress Contributors",
 	"license": "GPL-2.0-or-later",
 	"main": "build/index.js",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/ddegner/photo-collage.git"
+	},
 	"scripts": {
 		"build": "wp-scripts build --blocks-manifest",
 		"format": "wp-scripts format",

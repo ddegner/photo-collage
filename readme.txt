@@ -18,6 +18,8 @@ Photo Collage transforms the way you display images in WordPress. Build beautifu
 
 Perfect for photographers, designers, and content creators who want to showcase images in creative, eye-catching arrangements without touching a single line of code.
 
+**GitHub Repository:** [https://github.com/ddegner/photo-collage](https://github.com/ddegner/photo-collage)
+
 = Key Features =
 
 * **12 Professional Layout Presets** - Choose from Side by Side, Three Columns, Overlap Left/Right, Grid, Scatter, Hero Layered, Vertical Wave, Staggered Story, Offset Gallery, and Center Overlay
