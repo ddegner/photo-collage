@@ -419,5 +419,3 @@ final class Photo_Collage_Admin_Settings
     }
 }
 
-// Initialize the admin settings
-new Photo_Collage_Admin_Settings();
