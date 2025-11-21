@@ -34,7 +34,6 @@ final class Photo_Collage_Admin_Settings
     {
         add_action('admin_menu', $this->add_settings_page(...));
         add_action('admin_init', $this->register_settings(...));
-        add_action('admin_notices', $this->show_plugin_notice(...));
         add_filter('plugin_action_links_photo-collage/photo-collage.php', $this->add_settings_link(...));
     }
 
@@ -90,26 +89,6 @@ final class Photo_Collage_Admin_Settings
         $settings_link = '<a href="' . admin_url('options-general.php?page=photo-collage-settings') . '">' . __('Configure Uninstall', 'photo-collage') . '</a>';
         array_unshift($links, $settings_link);
         return $links;
-    }
-
-    /**
-     * Show admin notice on plugins page
-     */
-    public function show_plugin_notice(): void
-    {
-        if (get_current_screen()?->id === 'plugins') {
-            ?>
-            <div class="notice notice-warning">
-                <p>
-                    <strong><?php esc_html_e('Photo Collage Plugin:', 'photo-collage'); ?></strong>
-                    <?php esc_html_e('Before uninstalling, please configure how your collage blocks should be converted.', 'photo-collage'); ?>
-                    <a href="<?php echo esc_url(admin_url('options-general.php?page=photo-collage-settings')); ?>">
-                        <?php esc_html_e('Configure Uninstall Settings', 'photo-collage'); ?>
-                    </a>
-                </p>
-            </div>
-            <?php
-        }
     }
 
     /**
@@ -187,7 +166,7 @@ final class Photo_Collage_Admin_Settings
 
         // Handle form submission
         if (isset($_POST['photo_collage_settings_nonce'])) {
-            if (!check_admin_referer('photo_collage_settings', 'photo_collage_settings_nonce')) {
+            if (!wp_verify_nonce($_POST['photo_collage_settings_nonce'], 'photo_collage_uninstall_options')) {
                 throw new RuntimeException('Security check failed');
             }
 
@@ -234,7 +213,7 @@ final class Photo_Collage_Admin_Settings
             </div>
 
             <form method="post" action="">
-                <?php wp_nonce_field('photo_collage_uninstall_options'); ?>
+                <?php wp_nonce_field('photo_collage_uninstall_options', 'photo_collage_settings_nonce'); ?>
 
                 <table class="form-table">
                     <tr>
