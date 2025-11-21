@@ -1,0 +1,99 @@
+import { SVG, Path, Rect } from '@wordpress/components';
+
+export const SideBySideIcon = (
+    <SVG width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <Rect x="2" y="4" width="9" height="16" rx="1" fill="currentColor" opacity="0.8" />
+        <Rect x="13" y="4" width="9" height="16" rx="1" fill="currentColor" opacity="0.8" />
+    </SVG>
+);
+
+export const ThreeColumnsIcon = (
+    <SVG width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <Rect x="2" y="4" width="6" height="16" rx="1" fill="currentColor" opacity="0.8" />
+        <Rect x="9" y="4" width="6" height="16" rx="1" fill="currentColor" opacity="0.8" />
+        <Rect x="16" y="4" width="6" height="16" rx="1" fill="currentColor" opacity="0.8" />
+    </SVG>
+);
+
+export const OverlapLeftIcon = (
+    <SVG width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <Rect x="8" y="4" width="12" height="14" rx="1" fill="currentColor" opacity="0.4" />
+        <Rect x="4" y="8" width="12" height="14" rx="1" fill="currentColor" opacity="1" />
+    </SVG>
+);
+
+export const OverlapRightIcon = (
+    <SVG width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <Rect x="4" y="4" width="12" height="14" rx="1" fill="currentColor" opacity="0.4" />
+        <Rect x="8" y="8" width="12" height="14" rx="1" fill="currentColor" opacity="1" />
+    </SVG>
+);
+
+export const ThreeGridIcon = (
+    <SVG width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <Rect x="2" y="2" width="9" height="9" rx="1" fill="currentColor" opacity="0.8" />
+        <Rect x="13" y="2" width="9" height="9" rx="1" fill="currentColor" opacity="0.8" />
+        <Rect x="2" y="13" width="20" height="9" rx="1" fill="currentColor" opacity="0.8" />
+    </SVG>
+);
+
+export const OffsetGridIcon = (
+    <SVG width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <Rect x="3" y="3" width="8" height="12" rx="1" fill="currentColor" opacity="0.8" />
+        <Rect x="13" y="9" width="8" height="12" rx="1" fill="currentColor" opacity="0.8" />
+    </SVG>
+);
+
+export const ScatterIcon = (
+    <SVG width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <Rect x="4" y="4" width="8" height="10" rx="1" transform="rotate(-10 8 9)" fill="currentColor" opacity="0.6" />
+        <Rect x="12" y="6" width="8" height="10" rx="1" transform="rotate(10 16 11)" fill="currentColor" opacity="0.8" />
+        <Rect x="8" y="12" width="8" height="8" rx="1" fill="currentColor" opacity="1" />
+    </SVG>
+);
+
+export const HeroLayeredIcon = (
+    <SVG width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <Rect x="2" y="2" width="16" height="16" rx="1" fill="currentColor" opacity="0.4" />
+        <Rect x="12" y="12" width="10" height="10" rx="1" fill="currentColor" opacity="1" />
+    </SVG>
+);
+
+export const VerticalWaveIcon = (
+    <SVG width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <Rect x="2" y="2" width="6" height="5" rx="1" fill="currentColor" opacity="0.6" />
+        <Rect x="9" y="5" width="6" height="5" rx="1" fill="currentColor" opacity="0.8" />
+        <Rect x="16" y="2" width="6" height="5" rx="1" fill="currentColor" opacity="0.7" />
+        <Rect x="2" y="10" width="6" height="5" rx="1" fill="currentColor" opacity="0.9" />
+        <Rect x="9" y="13" width="6" height="5" rx="1" fill="currentColor" opacity="0.5" />
+        <Rect x="16" y="10" width="6" height="5" rx="1" fill="currentColor" opacity="0.6" />
+    </SVG>
+);
+
+export const StaggeredStoryIcon = (
+    <SVG width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <Rect x="2" y="2" width="6" height="8" rx="1" fill="currentColor" opacity="0.6" />
+        <Rect x="9" y="4" width="6" height="8" rx="1" fill="currentColor" opacity="0.8" />
+        <Rect x="16" y="2" width="6" height="8" rx="1" fill="currentColor" opacity="0.7" />
+        <Rect x="2" y="12" width="6" height="8" rx="1" fill="currentColor" opacity="0.9" />
+        <Rect x="9" y="14" width="6" height="8" rx="1" fill="currentColor" opacity="0.5" />
+        <Rect x="16" y="12" width="6" height="8" rx="1" fill="currentColor" opacity="0.6" />
+    </SVG>
+);
+
+export const OffsetGalleryIcon = (
+    <SVG width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <Rect x="2" y="2" width="8" height="6" rx="1" fill="currentColor" opacity="0.6" />
+        <Rect x="12" y="4" width="10" height="6" rx="1" fill="currentColor" opacity="0.8" />
+        <Rect x="4" y="10" width="8" height="6" rx="1" fill="currentColor" opacity="0.7" />
+        <Rect x="14" y="12" width="8" height="6" rx="1" fill="currentColor" opacity="0.9" />
+        <Rect x="2" y="16" width="10" height="6" rx="1" fill="currentColor" opacity="0.5" />
+    </SVG>
+);
+
+export const CenterOverlayIcon = (
+    <SVG width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <Rect x="2" y="2" width="20" height="20" rx="1" fill="currentColor" opacity="0.4" />
+        <Rect x="7" y="7" width="10" height="10" rx="1" fill="currentColor" opacity="1" />
+    </SVG>
+);

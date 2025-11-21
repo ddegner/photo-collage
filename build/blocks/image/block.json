@@ -1,0 +1,125 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "photo-collage/image",
+  "version": "0.3.0",
+  "title": "Collage Image",
+  "category": "design",
+  "icon": "format-image",
+  "description": "An image block with advanced positioning controls.",
+  "parent": [
+    "photo-collage/container"
+  ],
+  "supports": {
+    "html": false
+  },
+  "textdomain": "photo-collage",
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css",
+  "render": "file:./render.php",
+  "attributes": {
+    "url": {
+      "type": "string"
+    },
+    "alt": {
+      "type": "string",
+      "default": ""
+    },
+    "id": {
+      "type": "number"
+    },
+    "isDecorative": {
+      "type": "boolean",
+      "default": false
+    },
+    "marginTop": {
+      "type": "string",
+      "default": "0%"
+    },
+    "marginRight": {
+      "type": "string",
+      "default": "0%"
+    },
+    "marginBottom": {
+      "type": "string",
+      "default": "0%"
+    },
+    "marginLeft": {
+      "type": "string",
+      "default": "0%"
+    },
+    "zIndex": {
+      "type": "number",
+      "default": 1
+    },
+    "width": {
+      "type": "string",
+      "default": "50%"
+    },
+    "height": {
+      "type": "string",
+      "default": "auto"
+    },
+    "paddingTop": {
+      "type": "string",
+      "default": "0%"
+    },
+    "paddingRight": {
+      "type": "string",
+      "default": "0%"
+    },
+    "paddingBottom": {
+      "type": "string",
+      "default": "0%"
+    },
+    "paddingLeft": {
+      "type": "string",
+      "default": "0%"
+    },
+    "useAbsolutePosition": {
+      "type": "boolean",
+      "default": false
+    },
+    "top": {
+      "type": "string",
+      "default": "auto"
+    },
+    "right": {
+      "type": "string",
+      "default": "auto"
+    },
+    "bottom": {
+      "type": "string",
+      "default": "auto"
+    },
+    "left": {
+      "type": "string",
+      "default": "auto"
+    },
+    "objectFit": {
+      "type": "string",
+      "default": "cover"
+    },
+    "rotation": {
+      "type": "number",
+      "default": 0
+    },
+    "opacity": {
+      "type": "number",
+      "default": 1
+    },
+    "caption": {
+      "type": "string",
+      "default": ""
+    },
+    "title": {
+      "type": "string",
+      "default": ""
+    },
+    "description": {
+      "type": "string",
+      "default": ""
+    }
+  }
+}
