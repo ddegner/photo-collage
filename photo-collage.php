@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Photo Collage
  * Description:       A block for creating photo collages with overlapping images.
- * Version:           0.3.0
+ * Version:           0.4.0
  * Requires at least: 6.8
  * Requires PHP:      8.1
  * Author:            David Degner

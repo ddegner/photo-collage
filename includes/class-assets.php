@@ -47,7 +47,7 @@ final class Photo_Collage_Assets
                 handle: $handle,
                 src: false,
                 deps: [],
-                ver: '0.3.0'
+                ver: '0.4.0'
             );
             wp_add_inline_style($handle, $css);
         }

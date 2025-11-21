@@ -1,7 +1,7 @@
 # Photo Collage WordPress Plugin
 
-[![WordPress](https://img.shields.io/badge/WordPress-6.4%2B-blue.svg)](https://wordpress.org/)
-[![PHP](https://img.shields.io/badge/PHP-7.4%2B-purple.svg)](https://php.net/)
+[![WordPress](https://img.shields.io/badge/WordPress-6.8%2B-blue.svg)](https://wordpress.org/)
+[![PHP](https://img.shields.io/badge/PHP-8.1%2B-purple.svg)](https://php.net/)
 [![License](https://img.shields.io/badge/License-GPL%20v2-green.svg)](https://www.gnu.org/licenses/gpl-2.0.html)
 
 Create stunning photo collages with overlapping images, advanced positioning controls, and professional layout presets—all within the WordPress block editor.
@@ -84,8 +84,8 @@ npm run build
 
 - Node.js 14.x or higher
 - npm 6.x or higher
-- WordPress 6.4 or higher
-- PHP 7.4 or higher
+- WordPress 6.8 or higher
+- PHP 8.1 or higher
 
 ### Build Commands
 
@@ -120,7 +120,9 @@ photo-collage/
 ├── includes/              # PHP classes and server-side code
 │   ├── class-admin-settings.php
 │   ├── class-block-converter.php
-│   └── class-uninstall-settings.php
+│   ├── class-renderer.php
+│   ├── class-assets.php
+│   └── enums.php
 ├── src/                   # Source files
 │   ├── blocks/           # Block definitions
 │   │   ├── container/    # Collage container block
@@ -134,8 +136,8 @@ photo-collage/
 
 ## 📋 Requirements
 
-- **WordPress:** 6.4 or higher
-- **PHP:** 7.4 or higher
+- **WordPress:** 6.8 or higher
+- **PHP:** 8.1 or higher
 - **Block Editor:** Required (does not work with Classic Editor)
 
 ## ❓ FAQ
@@ -165,6 +167,13 @@ Yes! The plugin includes an uninstall settings page where you can choose to conv
 Photo Collage is optimized for performance. It uses modern CSS for positioning and transforms, avoiding heavy JavaScript. Images are loaded using WordPress's native media handling, which includes lazy loading support.
 
 ## 📝 Changelog
+
+### 0.4.0
+- **MODERNIZATION:** Updated requirements to PHP 8.1+ and WordPress 6.8+
+- **PERFORMANCE:** Implemented strict typing and readonly classes for better performance
+- **SECURITY:** Switched to WordPress HTML API for safer HTML generation
+- **DEV EXPERIENCE:** Refactored codebase with modern PHP 8.1 features (Enums, Match expressions)
+- **COMPATIBILITY:** Full support for latest WordPress features
 
 ### 0.3.0
 - Added 12 professional Quick Layout presets
