@@ -99,7 +99,7 @@
         },
         "objectFit": {
             "type": "string",
-            "default": "cover"
+            "default": "contain"
         },
         "rotation": {
             "type": "number",

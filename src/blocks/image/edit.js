@@ -6,52 +6,52 @@ import { PanelBody, RangeControl, TextControl, ToggleControl, __experimentalUnit
 import './editor.scss';
 
 const BoxControl = ({ values, onChange, centerLabel = 'M', isDashed = true }) => (
-	<div className="photo-collage-box-control">
-		{/* Top */}
-		<div className="photo-collage-box-row is-center">
-			<UnitControl
-				label={__('Top', 'photo-collage')}
-				labelPosition="top"
-				value={values.top}
-				onChange={(value) => onChange('top', value)}
-				className="photo-collage-unit-control-small"
-			/>
-		</div>
+    <div className="photo-collage-box-control">
+        {/* Top */}
+        <div className="photo-collage-box-row is-center">
+            <UnitControl
+                label={__('Top', 'photo-collage')}
+                labelPosition="top"
+                value={values.top}
+                onChange={(value) => onChange('top', value)}
+                className="photo-collage-unit-control-small"
+            />
+        </div>
 
-		{/* Middle row: Left, Center symbol, Right */}
-		<div className="photo-collage-box-row is-space-between">
-			<UnitControl
-				label={__('Left', 'photo-collage')}
-				labelPosition="top"
-				value={values.left}
-				onChange={(value) => onChange('left', value)}
-				className="photo-collage-unit-control-small"
-			/>
+        {/* Middle row: Left, Center symbol, Right */}
+        <div className="photo-collage-box-row is-space-between">
+            <UnitControl
+                label={__('Left', 'photo-collage')}
+                labelPosition="top"
+                value={values.left}
+                onChange={(value) => onChange('left', value)}
+                className="photo-collage-unit-control-small"
+            />
 
-			<div className={`photo-collage-box-center ${isDashed ? 'is-dashed' : 'is-solid'}`}>
-				{centerLabel}
-			</div>
+            <div className={`photo-collage-box-center ${isDashed ? 'is-dashed' : 'is-solid'}`}>
+                {centerLabel}
+            </div>
 
-			<UnitControl
-				label={__('Right', 'photo-collage')}
-				labelPosition="top"
-				value={values.right}
-				onChange={(value) => onChange('right', value)}
-				className="photo-collage-unit-control-small"
-			/>
-		</div>
+            <UnitControl
+                label={__('Right', 'photo-collage')}
+                labelPosition="top"
+                value={values.right}
+                onChange={(value) => onChange('right', value)}
+                className="photo-collage-unit-control-small"
+            />
+        </div>
 
-		{/* Bottom */}
-		<div className="photo-collage-box-row is-center">
-			<UnitControl
-				label={__('Bottom', 'photo-collage')}
-				labelPosition="top"
-				value={values.bottom}
-				onChange={(value) => onChange('bottom', value)}
-				className="photo-collage-unit-control-small"
-			/>
-		</div>
-	</div>
+        {/* Bottom */}
+        <div className="photo-collage-box-row is-center">
+            <UnitControl
+                label={__('Bottom', 'photo-collage')}
+                labelPosition="top"
+                value={values.bottom}
+                onChange={(value) => onChange('bottom', value)}
+                className="photo-collage-unit-control-small"
+            />
+        </div>
+    </div>
 );
 
 export default function Edit({ attributes, setAttributes, isSelected }) {
@@ -76,7 +76,7 @@ export default function Edit({ attributes, setAttributes, isSelected }) {
         zIndex,
         width,
         height,
-        objectFit = 'cover',
+        objectFit = 'contain',
         rotation = 0,
         opacity = 1,
         caption = '',
@@ -192,16 +192,6 @@ export default function Edit({ attributes, setAttributes, isSelected }) {
                         label={__('Height', 'photo-collage')}
                         value={height}
                         onChange={(value) => setAttributes({ height: value })}
-                    />
-
-                    <ToggleControl
-                        label={__('Cover (crop to fit)', 'photo-collage')}
-                        help={objectFit === 'cover'
-                            ? __('Image will fill the space and crop if needed.', 'photo-collage')
-                            : __('Image will fit within the space without cropping.', 'photo-collage')
-                        }
-                        checked={objectFit === 'cover'}
-                        onChange={(value) => setAttributes({ objectFit: value ? 'cover' : 'contain' })}
                     />
                 </PanelBody>
 
@@ -434,7 +424,7 @@ export default function Edit({ attributes, setAttributes, isSelected }) {
                     src={url}
                     alt={alt}
                     style={{
-                        objectFit,
+                        objectFit: 'contain',
                         width: '100%',
                         height: '100%',
 
@@ -448,7 +438,7 @@ export default function Edit({ attributes, setAttributes, isSelected }) {
                         value={caption}
                         onChange={(value) => setAttributes({ caption: value })}
                         inlineToolbar
-                        allowedFormats={['core/bold', 'core/italic', 'core/link', 'core/strikethrough', 'core/text-color', 'core/subscript', 'core/superscript']} 
+                        allowedFormats={['core/bold', 'core/italic', 'core/link', 'core/strikethrough', 'core/text-color', 'core/subscript', 'core/superscript']}
                     />
                 )}
             </div>

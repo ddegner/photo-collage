@@ -14,6 +14,8 @@ Create stunning photo collages with overlapping images, advanced positioning con
 
 Photo Collage transforms the way you display images in WordPress. Build beautiful, magazine-style photo collages with overlapping images, custom positioning, and professional layout presets—all within the familiar block editor interface.
 
+**Built by a photographer for photographers.** This plugin is specifically designed for creating compelling photo story layouts that bring your visual narratives to life. Whether you're showcasing a wedding, documenting a journey, or telling any story through images, Photo Collage gives you the creative control you need.
+
 Perfect for photographers, designers, and content creators who want to showcase images in creative, eye-catching arrangements without touching a single line of code.
 
 = Key Features =
@@ -21,7 +23,7 @@ Perfect for photographers, designers, and content creators who want to showcase 
 * **12 Professional Layout Presets** - Choose from Side by Side, Three Columns, Overlap Left/Right, Grid, Scatter, Hero Layered, Vertical Wave, Staggered Story, Offset Gallery, and Center Overlay
 * **Advanced Image Controls** - Fine-tune each image with rotation, opacity, padding, margins, and z-index layering
 * **Dual Positioning Modes** - Use relative positioning with margins for flexible layouts, or absolute positioning for pixel-perfect control
-* **Smart Image Fitting** - Select between cover (fill space) or contain (fit without cropping) for each image
+* **No Image Cropping** - Images are never cropped, preserving your entire composition
 * **Mobile-First Responsive** - Enable automatic stacking on mobile devices with a single toggle
 * **Accessibility Built-In** - Full support for alt text, image titles, descriptions, and decorative image marking
 * **Live Visual Editing** - See exactly how your collage will look as you build it
@@ -115,7 +117,7 @@ Photo Collage is optimized for performance. It uses modern CSS for positioning a
 * Added 12 professional Quick Layout presets (Side by Side, Three Columns, Overlap Left/Right, Grid, Scatter, Hero Layered, Vertical Wave, Staggered Story, Offset Gallery, Center Overlay)
 * Added rotation and opacity controls for individual images
 * Added caption, title, and description support for images
-* Added object-fit control to prevent image distortion (cover/contain options)
+* Images never crop - designed for photographers to preserve entire compositions
 * Improved mobile stacking with complete position reset
 * Enhanced positioning controls with custom margin/padding UI
 * Added minimum container height for better visibility in editor

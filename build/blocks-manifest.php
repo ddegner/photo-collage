@@ -142,7 +142,7 @@ return array(
 			),
 			'objectFit' => array(
 				'type' => 'string',
-				'default' => 'cover'
+				'default' => 'contain'
 			),
 			'rotation' => array(
 				'type' => 'number',

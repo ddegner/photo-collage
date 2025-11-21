@@ -27,7 +27,7 @@ class Photo_Collage_Renderer
             'zIndex' => 1,
             'width' => '50%',
             'height' => 'auto',
-            'objectFit' => 'cover',
+            'objectFit' => 'contain',
             'rotation' => 0,
             'opacity' => 1,
             'top' => 'auto',
@@ -123,12 +123,12 @@ class Photo_Collage_Renderer
             return '';
         }
 
-        $img_style = "object-fit: {$attributes['objectFit']}; width: 100%; height: 100%;";
-        
+        $img_style = "object-fit: contain; width: 100%; height: 100%;";
+
         $has_caption = !empty($attributes['caption']);
         $is_decorative = $attributes['isDecorative'];
         $alt_attr = $is_decorative ? '' : $attributes['alt'];
-        
+
         $has_description = !empty($attributes['description']) && !$is_decorative;
         $description_id = $has_description ? 'photo-collage-desc-' . uniqid() : '';
 
@@ -142,7 +142,7 @@ class Photo_Collage_Renderer
         );
 
         $html = '';
-        
+
         if ($has_caption) {
             $html .= '<figure class="photo-collage-image-figure">';
             $html .= $img_html;
