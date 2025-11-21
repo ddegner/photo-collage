@@ -1,60 +1,128 @@
 === Photo Collage ===
 Contributors:      The WordPress Contributors
-Tags:              block
-Tested up to:      6.7
+Tags:              block, photo collage, image gallery, overlapping images, visual design
+Tested up to:      6.8
 Stable tag:        0.3.0
 Requires at least: 6.4
 Requires PHP:      7.4
 License:           GPL-2.0-or-later
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
 
-A block for creating photo collages with overlapping images.
+Create stunning photo collages with overlapping images, advanced positioning controls, and professional layout presets.
 
 == Description ==
 
-Create beautiful photo collages with overlapping images using an intuitive block editor interface. This plugin adds a "Photo Collage" block to your WordPress editor, allowing you to easily arrange images in creative layouts without writing any code.
+Photo Collage transforms the way you display images in WordPress. Build beautiful, magazine-style photo collages with overlapping images, custom positioning, and professional layout presets—all within the familiar block editor interface.
 
-**Features:**
+Perfect for photographers, designers, and content creators who want to showcase images in creative, eye-catching arrangements without touching a single line of code.
 
-* **Quick Layout Presets** - Start with pre-configured layouts (side-by-side, overlapping, grid, scatter, and more).
-* **Flexible Positioning** - Use relative margins or absolute positioning for precise control.
-* **Image Fit Options** - Choose between cover (crop to fit) or contain (fit without cropping).
-* **Mobile Responsive** - Automatically stack images on mobile devices.
-* **Z-Index Control** - Layer images in any order.
-* **Accessibility Ready** - Full alt text and decorative image support.
-* **Visual Editor** - See your collage as you build it.
+= Key Features =
+
+* **12 Professional Layout Presets** - Choose from Side by Side, Three Columns, Overlap Left/Right, Grid, Scatter, Hero Layered, Vertical Wave, Staggered Story, Offset Gallery, and Center Overlay
+* **Advanced Image Controls** - Fine-tune each image with rotation, opacity, padding, margins, and z-index layering
+* **Dual Positioning Modes** - Use relative positioning with margins for flexible layouts, or absolute positioning for pixel-perfect control
+* **Smart Image Fitting** - Select between cover (fill space) or contain (fit without cropping) for each image
+* **Mobile-First Responsive** - Enable automatic stacking on mobile devices with a single toggle
+* **Accessibility Built-In** - Full support for alt text, image titles, descriptions, and decorative image marking
+* **Live Visual Editing** - See exactly how your collage will look as you build it
+* **Caption Support** - Add captions to individual images within your collage
+* **Theme Compatible** - Works seamlessly with any WordPress theme that supports the block editor
+
+= Perfect For =
+
+* Photography portfolios
+* Before/after comparisons
+* Product showcases
+* Travel blogs
+* Creative storytelling
+* Magazine-style layouts
+* Event galleries
+
+= How It Works =
+
+1. Add the Photo Collage block to any post or page
+2. Choose a Quick Layout preset or start from scratch
+3. Upload your images and customize positioning, rotation, and opacity
+4. Adjust responsive settings for mobile devices
+5. Publish and enjoy your stunning photo collage
 
 == Installation ==
 
-1. Upload the plugin files to the `/wp-content/plugins/photo-collage` directory, or install the plugin through the WordPress plugins screen directly.
-2. Activate the plugin through the 'Plugins' screen in WordPress.
-3. Go to a post or page and add the "Photo Collage" block.
+= Automatic Installation =
+
+1. Log in to your WordPress dashboard
+2. Navigate to Plugins → Add New
+3. Search for "Photo Collage"
+4. Click "Install Now" and then "Activate"
+
+= Manual Installation =
+
+1. Download the plugin zip file
+2. Log in to your WordPress dashboard
+3. Navigate to Plugins → Add New → Upload Plugin
+4. Choose the downloaded zip file and click "Install Now"
+5. Activate the plugin through the 'Plugins' screen
+
+= Getting Started =
+
+1. Edit any post or page
+2. Click the '+' button to add a new block
+3. Search for "Photo Collage" and select it
+4. Choose a Quick Layout preset or customize your own
+5. Click on image placeholders to upload your photos
+6. Use the sidebar settings to fine-tune positioning, rotation, and other properties
 
 == Frequently Asked Questions ==
 
-= Can I use this with any theme? =
+= Can I use this with any WordPress theme? =
 
-Yes, the Photo Collage block is designed to work with any WordPress theme that supports the block editor.
+Yes! Photo Collage is designed to work with any WordPress theme that supports the block editor (Gutenberg). The collages are built using standard WordPress blocks and will inherit your theme's styling.
 
-= Is it responsive? =
+= Is it responsive on mobile devices? =
 
-Yes, you can enable the "Stack on Mobile" option to automatically arrange images vertically on smaller screens.
+Absolutely. You can enable the "Stack on Mobile" option to automatically arrange images vertically on screens smaller than 782px. This ensures your collages look great on all devices.
+
+= How many images can I add to a collage? =
+
+You can add as many images as you need. The Quick Layout presets range from 2 to 6 images, but you can manually add more images to any collage.
+
+= Can I adjust the position of individual images? =
+
+Yes! Each image has extensive positioning controls including margins, padding, absolute positioning (top/right/bottom/left), rotation, opacity, and z-index layering.
+
+= Does it work with the classic editor? =
+
+No, Photo Collage requires the block editor (Gutenberg). If you're still using the classic editor, you'll need to switch to the block editor to use this plugin.
+
+= Can I convert existing collages if I uninstall the plugin? =
+
+Yes! The plugin includes an uninstall settings page where you can choose to convert your Photo Collage blocks to either static HTML (preserving the visual layout) or core WordPress image blocks (preserving editability) before uninstalling.
+
+= Are there any performance concerns? =
+
+Photo Collage is optimized for performance. It uses modern CSS for positioning and transforms, avoiding heavy JavaScript. Images are loaded using WordPress's native media handling, which includes lazy loading support.
 
 == Screenshots ==
 
-1. The Photo Collage block in the editor.
-2. Selecting a Quick Layout preset.
+1. The Photo Collage block in the editor with Quick Layout presets
+2. Advanced positioning controls for individual images
+3. Example of an overlapping photo collage on the front-end
+4. Mobile-responsive stacking in action
 
 == Changelog ==
 
 = 0.3.0 =
-* Added quick layout presets (side-by-side, overlap, grid)
-* Added object-fit control to prevent image distortion
+* Added 12 professional Quick Layout presets (Side by Side, Three Columns, Overlap Left/Right, Grid, Scatter, Hero Layered, Vertical Wave, Staggered Story, Offset Gallery, Center Overlay)
+* Added rotation and opacity controls for individual images
+* Added caption, title, and description support for images
+* Added object-fit control to prevent image distortion (cover/contain options)
 * Improved mobile stacking with complete position reset
-* Removed unused server-side rendering code
-* Added minimum container height for better visibility
+* Enhanced positioning controls with custom margin/padding UI
+* Added minimum container height for better visibility in editor
 * Simplified image styles for better performance
-* Enhanced editor preview to match front-end exactly
+* Enhanced editor preview to match front-end rendering exactly
+* Added uninstall settings page with block conversion options
+* Removed unused server-side rendering code
 
 = 0.2.0 =
 * SECURITY: Added server-side rendering and sanitization to prevent XSS attacks
@@ -64,9 +132,12 @@ Yes, you can enable the "Stack on Mobile" option to automatically arrange images
 * Added error handling for failed image loads
 * Removed !important flags from CSS for better theme compatibility
 * Updated mobile breakpoint to WordPress standard (782px)
-* Requires WordPress 6.8+ and PHP 8.0+
+* Requires WordPress 6.4+ and PHP 7.4+
 
 = 0.1.0 =
-* Release
+* Initial release
+* Basic photo collage functionality with overlapping images
+* Z-index layering support
+* Mobile responsive options
 
 

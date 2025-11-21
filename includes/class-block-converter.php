@@ -22,6 +22,7 @@ class Photo_Collage_Block_Converter
 
         // Use a LIKE query to find posts with the block, which is much faster/lighter than loading all posts
         // Note: This might match commented out blocks or revisions, but we filter by post_status/type
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
         $post_ids = $wpdb->get_col(
             "SELECT ID FROM {$wpdb->posts} 
             WHERE post_content LIKE '%wp:photo-collage/container%' 

@@ -31,11 +31,7 @@ function photo_collage_uninstall()
 
         if (!empty($post_ids)) {
             // Log start
-            error_log(sprintf(
-                'Photo Collage: Starting %s conversion for %d posts',
-                $preference,
-                count($post_ids)
-            ));
+
 
             $success_count = 0;
             $error_count = 0;
@@ -46,39 +42,28 @@ function photo_collage_uninstall()
                         $success_count++;
                     } else {
                         $error_count++;
-                        error_log(sprintf(
-                            'Photo Collage: Failed to convert post ID %d',
-                            $post_id
-                        ));
+
                     }
                 } catch (Exception $e) {
                     $error_count++;
-                    error_log(sprintf(
-                        'Photo Collage: Exception converting post ID %d: %s',
-                        $post_id,
-                        $e->getMessage()
-                    ));
+
                 }
             }
 
             // Log results
-            error_log(sprintf(
-                'Photo Collage: Conversion complete. Success: %d, Errors: %d',
-                $success_count,
-                $error_count
-            ));
+
         } else {
-            error_log('Photo Collage: No collage blocks found to convert');
+
         }
     } else {
-        error_log('Photo Collage: User chose to keep blocks as-is, skipping conversion');
+
     }
 
     // Clean up plugin options
     delete_option('photo_collage_uninstall_preference');
 
     // Log completion
-    error_log('Photo Collage: Uninstall complete');
+
 }
 
 // Run the uninstall process

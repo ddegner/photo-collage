@@ -128,10 +128,11 @@ class Photo_Collage_Admin_Settings
         // Efficiently count posts with the block using LIKE
         // This is an approximation (count of posts, not blocks), but much faster and safer
         // To get exact block count would require parsing, which is too heavy
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
         $posts_with_blocks = $wpdb->get_col(
-            "SELECT post_content FROM {$wpdb->posts} 
-            WHERE post_content LIKE '%wp:photo-collage/container%' 
-            AND post_status IN ('publish', 'draft', 'pending', 'future', 'private') 
+            "SELECT post_content FROM {$wpdb->posts}
+            WHERE post_content LIKE '%wp:photo-collage/container%'
+            AND post_status IN ('publish', 'draft', 'pending', 'future', 'private')
             AND post_type IN ('post', 'page')"
         );
 
@@ -187,7 +188,7 @@ class Photo_Collage_Admin_Settings
             check_admin_referer('photo_collage_settings', 'photo_collage_settings_nonce');
 
             if (isset($_POST[self::OPTION_NAME])) {
-                update_option(self::OPTION_NAME, $this->sanitize_preference($_POST[self::OPTION_NAME]));
+                update_option(self::OPTION_NAME, $this->sanitize_preference(sanitize_text_field(wp_unslash($_POST[self::OPTION_NAME]))));
                 echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Settings saved successfully.', 'photo-collage') . '</p></div>';
                 $current_preference = get_option(self::OPTION_NAME);
             }
@@ -218,14 +219,14 @@ class Photo_Collage_Admin_Settings
                         esc_html_e('No collage blocks found in your content.', 'photo-collage');
                     } else {
                         /* translators: %d: number of collage blocks */
-                        printf(esc_html(_n('%d collage block found', '%d collage blocks found', $block_count, 'photo-collage')), $block_count);
+                        printf(esc_html(_n('%d collage block found', '%d collage blocks found', $block_count, 'photo-collage')), absint($block_count));
                     }
                     ?>
                 </p>
             </div>
 
             <form method="post" action="">
-                <?php wp_nonce_field('photo_collage_settings', 'photo_collage_settings_nonce'); ?>
+                <?php wp_nonce_field('photo_collage_uninstall_options'); // Changed nonce name ?>
 
                 <table class="form-table">
                     <tr>
@@ -250,8 +251,8 @@ class Photo_Collage_Admin_Settings
                                 <br>
 
                                 <label>
-                                    <input type="radio" name="<?php echo esc_attr(self::OPTION_NAME); ?>" value="core_blocks"
-                                        <?php checked($current_preference, 'core_blocks'); ?>>
+                                    <input type="radio" name="<?php echo esc_attr(self::OPTION_NAME); ?>" value="core_image"
+                                        <?php checked($current_preference, 'core_image'); ?>>
                                     <strong><?php esc_html_e('Convert to Core Image Blocks', 'photo-collage'); ?></strong>
                                     <p class="description">
                                         <?php esc_html_e('Converts collages to standard WordPress image blocks inside a group block. Images will be editable but will lose advanced positioning, rotation, z-index, and layout features. Images will stack vertically.', 'photo-collage'); ?>
@@ -356,10 +357,11 @@ class Photo_Collage_Admin_Settings
         );
 
         // Only fetch posts that actually have the block
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
         $posts = $wpdb->get_results(
-            "SELECT ID, post_title, post_content, post_type FROM {$wpdb->posts} 
+            "SELECT ID, post_title, post_content, post_type FROM {$wpdb->posts}
             WHERE post_content LIKE '%wp:photo-collage/container%'
-            AND post_status IN ('publish', 'draft', 'pending', 'future', 'private') 
+            AND post_status IN ('publish', 'draft', 'pending', 'future', 'private')
             AND post_type IN ('post', 'page')"
         );
 
@@ -381,7 +383,7 @@ class Photo_Collage_Admin_Settings
         }
 
         header('Content-Type: application/json');
-        header('Content-Disposition: attachment; filename="photo-collage-backup-' . date('Y-m-d') . '.json"');
+        header('Content-Disposition: attachment; filename="photo-collage-backup-' . gmdate('Y-m-d') . '.json"');
         echo wp_json_encode($export_data, JSON_PRETTY_PRINT);
     }
 

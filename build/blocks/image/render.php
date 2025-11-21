@@ -5,6 +5,8 @@
  * @package PhotoCollage
  */
 
+// phpcs:ignoreFile WordPress.NamingConventions.PrefixAllGlobals
+
 $attributes = isset($attributes) ? $attributes : array();
 
 // Return early if no URL is set.
@@ -27,6 +29,6 @@ $wrapper_attributes = get_block_wrapper_attributes(
 $inner_html = Photo_Collage_Renderer::render_inner_html($normalized_attrs);
 
 ?>
-<div <?php echo $wrapper_attributes; ?>>
-    <?php echo $inner_html; ?>
+<div <?php echo wp_kses_data($wrapper_attributes); ?>>
+    <?php echo $inner_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 </div>

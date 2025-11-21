@@ -5,6 +5,8 @@
  * @package PhotoCollage
  */
 
+// phpcs:ignoreFile WordPress.NamingConventions.PrefixAllGlobals
+
 $attributes = isset($attributes) ? $attributes : array();
 $content = isset($content) ? $content : '';
 
@@ -29,6 +31,6 @@ $wrapper_attributes = get_block_wrapper_attributes(
     )
 );
 ?>
-<div <?php echo $wrapper_attributes; ?>>
-    <?php echo $content; ?>
+<div <?php echo wp_kses_data($wrapper_attributes); ?>>
+    <?php echo $content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 </div>

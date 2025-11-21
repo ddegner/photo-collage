@@ -41,9 +41,13 @@ class Photo_Collage_Assets
         if (file_exists($file_path)) {
             $css = file_get_contents($file_path);
             // Register a dummy handle to attach inline styles to
-            wp_register_style($handle, false);
+            wp_register_style(
+                'photo-collage-container-inline',
+                false,
+                array(),
+                '0.3.0'
+            );
             wp_add_inline_style($handle, $css);
         }
     }
 }
-

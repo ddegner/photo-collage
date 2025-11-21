@@ -17,14 +17,7 @@ if (!defined('ABSPATH')) {
 	exit; // Exit if accessed directly.
 }
 
-/**
- * Load the plugin text domain.
- */
-function photo_collage_textdomain()
-{
-	load_plugin_textdomain('photo-collage', false, dirname(plugin_basename(__FILE__)) . '/languages');
-}
-add_action('init', 'photo_collage_textdomain');
+
 
 /**
  * Registers the blocks.
