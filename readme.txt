@@ -2,7 +2,7 @@
 Contributors:      The WordPress Contributors
 Tags:              block
 Tested up to:      6.7
-Stable tag:        0.1.0
+Stable tag:        0.3.0
 Requires at least: 6.4
 Requires PHP:      7.4
 License:           GPL-2.0-or-later
@@ -12,45 +12,38 @@ A block for creating photo collages with overlapping images.
 
 == Description ==
 
-Create beautiful photo collages with overlapping images using an intuitive block editor interface.
+Create beautiful photo collages with overlapping images using an intuitive block editor interface. This plugin adds a "Photo Collage" block to your WordPress editor, allowing you to easily arrange images in creative layouts without writing any code.
 
 **Features:**
 
-* **Quick Layout Presets** - Start with pre-configured layouts (side-by-side, overlapping, grid)
-* **Flexible Positioning** - Use relative margins or absolute positioning for precise control
-* **Image Fit Options** - Choose between cover (crop to fit) or contain (fit without cropping)
-* **Mobile Responsive** - Automatically stack images on mobile devices
-* **Z-Index Control** - Layer images in any order
-* **Accessibility Ready** - Full alt text and decorative image support
-* **Visual Editor** - See your collage as you build it
+* **Quick Layout Presets** - Start with pre-configured layouts (side-by-side, overlapping, grid, scatter, and more).
+* **Flexible Positioning** - Use relative margins or absolute positioning for precise control.
+* **Image Fit Options** - Choose between cover (crop to fit) or contain (fit without cropping).
+* **Mobile Responsive** - Automatically stack images on mobile devices.
+* **Z-Index Control** - Layer images in any order.
+* **Accessibility Ready** - Full alt text and decorative image support.
+* **Visual Editor** - See your collage as you build it.
 
 == Installation ==
 
-This section describes how to install the plugin and get it working.
-
-e.g.
-
-1. Upload the plugin files to the `/wp-content/plugins/.` directory, or install the plugin through the WordPress plugins screen directly.
-1. Activate the plugin through the 'Plugins' screen in WordPress
-
+1. Upload the plugin files to the `/wp-content/plugins/photo-collage` directory, or install the plugin through the WordPress plugins screen directly.
+2. Activate the plugin through the 'Plugins' screen in WordPress.
+3. Go to a post or page and add the "Photo Collage" block.
 
 == Frequently Asked Questions ==
 
-= A question that someone might have =
+= Can I use this with any theme? =
 
-An answer to that question.
+Yes, the Photo Collage block is designed to work with any WordPress theme that supports the block editor.
 
-= What about foo bar? =
+= Is it responsive? =
 
-Answer to foo bar dilemma.
+Yes, you can enable the "Stack on Mobile" option to automatically arrange images vertically on smaller screens.
 
 == Screenshots ==
 
-1. This screen shot description corresponds to screenshot-1.(png|jpg|jpeg|gif). Note that the screenshot is taken from
-the /assets directory or the directory that contains the stable readme.txt (tags or trunk). Screenshots in the /assets
-directory take precedence. For example, `/assets/screenshot-1.png` would win over `/tags/4.3/screenshot-1.png`
-(or jpg, jpeg, gif).
-2. This is the second screen shot
+1. The Photo Collage block in the editor.
+2. Selecting a Quick Layout preset.
 
 == Changelog ==
 
