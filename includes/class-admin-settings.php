@@ -251,9 +251,9 @@ final class Photo_Collage_Admin_Settings
                                 <label>
                                     <input type="radio" name="<?php echo esc_attr(self::OPTION_NAME); ?>" value="<?php echo esc_attr(UninstallPreference::KEEP_AS_IS->value); ?>"
                                         <?php checked($current_preference->value, UninstallPreference::KEEP_AS_IS->value); ?>>
-                                    <strong><?php esc_html_e('Keep As-Is (Not Recommended)', 'photo-collage'); ?></strong>
+                                    <strong><?php esc_html_e('Keep As-Is (Reversible)', 'photo-collage'); ?></strong>
                                     <p class="description">
-                                        <?php esc_html_e('Leaves blocks unconverted. They will appear as "unknown blocks" in the editor and may not display correctly.', 'photo-collage'); ?>
+                                        <?php esc_html_e('Leaves block data intact. Content will not display while the plugin is uninstalled, but will be fully restored if you reinstall the plugin.', 'photo-collage'); ?>
                                     </p>
                                 </label>
                             </fieldset>
