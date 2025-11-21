@@ -1,5 +1,5 @@
 === Photo Collage ===
-Contributors:      The WordPress Contributors
+Contributors:      ddegner
 Tags:              block, photo collage, image gallery, overlapping images, visual design
 Tested up to:      6.8
 Stable tag:        0.3.0

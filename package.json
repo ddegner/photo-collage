@@ -2,7 +2,7 @@
 	"name": "photo-collage",
 	"version": "0.1.0",
 	"description": "Create stunning photo collages with overlapping images, advanced positioning controls, and professional layout presets for WordPress.",
-	"author": "The WordPress Contributors",
+	"author": "David Degner <https://www.daviddegner.com>",
 	"license": "GPL-2.0-or-later",
 	"main": "build/index.js",
 	"repository": {

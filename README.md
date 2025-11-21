@@ -211,7 +211,8 @@ This project is licensed under the GPL v2 or later - see the [LICENSE](https://w
 
 ## 👤 Author
 
-**The WordPress Contributors**
+**David Degner**  
+[daviddegner.com](https://www.daviddegner.com)
 
 ## 🔗 Links
 
