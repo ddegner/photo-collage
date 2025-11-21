@@ -5,46 +5,54 @@
  * @package PhotoCollage
  */
 
+declare(strict_types=1);
+
 if (!defined('ABSPATH')) {
     exit;
 }
 
-class Photo_Collage_Block_Converter
+require_once __DIR__ . '/enums.php';
+require_once __DIR__ . '/class-renderer.php';
+
+final class Photo_Collage_Block_Converter
 {
     /**
      * Scan all posts for collage blocks
      *
-     * @return array Array of post IDs.
+     * @return array<int> Array of post IDs.
      */
-    public function scan_all_posts()
+    public function scan_all_posts(): array
     {
         global $wpdb;
 
-        // Use a LIKE query to find posts with the block, which is much faster/lighter than loading all posts
-        // Note: This might match commented out blocks or revisions, but we filter by post_status/type
+        // Use a LIKE query to find posts with the block
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery
         $post_ids = $wpdb->get_col(
             "SELECT ID FROM {$wpdb->posts} 
             WHERE post_content LIKE '%wp:photo-collage/container%' 
             AND post_status IN ('publish', 'draft', 'pending', 'future', 'private') 
             AND post_type IN ('post', 'page')"
-        );
+        ) ?? [];
 
-        return $post_ids;
+        return array_map('intval', $post_ids);
     }
 
     /**
      * Convert blocks in a post
      *
      * @param int $post_id Post ID.
-     * @param string $preference Conversion preference ('static_html' or 'core_blocks').
+     * @param string|UninstallPreference $preference Conversion preference.
      * @return bool Success.
      */
-    public function convert_post($post_id, $preference)
+    public function convert_post(int $post_id, string|UninstallPreference $preference): bool
     {
         $post = get_post($post_id);
         if (!$post) {
             return false;
+        }
+
+        if (is_string($preference)) {
+            $preference = UninstallPreference::fromString($preference);
         }
 
         if (!has_blocks($post->post_content)) {
@@ -58,10 +66,10 @@ class Photo_Collage_Block_Converter
 
         // Only update if changed
         if ($new_content !== $post->post_content) {
-            $updated = wp_update_post(array(
+            $updated = wp_update_post([
                 'ID' => $post_id,
                 'post_content' => $new_content,
-            ));
+            ]);
             return !is_wp_error($updated);
         }
 
@@ -72,24 +80,21 @@ class Photo_Collage_Block_Converter
      * Recursively convert blocks
      *
      * @param array $blocks Array of blocks.
-     * @param string $preference Preference.
+     * @param UninstallPreference $preference Preference.
      * @return array Converted blocks.
      */
-    private function convert_blocks_recursive($blocks, $preference)
+    private function convert_blocks_recursive(array $blocks, UninstallPreference $preference): array
     {
-        $new_blocks = array();
+        $new_blocks = [];
 
         foreach ($blocks as $block) {
-            if ($block['blockName'] === 'photo-collage/container') {
-                // Convert this block
-                if ($preference === 'static_html') {
-                    $new_blocks[] = $this->convert_to_static_html($block);
-                } elseif ($preference === 'core_blocks') {
-                    $new_blocks[] = $this->convert_to_core_blocks($block);
-                } else {
-                    // Keep as is
-                    $new_blocks[] = $block;
-                }
+            if (($block['blockName'] ?? '') === 'photo-collage/container') {
+                // Convert this block using match expression
+                $new_blocks[] = match($preference) {
+                    UninstallPreference::STATIC_HTML => $this->convert_to_static_html($block),
+                    UninstallPreference::CORE_BLOCKS => $this->convert_to_core_blocks($block),
+                    default => $block,
+                };
             } else {
                 // Recursively check inner blocks
                 if (!empty($block['innerBlocks'])) {
@@ -108,13 +113,13 @@ class Photo_Collage_Block_Converter
      * @param array $block Block data.
      * @return array New block data (HTML block).
      */
-    private function convert_to_static_html($block)
+    private function convert_to_static_html(array $block): array
     {
-        $attributes = $block['attrs'] ?? array();
-        $inner_blocks = $block['innerBlocks'] ?? array();
+        $attributes = $block['attrs'] ?? [];
+        $inner_blocks = $block['innerBlocks'] ?? [];
 
-        $height = isset($attributes['containerHeight']) ? $attributes['containerHeight'] : '500px';
-        $stack_on_mobile = isset($attributes['stackOnMobile']) ? $attributes['stackOnMobile'] : true;
+        $height = $attributes['containerHeight'] ?? '500px';
+        $stack_on_mobile = $attributes['stackOnMobile'] ?? true;
 
         $classes = 'wp-block-photo-collage-container';
         if ($stack_on_mobile) {
@@ -130,20 +135,20 @@ class Photo_Collage_Block_Converter
         $html = sprintf('<div class="%s" style="%s">', esc_attr($classes), esc_attr($style));
 
         foreach ($inner_blocks as $inner_block) {
-            if ($inner_block['blockName'] === 'photo-collage/image') {
+            if (($inner_block['blockName'] ?? '') === 'photo-collage/image') {
                 $html .= $this->generate_image_html($inner_block);
             }
         }
 
         $html .= '</div>';
 
-        return array(
+        return [
             'blockName' => 'core/html',
-            'attrs' => array(),
-            'innerBlocks' => array(),
+            'attrs' => [],
+            'innerBlocks' => [],
             'innerHTML' => $html,
-            'innerContent' => array($html),
-        );
+            'innerContent' => [$html],
+        ];
     }
 
     /**
@@ -152,20 +157,23 @@ class Photo_Collage_Block_Converter
      * @param array $image_block Image block.
      * @return string Generated HTML.
      */
-    private function generate_image_html($image_block)
+    private function generate_image_html(array $image_block): string
     {
-        $attrs = isset($image_block['attrs']) ? $image_block['attrs'] : array();
+        $attrs = $image_block['attrs'] ?? [];
 
         if (empty($attrs['url'])) {
             return '';
         }
 
         // Use shared renderer
+        // normalize_attributes now returns Photo_Collage_Block_Attributes object
         $normalized_attrs = Photo_Collage_Renderer::normalize_attributes($attrs);
+        
+        // get_container_styles accepts object
         $styles = Photo_Collage_Renderer::get_container_styles($normalized_attrs);
         $style_string = Photo_Collage_Renderer::build_style_string($styles);
 
-        // Render inner content
+        // Render inner content (accepts object)
         $inner_html = Photo_Collage_Renderer::render_inner_html($normalized_attrs);
 
         // Wrap with static class
@@ -186,51 +194,58 @@ class Photo_Collage_Block_Converter
      * @param array $block Block data.
      * @return array New block data (Group block).
      */
-    private function convert_to_core_blocks($block)
+    private function convert_to_core_blocks(array $block): array
     {
-        $inner_blocks = $block['innerBlocks'] ?? array();
-        $new_inner_blocks = array();
+        $inner_blocks = $block['innerBlocks'] ?? [];
+        $new_inner_blocks = [];
 
         foreach ($inner_blocks as $inner_block) {
-            if ($inner_block['blockName'] === 'photo-collage/image') {
-                $attrs = $inner_block['attrs'] ?? array();
-                if (empty($attrs['url']))
+            if (($inner_block['blockName'] ?? '') === 'photo-collage/image') {
+                $attrs = $inner_block['attrs'] ?? [];
+                if (empty($attrs['url'])) {
                     continue;
+                }
 
-                $image_attrs = array(
+                $image_attrs = [
                     'url' => $attrs['url'],
                     'alt' => $attrs['alt'] ?? '',
                     'caption' => $attrs['caption'] ?? '',
                     'title' => $attrs['title'] ?? '',
                     'id' => $attrs['id'] ?? null,
-                );
+                ];
 
-                // Create core/image block
-                // Note: core/image serialization is complex, simplified here
-                $img_html = sprintf(
-                    '<figure class="wp-block-image"><img src="%s" alt="%s" class="%s"/></figure>',
-                    esc_url($attrs['url']),
-                    esc_attr($attrs['alt'] ?? ''),
-                    isset($attrs['id']) ? 'wp-image-' . $attrs['id'] : ''
-                );
+                // Create core/image block using WP_HTML_Tag_Processor
+                // Start with figure and img skeleton
+                $tags = new WP_HTML_Tag_Processor('<figure class="wp-block-image"><img /></figure>');
+                
+                // Configure img
+                $tags->next_tag('img');
+                $tags->set_attribute('src', $attrs['url']);
+                $tags->set_attribute('alt', $attrs['alt'] ?? '');
+                
+                if (isset($attrs['id'])) {
+                    $tags->set_attribute('class', 'wp-image-' . $attrs['id']);
+                }
+                
+                $img_html = $tags->get_updated_html();
 
-                $new_inner_blocks[] = array(
+                $new_inner_blocks[] = [
                     'blockName' => 'core/image',
                     'attrs' => $image_attrs,
-                    'innerBlocks' => array(),
+                    'innerBlocks' => [],
                     'innerHTML' => $img_html,
-                    'innerContent' => array($img_html),
-                );
+                    'innerContent' => [$img_html],
+                ];
             }
         }
 
         // Return a Group block containing the images
-        return array(
+        return [
             'blockName' => 'core/group',
-            'attrs' => array('layout' => array('type' => 'flex', 'orientation' => 'vertical')),
+            'attrs' => ['layout' => ['type' => 'flex', 'orientation' => 'vertical']],
             'innerBlocks' => $new_inner_blocks,
             'innerHTML' => '<div class="wp-block-group"></div>',
-            'innerContent' => array('<div class="wp-block-group">', null, '</div>'),
-        );
+            'innerContent' => ['<div class="wp-block-group">', null, '</div>'],
+        ];
     }
 }

@@ -7,6 +7,8 @@
  * @package PhotoCollage
  */
 
+declare(strict_types=1);
+
 // If uninstall not called from WordPress, exit
 if (!defined('WP_UNINSTALL_PLUGIN')) {
     exit;
@@ -15,55 +17,44 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
 /**
  * Main uninstall process
  */
-function photo_collage_uninstall()
+function photo_collage_uninstall(): void
 {
     // Get user's conversion preference
-    $preference = get_option('photo_collage_uninstall_preference', 'static_html');
+    $preference_value = (string) get_option('photo_collage_uninstall_preference', 'static_html');
+    $preference = UninstallPreference::tryFrom($preference_value) ?? UninstallPreference::STATIC_HTML;
 
     // Only convert if preference is not 'keep_as_is'
-    if ($preference !== 'keep_as_is') {
+    if ($preference !== UninstallPreference::KEEP_AS_IS) {
         // Load the converter class
         require_once plugin_dir_path(__FILE__) . 'includes/class-block-converter.php';
+        // Enums are required by the converter, and might be required here if we use them
+        require_once plugin_dir_path(__FILE__) . 'includes/enums.php';
+        
         $converter = new Photo_Collage_Block_Converter();
 
         // Get all posts with collage blocks
         $post_ids = $converter->scan_all_posts();
 
         if (!empty($post_ids)) {
-            // Log start
-
-
-            $success_count = 0;
-            $error_count = 0;
-
             foreach ($post_ids as $post_id) {
                 try {
-                    if ($converter->convert_post($post_id, $preference)) {
-                        $success_count++;
-                    } else {
-                        $error_count++;
-
-                    }
-                } catch (Exception $e) {
-                    $error_count++;
-
+                    $converter->convert_post($post_id, $preference);
+                } catch (Exception) {
+                    // Silently fail individual post conversions during uninstall
+                    continue;
                 }
             }
-
-            // Log results
-
-        } else {
-
         }
-    } else {
-
     }
 
     // Clean up plugin options
     delete_option('photo_collage_uninstall_preference');
+    delete_transient('photo_collage_block_count');
+}
 
-    // Log completion
-
+// Load Enum definition if not already loaded (uninstall context)
+if (!class_exists('UninstallPreference')) {
+     require_once plugin_dir_path(__FILE__) . 'includes/enums.php';
 }
 
 // Run the uninstall process

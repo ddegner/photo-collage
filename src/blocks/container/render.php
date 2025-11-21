@@ -7,11 +7,11 @@
 
 // phpcs:ignoreFile WordPress.NamingConventions.PrefixAllGlobals
 
-$attributes = isset($attributes) ? $attributes : array();
-$content = isset($content) ? $content : '';
+$attributes = $attributes ?? [];
+$content = $content ?? '';
 
-$stack_on_mobile = isset($attributes['stackOnMobile']) ? $attributes['stackOnMobile'] : true;
-$height = isset($attributes['containerHeight']) ? $attributes['containerHeight'] : '500px';
+$stack_on_mobile = $attributes['stackOnMobile'] ?? true;
+$height = $attributes['containerHeight'] ?? '500px';
 
 $classes = 'wp-block-photo-collage-container';
 if ($stack_on_mobile) {
@@ -25,10 +25,10 @@ if (!empty($height)) {
 $style .= "min-height: 200px;";
 
 $wrapper_attributes = get_block_wrapper_attributes(
-    array(
+    [
         'class' => $classes,
         'style' => $style,
-    )
+    ]
 );
 ?>
 <div <?php echo wp_kses_data($wrapper_attributes); ?>>

@@ -5,90 +5,128 @@
  * @package PhotoCollage
  */
 
+declare(strict_types=1);
+
 if (!defined('ABSPATH')) {
     exit;
 }
 
-class Photo_Collage_Renderer
+/**
+ * Readonly class for block attributes
+ */
+final readonly class Photo_Collage_Block_Attributes
+{
+    public string $url;
+    public string $alt;
+    public bool $isDecorative;
+    public bool $useAbsolutePosition;
+    public int $zIndex;
+    public string $width;
+    public string $height;
+    public string $objectFit;
+    public int $rotation;
+    public float $opacity;
+    public string $top;
+    public string $right;
+    public string $bottom;
+    public string $left;
+    public string $marginTop;
+    public string $marginRight;
+    public string $marginBottom;
+    public string $marginLeft;
+    public string $paddingTop;
+    public string $paddingRight;
+    public string $paddingBottom;
+    public string $paddingLeft;
+    public string $caption;
+    public string $title;
+    public string $description;
+
+    public function __construct(array $attributes)
+    {
+        $this->url = (string) ($attributes['url'] ?? '');
+        $this->alt = (string) ($attributes['alt'] ?? '');
+        $this->isDecorative = (bool) ($attributes['isDecorative'] ?? false);
+        $this->useAbsolutePosition = (bool) ($attributes['useAbsolutePosition'] ?? false);
+        $this->zIndex = (int) ($attributes['zIndex'] ?? 1);
+        $this->width = (string) ($attributes['width'] ?? '50%');
+        $this->height = (string) ($attributes['height'] ?? 'auto');
+        $this->objectFit = (string) ($attributes['objectFit'] ?? 'contain');
+        $this->rotation = (int) ($attributes['rotation'] ?? 0);
+        $this->opacity = (float) ($attributes['opacity'] ?? 1);
+        $this->top = (string) ($attributes['top'] ?? 'auto');
+        $this->right = (string) ($attributes['right'] ?? 'auto');
+        $this->bottom = (string) ($attributes['bottom'] ?? 'auto');
+        $this->left = (string) ($attributes['left'] ?? 'auto');
+        $this->marginTop = (string) ($attributes['marginTop'] ?? '0%');
+        $this->marginRight = (string) ($attributes['marginRight'] ?? '0%');
+        $this->marginBottom = (string) ($attributes['marginBottom'] ?? '0%');
+        $this->marginLeft = (string) ($attributes['marginLeft'] ?? '0%');
+        $this->paddingTop = (string) ($attributes['paddingTop'] ?? '0%');
+        $this->paddingRight = (string) ($attributes['paddingRight'] ?? '0%');
+        $this->paddingBottom = (string) ($attributes['paddingBottom'] ?? '0%');
+        $this->paddingLeft = (string) ($attributes['paddingLeft'] ?? '0%');
+        $this->caption = (string) ($attributes['caption'] ?? '');
+        $this->title = (string) ($attributes['title'] ?? '');
+        $this->description = (string) ($attributes['description'] ?? '');
+    }
+}
+
+final class Photo_Collage_Renderer
 {
     /**
      * Normalize attributes with defaults
      *
      * @param array $attributes Block attributes.
-     * @return array Normalized attributes.
+     * @return Photo_Collage_Block_Attributes Normalized attributes object.
      */
-    public static function normalize_attributes($attributes)
+    public static function normalize_attributes(array $attributes): Photo_Collage_Block_Attributes
     {
-        return array_merge(array(
-            'url' => '',
-            'alt' => '',
-            'isDecorative' => false,
-            'useAbsolutePosition' => false,
-            'zIndex' => 1,
-            'width' => '50%',
-            'height' => 'auto',
-            'objectFit' => 'contain',
-            'rotation' => 0,
-            'opacity' => 1,
-            'top' => 'auto',
-            'right' => 'auto',
-            'bottom' => 'auto',
-            'left' => 'auto',
-            'marginTop' => '0%',
-            'marginRight' => '0%',
-            'marginBottom' => '0%',
-            'marginLeft' => '0%',
-            'paddingTop' => '0%',
-            'paddingRight' => '0%',
-            'paddingBottom' => '0%',
-            'paddingLeft' => '0%',
-            'caption' => '',
-            'title' => '',
-            'description' => '',
-        ), $attributes);
+        return new Photo_Collage_Block_Attributes($attributes);
     }
 
     /**
      * Build style array for the container
      *
-     * @param array $attributes Normalized attributes.
-     * @return array Style key-value pairs.
+     * @param Photo_Collage_Block_Attributes $attributes Normalized attributes.
+     * @return array<string, string|int|float> Style key-value pairs.
      */
-    public static function get_container_styles($attributes)
+    public static function get_container_styles(Photo_Collage_Block_Attributes $attributes): array
     {
-        $styles = array(
-            'width' => $attributes['width'],
-            'height' => $attributes['height'],
-            'z-index' => $attributes['zIndex'],
-            'padding-top' => $attributes['paddingTop'],
-            'padding-right' => $attributes['paddingRight'],
-            'padding-bottom' => $attributes['paddingBottom'],
-            'padding-left' => $attributes['paddingLeft'],
-        );
+        $styles = [
+            'width' => $attributes->width,
+            'height' => $attributes->height,
+            'z-index' => $attributes->zIndex,
+            'padding-top' => $attributes->paddingTop,
+            'padding-right' => $attributes->paddingRight,
+            'padding-bottom' => $attributes->paddingBottom,
+            'padding-left' => $attributes->paddingLeft,
+        ];
 
-        // Position
-        if ($attributes['useAbsolutePosition']) {
-            $styles['position'] = 'absolute';
-            $styles['top'] = $attributes['top'];
-            $styles['right'] = $attributes['right'];
-            $styles['bottom'] = $attributes['bottom'];
-            $styles['left'] = $attributes['left'];
+        if ($attributes->useAbsolutePosition) {
+            $styles += [
+                'position' => 'absolute',
+                'top' => $attributes->top,
+                'right' => $attributes->right,
+                'bottom' => $attributes->bottom,
+                'left' => $attributes->left,
+            ];
         } else {
-            $styles['position'] = 'relative';
-            $styles['margin-top'] = $attributes['marginTop'];
-            $styles['margin-right'] = $attributes['marginRight'];
-            $styles['margin-bottom'] = $attributes['marginBottom'];
-            $styles['margin-left'] = $attributes['marginLeft'];
+            $styles += [
+                'position' => 'relative',
+                'margin-top' => $attributes->marginTop,
+                'margin-right' => $attributes->marginRight,
+                'margin-bottom' => $attributes->marginBottom,
+                'margin-left' => $attributes->marginLeft,
+            ];
         }
 
-        // Transform
-        if (!empty($attributes['rotation']) && $attributes['rotation'] != 0) {
-            $styles['transform'] = "rotate({$attributes['rotation']}deg)";
+        if ($attributes->rotation !== 0) {
+            $styles['transform'] = "rotate({$attributes->rotation}deg)";
         }
 
-        // Opacity
-        if (isset($attributes['opacity']) && $attributes['opacity'] != 1) {
-            $styles['opacity'] = $attributes['opacity'];
+        if ($attributes->opacity !== 1.0) {
+            $styles['opacity'] = $attributes->opacity;
         }
 
         return $styles;
@@ -97,14 +135,14 @@ class Photo_Collage_Renderer
     /**
      * Build style string from array
      *
-     * @param array $styles Style array.
+     * @param array<string, string|int|float> $styles Style array.
      * @return string CSS style string.
      */
-    public static function build_style_string($styles)
+    public static function build_style_string(array $styles): string
     {
         $style_string = '';
         foreach ($styles as $key => $value) {
-            if ($value !== null && $value !== '') {
+            if ($value !== '' && $value !== null) {
                 $style_string .= "$key: $value; ";
             }
         }
@@ -112,59 +150,61 @@ class Photo_Collage_Renderer
     }
 
     /**
-     * Generate inner HTML (img, figure, caption)
+     * Generate inner HTML using WP_HTML_Tag_Processor
      *
-     * @param array $attributes Normalized attributes.
+     * @param Photo_Collage_Block_Attributes $attributes Normalized attributes.
      * @return string HTML content.
      */
-    public static function render_inner_html($attributes)
+    public static function render_inner_html(Photo_Collage_Block_Attributes $attributes): string
     {
-        if (empty($attributes['url'])) {
+        if (empty($attributes->url)) {
             return '';
         }
 
         $img_style = "object-fit: contain; width: 100%; height: 100%;";
 
-        $has_caption = !empty($attributes['caption']);
-        $is_decorative = $attributes['isDecorative'];
-        $alt_attr = $is_decorative ? '' : $attributes['alt'];
+        $has_caption = !empty($attributes->caption);
+        $is_decorative = $attributes->isDecorative;
+        $alt_attr = $is_decorative ? '' : $attributes->alt;
 
-        $has_description = !empty($attributes['description']) && !$is_decorative;
+        $has_description = !empty($attributes->description) && !$is_decorative;
         $description_id = $has_description ? 'photo-collage-desc-' . uniqid() : '';
 
-        $img_html = sprintf(
-            '<img src="%s" alt="%s"%s%s loading="lazy" style="%s" />',
-            esc_url($attributes['url']),
-            esc_attr($alt_attr),
-            !empty($attributes['title']) ? ' title="' . esc_attr($attributes['title']) . '"' : '',
-            $has_description ? ' aria-describedby="' . esc_attr($description_id) . '"' : '',
-            esc_attr($img_style)
-        );
+        // Generate IMG tag using HTML API
+        $tags = new WP_HTML_Tag_Processor('<img />');
+        $tags->next_tag();
+        $tags->set_attribute('src', $attributes->url);
+        $tags->set_attribute('alt', $alt_attr);
+        $tags->set_attribute('loading', 'lazy');
+        $tags->set_attribute('style', $img_style);
 
-        $html = '';
-
-        if ($has_caption) {
-            $html .= '<figure class="photo-collage-image-figure">';
-            $html .= $img_html;
-            // Add inline style for caption if converting (optional, but good for static HTML)
-            $html .= sprintf(
-                '<figcaption class="photo-collage-image-caption wp-element-caption">%s</figcaption>',
-                wp_kses_post($attributes['caption'])
-            );
-            $html .= '</figure>';
-        } else {
-            $html .= $img_html;
+        if (!empty($attributes->title)) {
+            $tags->set_attribute('title', $attributes->title);
         }
+
+        if ($has_description) {
+            $tags->set_attribute('aria-describedby', $description_id);
+        }
+
+        $img_html = $tags->get_updated_html();
+
+        $html = match(true) {
+            $has_caption => sprintf(
+                '<figure class="photo-collage-image-figure">%s<figcaption class="photo-collage-image-caption wp-element-caption">%s</figcaption></figure>',
+                $img_html,
+                wp_kses_post($attributes->caption)
+            ),
+            default => $img_html,
+        };
 
         if ($has_description) {
             $html .= sprintf(
                 '<div id="%s" class="screen-reader-text">%s</div>',
                 esc_attr($description_id),
-                wp_kses_post($attributes['description'])
+                wp_kses_post($attributes->description)
             );
         }
 
         return $html;
     }
 }
-
