@@ -5,7 +5,7 @@ return array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
 		'apiVersion' => 3,
 		'name' => 'photo-collage/container',
-		'version' => '0.4.0',
+		'version' => '0.5.0',
 		'title' => 'Collage Container',
 		'category' => 'design',
 		'icon' => 'grid-view',
@@ -45,16 +45,18 @@ return array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
 		'apiVersion' => 3,
 		'name' => 'photo-collage/image',
-		'version' => '0.4.0',
+		'version' => '0.5.0',
 		'title' => 'Collage Image',
 		'category' => 'design',
 		'icon' => 'format-image',
 		'description' => 'An image block with advanced positioning controls.',
-		'parent' => array(
-			'photo-collage/container'
-		),
 		'supports' => array(
-			'html' => false
+			'align' => true,
+			'html' => false,
+			'interactivity' => true,
+			'lightbox' => array(
+				'allowEditing' => true
+			)
 		),
 		'textdomain' => 'photo-collage',
 		'editorScript' => 'file:./index.js',
@@ -69,12 +71,12 @@ return array(
 				'type' => 'string',
 				'default' => ''
 			),
-			'id' => array(
-				'type' => 'number'
-			),
 			'isDecorative' => array(
 				'type' => 'boolean',
 				'default' => false
+			),
+			'id' => array(
+				'type' => 'number'
 			),
 			'marginTop' => array(
 				'type' => 'string',
@@ -152,6 +154,10 @@ return array(
 				'type' => 'number',
 				'default' => 1
 			),
+			'showCaption' => array(
+				'type' => 'boolean',
+				'default' => true
+			),
 			'caption' => array(
 				'type' => 'string',
 				'default' => ''
@@ -163,6 +169,22 @@ return array(
 			'description' => array(
 				'type' => 'string',
 				'default' => ''
+			),
+			'href' => array(
+				'type' => 'string'
+			),
+			'linkTarget' => array(
+				'type' => 'string'
+			),
+			'rel' => array(
+				'type' => 'string'
+			),
+			'linkClass' => array(
+				'type' => 'string'
+			),
+			'linkDestination' => array(
+				'type' => 'string',
+				'default' => 'none'
 			)
 		)
 	)

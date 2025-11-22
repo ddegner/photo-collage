@@ -1,8 +1,10 @@
 import { __ } from '@wordpress/i18n';
 import { useEffect } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
-import { useBlockProps, InspectorControls, MediaPlaceholder, BlockControls, MediaReplaceFlow, RichText } from '@wordpress/block-editor';
-import { PanelBody, RangeControl, TextControl, ToggleControl, __experimentalUnitControl as UnitControl, Button } from '@wordpress/components';
+import { useBlockProps, InspectorControls, MediaPlaceholder, BlockControls, MediaReplaceFlow, RichText, __experimentalLinkControl as LinkControl } from '@wordpress/block-editor';
+import { PanelBody, RangeControl, TextControl, ToggleControl, __experimentalUnitControl as UnitControl, Button, SelectControl, ToolbarButton, Popover, ToolbarDropdownMenu } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+import { link as linkIcon, unlink, caption as captionIcon } from '@wordpress/icons';
 import './editor.scss';
 
 const BoxControl = ({ values, onChange, centerLabel = 'M', isDashed = true }) => (
@@ -81,8 +83,78 @@ export default function Edit({ attributes, setAttributes, isSelected }) {
         opacity = 1,
         caption = '',
         title = '',
-        description = ''
+        description = '',
+        align,
+
+        href,
+        linkTarget,
+        rel,
+        linkClass,
+        linkDestination = 'none',
+        showCaption = true,
+        lightbox = { enabled: false }
     } = attributes;
+
+    const [isLinkPopoverOpen, setIsLinkPopoverOpen] = useState(false);
+
+    const onSetLink = ({ url, opensInNewTab }) => {
+        setAttributes({
+            href: url,
+            linkTarget: opensInNewTab ? '_blank' : undefined,
+            rel: opensInNewTab ? 'noreferrer noopener' : undefined,
+            lightbox: { enabled: false }
+        });
+        setIsLinkPopoverOpen(false);
+        setAttributes({ linkDestination: 'custom' });
+    };
+
+    const onRemoveLink = () => {
+        setAttributes({
+            href: undefined,
+            linkTarget: undefined,
+            rel: undefined,
+            linkClass: undefined,
+            linkDestination: 'none',
+            lightbox: { enabled: false }
+        });
+    };
+
+    const onLinkToMedia = () => {
+        if (!media || !media.source_url) return;
+        setAttributes({
+            href: media.source_url,
+            linkDestination: 'media',
+            linkTarget: undefined,
+            rel: undefined,
+            linkClass: undefined,
+            lightbox: { enabled: false }
+        });
+    };
+
+    const onLinkToAttachment = () => {
+        if (!media || !media.link) return;
+        setAttributes({
+            href: media.link,
+            linkDestination: 'attachment',
+            linkTarget: undefined,
+            rel: undefined,
+            linkClass: undefined,
+            lightbox: { enabled: false }
+        });
+    };
+
+    const onEnlargeOnClick = () => {
+        setAttributes({
+            href: undefined,
+            linkDestination: 'none',
+            linkTarget: undefined,
+            rel: undefined,
+            linkClass: undefined,
+            lightbox: { enabled: true }
+        });
+    };
+
+
 
     const onSelectImage = (media) => {
         if (!media || !media.url) {
@@ -96,17 +168,21 @@ export default function Edit({ attributes, setAttributes, isSelected }) {
             title: media.title || '',
             caption: media.caption || '',
             description: media.description || '',
+            linkDestination: 'none',
+            href: undefined,
+            lightbox: { enabled: false },
         });
     };
 
-    // Auto-recover URL from ID if missing (fixes legacy data issue)
+    // Fetch media object for link functionality and legacy recovery
     const media = useSelect(
-        (select) => (id && !url ? select('core').getMedia(id) : null),
-        [id, url]
+        (select) => (id ? select('core').getMedia(id) : null),
+        [id]
     );
 
     useEffect(() => {
-        if (media && media.source_url) {
+        // Only auto-recover if URL is missing
+        if (!url && media && media.source_url) {
             setAttributes({
                 url: media.source_url,
                 alt: media.alt_text || alt,
@@ -114,7 +190,7 @@ export default function Edit({ attributes, setAttributes, isSelected }) {
                 caption: media.caption?.rendered || caption,
             });
         }
-    }, [media, url, alt, title, caption]);
+    }, [media, url]);
 
     const onChangeAlt = (newAlt) => {
         setAttributes({ alt: newAlt });
@@ -137,16 +213,16 @@ export default function Edit({ attributes, setAttributes, isSelected }) {
                 left: left && left !== 'auto' ? left : undefined,
             } : {
                 position: 'relative',
-                marginTop,
-                marginRight,
-                marginBottom,
-                marginLeft,
+                marginTop: (!align || marginTop !== '0%') ? marginTop : undefined,
+                marginRight: (!align || marginRight !== '0%') ? marginRight : undefined,
+                marginBottom: (!align || marginBottom !== '0%') ? marginBottom : undefined,
+                marginLeft: (!align || marginLeft !== '0%') ? marginLeft : undefined,
             }),
             paddingTop,
             paddingRight,
             paddingBottom,
             paddingLeft,
-            width,
+            width: (!align || width !== '50%') ? width : undefined,
             height,
             zIndex,
             transform: `rotate(${rotation}deg)`,
@@ -172,6 +248,56 @@ export default function Edit({ attributes, setAttributes, isSelected }) {
 
     return (
         <>
+            <BlockControls>
+                <ToolbarDropdownMenu
+                    icon={linkIcon}
+                    label={__('Link', 'photo-collage')}
+                    controls={[
+                        {
+                            title: __('Link to image file', 'photo-collage'),
+                            icon: linkDestination === 'media' ? 'yes' : undefined,
+                            onClick: onLinkToMedia,
+                            isDisabled: !media || !media.source_url,
+                        },
+                        {
+                            title: __('Link to attachment page', 'photo-collage'),
+                            icon: linkDestination === 'attachment' ? 'yes' : undefined,
+                            onClick: onLinkToAttachment,
+                            isDisabled: !media || !media.link,
+                        },
+                        {
+                            title: __('Enlarge on click', 'photo-collage'),
+                            icon: (linkDestination === 'none' && lightbox?.enabled) ? 'yes' : undefined,
+                            onClick: onEnlargeOnClick,
+                        },
+                        {
+                            title: __('Custom URL', 'photo-collage'),
+                            icon: linkDestination === 'custom' ? 'yes' : undefined,
+                            onClick: () => setIsLinkPopoverOpen(true),
+                        },
+                    ]}
+                />
+                {isLinkPopoverOpen && (
+                    <Popover
+                        position="bottom center"
+                        onClose={() => setIsLinkPopoverOpen(false)}
+                    >
+                        <LinkControl
+                            className="wp-block-navigation-link__inline-link-input"
+                            value={{ url: href, opensInNewTab: linkTarget === '_blank' }}
+                            onChange={onSetLink}
+                            onRemove={onRemoveLink}
+                            forceIsEditingLink={isLinkPopoverOpen}
+                        />
+                    </Popover>
+                )}
+                <ToolbarButton
+                    icon={captionIcon}
+                    label={showCaption ? __('Hide caption', 'photo-collage') : __('Show caption', 'photo-collage')}
+                    isActive={showCaption}
+                    onClick={() => setAttributes({ showCaption: !showCaption })}
+                />
+            </BlockControls>
             <BlockControls>
                 <MediaReplaceFlow
                     mediaId={id}
@@ -430,7 +556,7 @@ export default function Edit({ attributes, setAttributes, isSelected }) {
 
                     }}
                 />
-                {(!RichText.isEmpty(caption) || isSelected) && (
+                {showCaption && (!RichText.isEmpty(caption) || isSelected) && (
                     <RichText
                         tagName="figcaption"
                         className="photo-collage-image-caption wp-element-caption"

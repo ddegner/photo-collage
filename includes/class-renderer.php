@@ -17,6 +17,11 @@ if (!defined('ABSPATH')) {
 final readonly class Photo_Collage_Block_Attributes
 {
     public string $url;
+    public int $id;
+    public string $href;
+    public string $linkTarget;
+    public string $rel;
+    public string $linkClass;
     public string $alt;
     public bool $isDecorative;
     public bool $useAbsolutePosition;
@@ -41,11 +46,21 @@ final readonly class Photo_Collage_Block_Attributes
     public string $caption;
     public string $title;
     public string $description;
+    public string $align;
+    public bool $showCaption;
+    public array $lightbox;
 
     public function __construct(array $attributes)
     {
         $this->url = (string) ($attributes['url'] ?? '');
+        $this->id = (int) ($attributes['id'] ?? 0);
+        $this->href = (string) ($attributes['href'] ?? '');
+        $this->linkTarget = (string) ($attributes['linkTarget'] ?? '');
+        $this->rel = (string) ($attributes['rel'] ?? '');
+        $this->linkClass = (string) ($attributes['linkClass'] ?? '');
         $this->alt = (string) ($attributes['alt'] ?? '');
+        $this->align = (string) ($attributes['align'] ?? '');
+        $this->showCaption = (bool) ($attributes['showCaption'] ?? true);
         $this->isDecorative = (bool) ($attributes['isDecorative'] ?? false);
         $this->useAbsolutePosition = (bool) ($attributes['useAbsolutePosition'] ?? false);
         $this->zIndex = (int) ($attributes['zIndex'] ?? 1);
@@ -69,6 +84,7 @@ final readonly class Photo_Collage_Block_Attributes
         $this->caption = (string) ($attributes['caption'] ?? '');
         $this->title = (string) ($attributes['title'] ?? '');
         $this->description = (string) ($attributes['description'] ?? '');
+        $this->lightbox = (array) ($attributes['lightbox'] ?? []);
     }
 
     /**
@@ -80,57 +96,6 @@ final readonly class Photo_Collage_Block_Attributes
      */
     public function with(array $changes): self
     {
-        $clone = clone $this;
-        foreach ($changes as $key => $value) {
-            if (property_exists($clone, $key)) {
-                // In PHP 8.3, we can re-initialize readonly properties during cloning
-                // However, since we can't easily access the property directly to set it if it's readonly from outside context
-                // (though we are inside the class here), we rely on the __clone magic method behavior if we were doing specific logic.
-                // Actually, PHP 8.3 allows re-initializing readonly properties in __clone().
-                // But we are in a method `with()`. We can't set them here directly on `$clone` if they are already set?
-                // Wait, PHP 8.3 allows overwriting readonly properties *only* within the __clone method.
-                // So we need to pass the changes to __clone or handle it differently.
-                // A common pattern for immutable objects in PHP 8.3 is:
-                // $clone = clone $this;
-                // $clone->prop = $newValue; // This works ONLY inside __clone().
-
-                // So we can't do it in `with()`. We need a way to pass state to `__clone`.
-                // But `__clone` doesn't take arguments.
-
-                // Actually, the standard way is to not use `__clone` directly for `with` if we want to change specific props,
-                // unless we have a way to signal which ones.
-                // OR, we just construct a new object.
-                // "PHP 8.3 allows reinitializing readonly properties during cloning."
-                // This means:
-                // public function __clone() { $this->prop = 'new value'; }
-
-                // Since we want a generic `with` method, constructing a new object is still the cleanest way 
-                // unless we want to use Reflection (slow) or a specific clone strategy.
-                // Let's stick to the constructor for simplicity and reliability, 
-                // OR since the user specifically asked for PHP 8.3 features, maybe they want to see the `__clone` capability?
-                // But `__clone` is for when *you* clone it.
-
-                // Let's use the constructor approach for `with` as it's robust, 
-                // but I will ADD a `__clone` method that demonstrates we *could* modify things if we had a specific need,
-                // or just stick to the constructor which is perfectly fine for immutable value objects.
-
-                // Wait, if I use `clone $this` inside `with`, I am NOT inside `__clone`.
-                // So I cannot modify `$clone->prop`.
-
-                // So the "PHP 8.3 deep cloning" feature is really about `__clone` implementation.
-                // I will implement `__clone` to ensure deep cloning if any properties were objects (none are here),
-                // but for `with`, I will use the constructor.
-
-                // HOWEVER, let's look at the prompt again: "Apply PHP 8.3 features (Typed constants, Readonly classes, etc.)"
-                // Readonly classes are PHP 8.2.
-                // PHP 8.3 allows fetching constants dynamically with default values, typed class constants (PHP 8.3?), 
-                // Typed class constants were introduced in 8.3.
-
-                // Let's stick to Typed Constants in the other file, and for this one, 
-                // just add the `with` method using the constructor, which is the correct way for immutable objects.
-            }
-        }
-        // Re-construct
         $vars = get_object_vars($this);
         $new_vars = array_merge($vars, $changes);
         return new self($new_vars);
@@ -168,6 +133,11 @@ final class Photo_Collage_Renderer
             'padding-left' => $attributes->paddingLeft,
         ];
 
+        // If aligned, and width is default, remove inline width to let alignment classes handle it.
+        if (!empty($attributes->align) && $attributes->width === '50%') {
+            unset($styles['width']);
+        }
+
         if ($attributes->useAbsolutePosition) {
             $styles += [
                 'position' => 'absolute',
@@ -177,13 +147,26 @@ final class Photo_Collage_Renderer
                 'left' => $attributes->left,
             ];
         } else {
-            $styles += [
-                'position' => 'relative',
-                'margin-top' => $attributes->marginTop,
-                'margin-right' => $attributes->marginRight,
-                'margin-bottom' => $attributes->marginBottom,
-                'margin-left' => $attributes->marginLeft,
-            ];
+            // Only apply default margins if NOT aligned or if user explicitly set custom margins.
+            // This allows standard alignment classes (aligncenter, alignleft, etc.) to work.
+            $has_custom_margins = (
+                $attributes->marginTop !== '0%' ||
+                $attributes->marginRight !== '0%' ||
+                $attributes->marginBottom !== '0%' ||
+                $attributes->marginLeft !== '0%'
+            );
+
+            if (empty($attributes->align) || $has_custom_margins) {
+                $styles += [
+                    'position' => 'relative',
+                    'margin-top' => $attributes->marginTop,
+                    'margin-right' => $attributes->marginRight,
+                    'margin-bottom' => $attributes->marginBottom,
+                    'margin-left' => $attributes->marginLeft,
+                ];
+            } else {
+                $styles += ['position' => 'relative'];
+            }
         }
 
         if ($attributes->rotation !== 0) {
@@ -228,30 +211,84 @@ final class Photo_Collage_Renderer
 
         $img_style = "object-fit: contain; width: 100%; height: 100%;";
 
-        $has_caption = !empty($attributes->caption);
+        $has_caption = !empty($attributes->caption) && $attributes->showCaption;
         $is_decorative = $attributes->isDecorative;
         $alt_attr = $is_decorative ? '' : $attributes->alt;
 
         $has_description = !empty($attributes->description) && !$is_decorative;
         $description_id = $has_description ? 'photo-collage-desc-' . uniqid() : '';
 
-        // Generate IMG tag using HTML API
-        $tags = new WP_HTML_Tag_Processor('<img />');
-        $tags->next_tag();
-        $tags->set_attribute('src', $attributes->url);
-        $tags->set_attribute('alt', $alt_attr);
-        $tags->set_attribute('loading', 'lazy');
-        $tags->set_attribute('style', $img_style);
+        // Generate IMG tag
+        if ($attributes->id > 0) {
+            // Use native WordPress function for responsive images
+            $img_attributes = [
+                'style' => $img_style,
+                'class' => '', // Prevent default classes if needed, or let WP add them
+            ];
 
-        if (!empty($attributes->title)) {
-            $tags->set_attribute('title', $attributes->title);
+            if ($is_decorative) {
+                $img_attributes['alt'] = '';
+                $img_attributes['role'] = 'presentation';
+            } else {
+                $img_attributes['alt'] = $attributes->alt;
+            }
+
+            if (!empty($attributes->title)) {
+                $img_attributes['title'] = $attributes->title;
+            }
+
+            if ($has_description) {
+                $img_attributes['aria-describedby'] = $description_id;
+            }
+
+        // Add Lightbox directives if enabled
+        if (!empty($attributes->lightbox['enabled']) && empty($attributes->href)) {
+            $img_attributes['data-wp-interactive'] = 'core/image';
+            $img_attributes['data-wp-on--click'] = 'actions.showLightbox';
+            $img_attributes['data-wp-context'] = wp_json_encode(['lightbox' => ['enabled' => true]]);
+            $img_attributes['style'] .= ' cursor: zoom-in;';
+        } else {
+             // If lightbox is NOT enabled, or if there is a custom HREF, ensure we don't output lightbox attrs.
+             // However, if fallback image is used, it generates its own tag below.
+             // If wp_get_attachment_image is used, it might add some attributes if filtered, but we are manually building $img_attributes.
         }
 
-        if ($has_description) {
-            $tags->set_attribute('aria-describedby', $description_id);
+            $img_html = wp_get_attachment_image($attributes->id, 'full', false, $img_attributes);
+
+            // Fallback if image ID is invalid or deleted
+            if (empty($img_html)) {
+                $img_html = self::generate_fallback_img($attributes, $img_style, $alt_attr, $description_id, $has_description);
+            }
+        } else {
+            $img_html = self::generate_fallback_img($attributes, $img_style, $alt_attr, $description_id, $has_description);
         }
 
-        $img_html = $tags->get_updated_html();
+        // Wrap in link if href is present
+        if (!empty($attributes->href)) {
+            $link_attributes = [
+                'href' => $attributes->href,
+                'class' => $attributes->linkClass,
+                'target' => $attributes->linkTarget,
+                'rel' => $attributes->rel,
+            ];
+
+            // Remove empty attributes
+            $link_attributes = array_filter($link_attributes);
+
+            // Build link HTML
+            $link_tags = new WP_HTML_Tag_Processor('<a></a>');
+            $link_tags->next_tag();
+            foreach ($link_attributes as $attr => $value) {
+                $link_tags->set_attribute($attr, $value);
+            }
+            // Insert image HTML inside link
+            // Note: WP_HTML_Tag_Processor doesn't support innerHTML injection easily for wrapping.
+            // So we'll use sprintf.
+            $link_open = $link_tags->get_updated_html();
+            $link_open = str_replace('</a>', '', $link_open); // Get just the opening tag
+
+            $img_html = $link_open . $img_html . '</a>';
+        }
 
         $html = match (true) {
             $has_caption => sprintf(
@@ -271,5 +308,49 @@ final class Photo_Collage_Renderer
         }
 
         return $html;
+    }
+
+    /**
+     * Generate fallback IMG tag using HTML API
+     * 
+     * @param Photo_Collage_Block_Attributes $attributes
+     * @param string $img_style
+     * @param string $alt_attr
+     * @param string $description_id
+     * @param bool $has_description
+     * @return string
+     */
+    private static function generate_fallback_img(
+        Photo_Collage_Block_Attributes $attributes,
+        string $img_style,
+        string $alt_attr,
+        string $description_id,
+        bool $has_description
+    ): string {
+        $tags = new WP_HTML_Tag_Processor('<img />');
+        $tags->next_tag();
+        $tags->set_attribute('src', $attributes->url);
+        $tags->set_attribute('alt', $alt_attr);
+        $tags->set_attribute('loading', 'lazy');
+        $tags->set_attribute('style', $img_style);
+
+        if (!empty($attributes->title)) {
+            $tags->set_attribute('title', $attributes->title);
+        }
+
+        if ($has_description) {
+            $tags->set_attribute('aria-describedby', $description_id);
+        }
+
+         // Add Lightbox directives if enabled for fallback images too
+         if (!empty($attributes->lightbox['enabled']) && empty($attributes->href)) {
+            $tags->set_attribute('data-wp-interactive', 'core/image');
+            $tags->set_attribute('data-wp-on--click', 'actions.showLightbox');
+            $tags->set_attribute('data-wp-context', wp_json_encode(['lightbox' => ['enabled' => true]]));
+            $current_style = $tags->get_attribute('style');
+            $tags->set_attribute('style', $current_style . ' cursor: zoom-in;');
+        }
+
+        return $tags->get_updated_html();
     }
 }
