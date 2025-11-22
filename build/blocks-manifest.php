@@ -5,11 +5,11 @@ return array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
 		'apiVersion' => 3,
 		'name' => 'photo-collage/container',
-		'version' => '0.3.0',
+		'version' => '0.4.0',
 		'title' => 'Collage Container',
 		'category' => 'design',
 		'icon' => 'grid-view',
-		'description' => 'A container for creating photo collages.',
+		'description' => 'A container for creating freeform photo layouts.',
 		'supports' => array(
 			'align' => array(
 				'wide',
@@ -45,7 +45,7 @@ return array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
 		'apiVersion' => 3,
 		'name' => 'photo-collage/image',
-		'version' => '0.3.0',
+		'version' => '0.4.0',
 		'title' => 'Collage Image',
 		'category' => 'design',
 		'icon' => 'format-image',

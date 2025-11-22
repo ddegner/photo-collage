@@ -90,7 +90,7 @@ final class Photo_Collage_Block_Converter
         foreach ($blocks as $block) {
             if (($block['blockName'] ?? '') === 'photo-collage/container') {
                 // Convert this block using match expression
-                $new_blocks[] = match($preference) {
+                $new_blocks[] = match ($preference) {
                     UninstallPreference::STATIC_HTML => $this->convert_to_static_html($block),
                     UninstallPreference::CORE_BLOCKS => $this->convert_to_core_blocks($block),
                     default => $block,
@@ -168,7 +168,7 @@ final class Photo_Collage_Block_Converter
         // Use shared renderer
         // normalize_attributes now returns Photo_Collage_Block_Attributes object
         $normalized_attrs = Photo_Collage_Renderer::normalize_attributes($attrs);
-        
+
         // get_container_styles accepts object
         $styles = Photo_Collage_Renderer::get_container_styles($normalized_attrs);
         $style_string = Photo_Collage_Renderer::build_style_string($styles);
@@ -217,16 +217,16 @@ final class Photo_Collage_Block_Converter
                 // Create core/image block using WP_HTML_Tag_Processor
                 // Start with figure and img skeleton
                 $tags = new WP_HTML_Tag_Processor('<figure class="wp-block-image"><img /></figure>');
-                
+
                 // Configure img
                 $tags->next_tag('img');
                 $tags->set_attribute('src', $attrs['url']);
                 $tags->set_attribute('alt', $attrs['alt'] ?? '');
-                
+
                 if (isset($attrs['id'])) {
                     $tags->set_attribute('class', 'wp-image-' . $attrs['id']);
                 }
-                
+
                 $img_html = $tags->get_updated_html();
 
                 $new_inner_blocks[] = [

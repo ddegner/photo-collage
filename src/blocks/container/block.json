@@ -6,7 +6,7 @@
     "title": "Collage Container",
     "category": "design",
     "icon": "grid-view",
-    "description": "A container for creating photo collages.",
+    "description": "A container for creating freeform photo layouts.",
     "supports": {
         "align": [
             "wide",

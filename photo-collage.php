@@ -1,10 +1,10 @@
 <?php
 /**
  * Plugin Name:       Photo Collage
- * Description:       A block for creating photo collages with overlapping images.
+ * Description:       Blocks for creating freeform photo layouts with more natural and chaotic structures that can overlap.
  * Version:           0.4.0
  * Requires at least: 6.8
- * Requires PHP:      8.1
+ * Requires PHP:      8.3
  * Author:            David Degner
  * Author URI:        https://www.daviddegner.com
  * License:           GPL-2.0-or-later
@@ -53,7 +53,7 @@ function photo_collage_load_admin(): void
 {
 	if (is_admin()) {
 		require_once plugin_dir_path(__FILE__) . 'includes/class-admin-settings.php';
-        new Photo_Collage_Admin_Settings();
+		new Photo_Collage_Admin_Settings();
 	}
 }
 add_action('plugins_loaded', photo_collage_load_admin(...));

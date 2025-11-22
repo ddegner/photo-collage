@@ -137,7 +137,7 @@ photo-collage/
 ## 📋 Requirements
 
 - **WordPress:** 6.8 or higher
-- **PHP:** 8.1 or higher
+- **PHP:** 8.3 or higher
 - **Block Editor:** Required (does not work with Classic Editor)
 
 ## ❓ FAQ
@@ -169,10 +169,10 @@ Photo Collage is optimized for performance. It uses modern CSS for positioning a
 ## 📝 Changelog
 
 ### 0.4.0
-- **MODERNIZATION:** Updated requirements to PHP 8.1+ and WordPress 6.8+
+- **MODERNIZATION:** Updated requirements to PHP 8.3+ and WordPress 6.8+
 - **PERFORMANCE:** Implemented strict typing and readonly classes for better performance
 - **SECURITY:** Switched to WordPress HTML API for safer HTML generation
-- **DEV EXPERIENCE:** Refactored codebase with modern PHP 8.1 features (Enums, Match expressions)
+- **DEV EXPERIENCE:** Refactored codebase with modern PHP 8.3 features (Enums, Match expressions)
 - **COMPATIBILITY:** Full support for latest WordPress features
 
 ### 0.3.0
