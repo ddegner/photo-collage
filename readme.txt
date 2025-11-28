@@ -1,7 +1,7 @@
 === Photo Collage ===
 Contributors:      ddegner
 Tags:              block, photo collage, image gallery, overlapping images, visual design
-Tested up to:      6.8
+Tested up to:      6.9
 Stable tag:        0.5.0
 Requires at least: 6.8
 Requires PHP:      8.3
@@ -121,6 +121,7 @@ Photo Collage is optimized for performance. It uses modern CSS for positioning a
 * IMPROVEMENT: Added toggle for image captions in the toolbar
 * IMPROVEMENT: Rearranged toolbar buttons to match native standards
 * FIX: Fixed fallback rendering logic for images with Lightbox enabled
+* COMPATIBILITY: Tested up to WordPress 6.9
 
 = 0.4.0 =
 * MODERNIZATION: Updated requirements to PHP 8.3+ and WordPress 6.8+
