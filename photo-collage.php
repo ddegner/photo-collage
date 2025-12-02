@@ -21,6 +21,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Plugin version constant
+ */
+define( 'PHOTO_COLLAGE_VERSION', '0.5.1' );
+
+/**
  * Registers the blocks.
  */
 function photo_collage_block_init(): void {

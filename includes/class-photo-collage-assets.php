@@ -46,11 +46,12 @@ final class Photo_Collage_Assets {
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
 			$css = (string) file_get_contents( $file_path );
 			// Register a dummy handle to attach inline styles to.
+			$version = defined( 'PHOTO_COLLAGE_VERSION' ) ? PHOTO_COLLAGE_VERSION : '0.5.1';
 			wp_register_style(
 				handle: $handle,
 				src: false,
 				deps: array(),
-				ver: '0.4.0'
+				ver: $version
 			);
 			wp_add_inline_style( $handle, wp_strip_all_tags( $css ) );
 		}
