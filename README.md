@@ -117,21 +117,22 @@ npm run packages-update
 ```
 photo-collage/
 ├── build/                  # Compiled assets (generated)
-├── includes/              # PHP classes and server-side code
-│   ├── class-admin-settings.php
-│   ├── class-block-converter.php
-│   ├── class-renderer.php
-│   ├── class-assets.php
+├── includes/               # PHP classes and server-side code
+│   ├── class-photo-collage-admin-settings.php
+│   ├── class-photo-collage-block-converter.php
+│   ├── class-photo-collage-renderer.php
+│   ├── class-photo-collage-block-attributes.php
+│   ├── class-photo-collage-assets.php
 │   └── enums.php
-├── src/                   # Source files
-│   ├── blocks/           # Block definitions
-│   │   ├── container/    # Collage container block
-│   │   └── image/        # Collage image block
-│   └── editor.scss       # Editor styles
-├── patterns/             # Block patterns
-├── photo-collage.php     # Main plugin file
-├── uninstall.php         # Uninstall handler
-└── readme.txt            # WordPress.org readme
+├── src/                    # Source files
+│   ├── blocks/             # Block definitions
+│   │   ├── container/      # Collage container block
+│   │   └── image/          # Collage image block
+│   └── editor.scss         # Editor styles
+├── patterns/               # Block patterns
+├── photo-collage.php       # Main plugin file
+├── uninstall.php           # Uninstall handler
+└── readme.txt              # WordPress.org readme
 ```
 
 ## 📋 Requirements
@@ -167,6 +168,20 @@ Yes! The plugin includes an uninstall settings page where you can choose to conv
 Photo Collage is optimized for performance. It uses modern CSS for positioning and transforms, avoiding heavy JavaScript. Images are loaded using WordPress's native media handling, which includes lazy loading support.
 
 ## 📝 Changelog
+
+### 0.5.1
+- **IMPROVEMENT:** Refactored PHP codebase to adhere to WordPress Coding Standards
+- **IMPROVEMENT:** Improved code organization by splitting renderer and attribute classes
+- **DEV:** Renamed class files for better PSR-4 and WP standard compliance
+- **DEV:** Fixed various coding standard violations (whitespace, yoda conditions, doc blocks)
+
+### 0.5.0
+- **IMPROVEMENT:** Updated Collage Image block link options to mirror native WordPress Image block
+- **IMPROVEMENT:** Added "Link to attachment page" and "Enlarge on click" (Lightbox) support
+- **IMPROVEMENT:** Added toggle for image captions in the toolbar
+- **IMPROVEMENT:** Rearranged toolbar buttons to match native standards
+- **FIX:** Fixed fallback rendering logic for images with Lightbox enabled
+- **COMPATIBILITY:** Tested up to WordPress 6.9
 
 ### 0.4.0
 - **MODERNIZATION:** Updated requirements to PHP 8.3+ and WordPress 6.8+

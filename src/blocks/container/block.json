@@ -1,40 +1,37 @@
 {
-    "$schema": "https://schemas.wp.org/trunk/block.json",
-    "apiVersion": 3,
-    "name": "photo-collage/container",
-    "version": "0.5.0",
-    "title": "Collage Container",
-    "category": "design",
-    "icon": "grid-view",
-    "description": "A container for creating freeform photo layouts.",
-    "supports": {
-        "align": [
-            "wide",
-            "full"
-        ],
-        "html": false,
-        "spacing": {
-            "margin": true,
-            "padding": true
-        }
-    },
-    "textdomain": "photo-collage",
-    "editorScript": "file:./index.js",
-    "editorStyle": "file:./index.css",
-    "attributes": {
-        "align": {
-            "type": "string",
-            "default": "wide"
-        },
-        "stackOnMobile": {
-            "type": "boolean",
-            "default": true
-        },
-        "containerHeight": {
-            "type": "string",
-            "default": ""
-        }
-    },
-    "style": "file:./style-index.css",
-    "render": "file:./render.php"
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "photo-collage/container",
+	"version": "0.5.1",
+	"title": "Collage Container",
+	"category": "design",
+	"icon": "grid-view",
+	"description": "A container for creating freeform photo layouts.",
+	"supports": {
+		"align": [ "wide", "full" ],
+		"html": false,
+		"spacing": {
+			"margin": true,
+			"padding": true
+		}
+	},
+	"textdomain": "photo-collage",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"attributes": {
+		"align": {
+			"type": "string",
+			"default": "wide"
+		},
+		"stackOnMobile": {
+			"type": "boolean",
+			"default": true
+		},
+		"containerHeight": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
 }

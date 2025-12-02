@@ -7,6 +7,10 @@
 
 // phpcs:ignoreFile WordPress.NamingConventions.PrefixAllGlobals
 
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 $attributes = $attributes ?? [];
 $content = $content ?? '';
 
@@ -32,5 +36,5 @@ $wrapper_attributes = get_block_wrapper_attributes(
 );
 ?>
 <div <?php echo wp_kses_data($wrapper_attributes); ?>>
-    <?php echo $content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+    <?php echo wp_kses($content, Photo_Collage_Renderer::get_allowed_html()); ?>
 </div>

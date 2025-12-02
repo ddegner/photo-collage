@@ -8,9 +8,7 @@
 				"kind": "build",
 				"isDefault": true
 			},
-			"problemMatcher": [
-				"$eslint-stylish"
-			],
+			"problemMatcher": [ "$eslint-stylish" ],
 			"label": "npm: build",
 			"detail": "wp-scripts build --blocks-manifest"
 		},
@@ -18,9 +16,7 @@
 			"type": "npm",
 			"script": "start",
 			"group": "build",
-			"problemMatcher": [
-				"$eslint-stylish"
-			],
+			"problemMatcher": [ "$eslint-stylish" ],
 			"label": "npm: start",
 			"isBackground": true,
 			"presentation": {
@@ -31,4 +27,3 @@
 		}
 	]
 }
-

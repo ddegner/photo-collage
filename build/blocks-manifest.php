@@ -5,7 +5,7 @@ return array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
 		'apiVersion' => 3,
 		'name' => 'photo-collage/container',
-		'version' => '0.5.0',
+		'version' => '0.5.1',
 		'title' => 'Collage Container',
 		'category' => 'design',
 		'icon' => 'grid-view',
@@ -45,7 +45,7 @@ return array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
 		'apiVersion' => 3,
 		'name' => 'photo-collage/image',
-		'version' => '0.5.0',
+		'version' => '0.5.1',
 		'title' => 'Collage Image',
 		'category' => 'design',
 		'icon' => 'format-image',
@@ -161,6 +161,14 @@ return array(
 			'caption' => array(
 				'type' => 'string',
 				'default' => ''
+			),
+			'captionAlign' => array(
+				'type' => 'string',
+				'default' => 'left'
+			),
+			'captionWidth' => array(
+				'type' => 'string',
+				'default' => '100%'
 			),
 			'title' => array(
 				'type' => 'string',

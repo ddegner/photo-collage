@@ -7,6 +7,10 @@
 
 // phpcs:ignoreFile WordPress.NamingConventions.PrefixAllGlobals
 
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 $attributes = $attributes ?? [];
 
 // Return early if no URL is set.
@@ -31,5 +35,5 @@ $inner_html = Photo_Collage_Renderer::render_inner_html($normalized_attrs);
 
 ?>
 <div <?php echo wp_kses_data($wrapper_attributes); ?>>
-    <?php echo $inner_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+    <?php echo wp_kses($inner_html, Photo_Collage_Renderer::get_allowed_html()); ?>
 </div>

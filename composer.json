@@ -1,0 +1,19 @@
+{
+	"name": "ddegner/photo-collage",
+	"description": "Photo Collage WordPress Plugin",
+	"type": "wordpress-plugin",
+	"license": "GPL-2.0-or-later",
+	"require-dev": {
+		"dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+		"wp-coding-standards/wpcs": "^3.0"
+	},
+	"scripts": {
+		"lint": "phpcs",
+		"fix": "phpcbf"
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	}
+}

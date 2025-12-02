@@ -2,7 +2,7 @@
 Contributors:      ddegner
 Tags:              block, photo collage, image gallery, overlapping images, visual design
 Tested up to:      6.9
-Stable tag:        0.5.0
+Stable tag:        0.5.1
 Requires at least: 6.8
 Requires PHP:      8.3
 License:           GPL-2.0-or-later
@@ -19,6 +19,15 @@ Photo Collage transforms the way you display images in WordPress. Build beautifu
 Perfect for photographers, designers, and content creators who want to showcase images in creative, eye-catching arrangements without touching a single line of code.
 
 **GitHub Repository:** [https://github.com/ddegner/photo-collage](https://github.com/ddegner/photo-collage)
+
+= Build Tools & Source =
+
+This plugin uses modern JavaScript build tools (npm, webpack) to compile the source code.
+The full source code, including build scripts and configuration, is available in the GitHub repository linked above.
+To build the plugin from source:
+1. Clone the repository
+2. Run `npm install` to install dependencies
+3. Run `npm run build` to compile the assets
 
 = Key Features =
 
@@ -114,6 +123,12 @@ Photo Collage is optimized for performance. It uses modern CSS for positioning a
 4. Mobile-responsive stacking in action
 
 == Changelog ==
+
+= 0.5.1 =
+* IMPROVEMENT: Refactored PHP codebase to adhere to WordPress Coding Standards
+* IMPROVEMENT: Improved code organization by splitting renderer and attribute classes
+* DEV: Renamed class files for better PSR-4 and WP standard compliance
+* DEV: Fixed various coding standard violations (whitespace, yoda conditions, doc blocks)
 
 = 0.5.0 =
 * IMPROVEMENT: Updated Collage Image block link options to mirror native WordPress Image block

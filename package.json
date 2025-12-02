@@ -1,6 +1,6 @@
 {
 	"name": "photo-collage",
-	"version": "0.5.0",
+	"version": "0.5.1",
 	"description": "Create freeform photo layouts with more natural and chaotic structures that can overlap, featuring advanced positioning controls and professional presets for WordPress.",
 	"author": "David Degner <https://www.daviddegner.com>",
 	"license": "GPL-2.0-or-later",
@@ -14,6 +14,7 @@
 		"format": "wp-scripts format",
 		"lint:css": "wp-scripts lint-style",
 		"lint:js": "wp-scripts lint-js",
+		"lint:php": "composer run-script lint",
 		"packages-update": "wp-scripts packages-update",
 		"plugin-zip": "wp-scripts plugin-zip",
 		"start": "wp-scripts start --blocks-manifest"

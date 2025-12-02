@@ -2,7 +2,7 @@
   "$schema": "https://schemas.wp.org/trunk/block.json",
   "apiVersion": 3,
   "name": "photo-collage/image",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "title": "Collage Image",
   "category": "design",
   "icon": "format-image",
@@ -118,6 +118,14 @@
     "caption": {
       "type": "string",
       "default": ""
+    },
+    "captionAlign": {
+      "type": "string",
+      "default": "left"
+    },
+    "captionWidth": {
+      "type": "string",
+      "default": "100%"
     },
     "title": {
       "type": "string",
