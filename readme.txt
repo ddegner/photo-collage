@@ -20,14 +20,23 @@ Perfect for photographers, designers, and content creators who want to showcase 
 
 **GitHub Repository:** [https://github.com/ddegner/photo-collage](https://github.com/ddegner/photo-collage)
 
-= Build Tools & Source =
+= Source Code & Build Tools =
 
-This plugin uses modern JavaScript build tools (npm, webpack) to compile the source code.
-The full source code, including build scripts and configuration, is available in the GitHub repository linked above.
-To build the plugin from source:
-1. Clone the repository
-2. Run `npm install` to install dependencies
-3. Run `npm run build` to compile the assets
+**All source code is included in this plugin and publicly available.**
+
+This plugin uses modern JavaScript build tools to compile block editor code:
+* **Source Files:** Located in the `src/` directory (included in this plugin)
+* **Compiled Files:** Located in the `build/` directory
+* **Build Tools:** npm and webpack (via @wordpress/scripts)
+* **Build Configuration:** `package.json` and `package-lock.json` (included in this plugin)
+
+**To build from source:**
+1. Install Node.js and npm
+2. Navigate to the plugin directory
+3. Run `npm install` to install dependencies
+4. Run `npm run build` to compile the assets
+
+**Full source code repository:** [https://github.com/ddegner/photo-collage](https://github.com/ddegner/photo-collage)
 
 = Key Features =
 

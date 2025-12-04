@@ -1,12 +1,10 @@
 .git
+.github
 .gitignore
 .editorconfig
 .vscode
 .DS_Store
 node_modules
-src
-package.json
-package-lock.json
 composer.json
 composer.lock
 phpcs.xml
