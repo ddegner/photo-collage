@@ -23,10 +23,12 @@ require_once __DIR__ . '/enums.php';
 final class Photo_Collage_Admin_Settings {
 
 
+
+
 	/**
 	 * Option name for storing uninstall preference
 	 */
-	public const string OPTION_NAME = 'photo_collage_uninstall_preference';
+	public const OPTION_NAME = 'photo_collage_uninstall_preference';
 
 	/**
 	 * Initialize the admin settings
@@ -124,42 +126,50 @@ final class Photo_Collage_Admin_Settings {
 
 	/**
 	 * Render the settings page
-	 *
-	 * @throws RuntimeException If security check fails.
 	 */
 	public function render_settings_page(): void {
+		// Check user capabilities first.
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
 
-		$current_preference = Photo_Collage_Uninstall_Preference::from_string(
-			(string) get_option( self::OPTION_NAME, Photo_Collage_Uninstall_Preference::STATIC_HTML->value )
-		);
-		$block_count        = $this->scan_collage_blocks();
-
-		// Handle form submission.
+		// Handle form submission - verify nonce BEFORE accessing any POST data.
 		if ( isset( $_POST['photo_collage_settings_nonce'] ) ) {
-			$nonce = sanitize_text_field( wp_unslash( $_POST['photo_collage_settings_nonce'] ) );
-			if ( ! wp_verify_nonce( $nonce, 'photo_collage_uninstall_options' ) ) {
-				throw new RuntimeException( 'Security check failed' );
+			// Verify nonce - this will die with error message if verification fails.
+			check_admin_referer( 'photo_collage_uninstall_options', 'photo_collage_settings_nonce' );
+
+			// Double-check capabilities (defense in depth).
+			if ( ! current_user_can( 'manage_options' ) ) {
+				wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'photo-collage' ) );
 			}
 
+			// Now it's safe to process POST data.
 			if ( isset( $_POST[ self::OPTION_NAME ] ) ) {
 				$value = sanitize_text_field( wp_unslash( $_POST[ self::OPTION_NAME ] ) );
 				update_option( self::OPTION_NAME, $this->sanitize_preference( $value ) );
 				echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Settings saved successfully.', 'photo-collage' ) . '</p></div>';
-				$current_preference = Photo_Collage_Uninstall_Preference::from_string( (string) get_option( self::OPTION_NAME ) );
 			}
 		}
 
-		// Handle export.
+		// Handle export - verify nonce BEFORE processing.
 		if ( isset( $_GET['action'] ) && 'export' === $_GET['action'] ) {
-			if ( ! check_admin_referer( 'photo_collage_export', 'nonce' ) ) {
-				throw new RuntimeException( 'Security check failed' );
+			// Verify nonce - this will die with error message if verification fails.
+			check_admin_referer( 'photo_collage_export', 'nonce' );
+
+			// Double-check capabilities (defense in depth).
+			if ( ! current_user_can( 'manage_options' ) ) {
+				wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'photo-collage' ) );
 			}
+
 			$this->export_collage_data();
 			exit;
 		}
+
+		// Get current settings after potential update.
+		$current_preference = Photo_Collage_Uninstall_Preference::from_string(
+			(string) get_option( self::OPTION_NAME, Photo_Collage_Uninstall_Preference::STATIC_HTML->value )
+		);
+		$block_count        = $this->scan_collage_blocks();
 
 		?>
 		<div class="wrap">

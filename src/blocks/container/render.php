@@ -34,7 +34,12 @@ $wrapper_attributes = get_block_wrapper_attributes(
         'style' => $style,
     ]
 );
-?>
-<div <?php echo wp_kses_data($wrapper_attributes); ?>>
-    <?php echo wp_kses($content, Photo_Collage_Renderer::get_allowed_html()); ?>
-</div>
+
+echo wp_kses(
+    sprintf(
+        '<div %s>%s</div>',
+        $wrapper_attributes,
+        $content
+    ),
+    Photo_Collage_Renderer::get_allowed_html()
+);

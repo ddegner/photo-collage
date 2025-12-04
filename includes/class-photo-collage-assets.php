@@ -18,6 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class Photo_Collage_Assets {
 
+
 	/**
 	 * Initialize asset registration
 	 */
@@ -53,7 +54,8 @@ final class Photo_Collage_Assets {
 				deps: array(),
 				ver: $version
 			);
-			wp_add_inline_style( $handle, wp_strip_all_tags( $css ) );
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- CSS is loaded from a local, trusted build file.
+			wp_add_inline_style( $handle, $css );
 		}
 	}
 }

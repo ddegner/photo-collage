@@ -33,7 +33,12 @@ $wrapper_attributes = get_block_wrapper_attributes(
 // Render inner content
 $inner_html = Photo_Collage_Renderer::render_inner_html($normalized_attrs);
 
-?>
-<div <?php echo wp_kses_data($wrapper_attributes); ?>>
-    <?php echo wp_kses($inner_html, Photo_Collage_Renderer::get_allowed_html()); ?>
-</div>
+
+echo wp_kses(
+    sprintf(
+        '<div %s>%s</div>',
+        $wrapper_attributes,
+        $inner_html
+    ),
+    Photo_Collage_Renderer::get_allowed_html()
+);

@@ -16,6 +16,9 @@
     "spacing": {
       "margin": true,
       "padding": true
+    },
+    "layout": {
+      "allowEditing": false
     }
   },
   "textdomain": "photo-collage",

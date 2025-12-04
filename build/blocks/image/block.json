@@ -127,6 +127,10 @@
       "type": "string",
       "default": "100%"
     },
+    "captionPlacement": {
+      "type": "string",
+      "default": "bottom-left"
+    },
     "title": {
       "type": "string",
       "default": ""

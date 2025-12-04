@@ -19,6 +19,9 @@ return array(
 			'spacing' => array(
 				'margin' => true,
 				'padding' => true
+			),
+			'layout' => array(
+				'allowEditing' => false
 			)
 		),
 		'textdomain' => 'photo-collage',
@@ -169,6 +172,10 @@ return array(
 			'captionWidth' => array(
 				'type' => 'string',
 				'default' => '100%'
+			),
+			'captionPlacement' => array(
+				'type' => 'string',
+				'default' => 'bottom-left'
 			),
 			'title' => array(
 				'type' => 'string',

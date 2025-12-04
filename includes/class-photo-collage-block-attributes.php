@@ -17,6 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 final readonly class Photo_Collage_Block_Attributes {
 
 
+
 	/**
 	 * Image URL
 	 *
@@ -256,6 +257,13 @@ final readonly class Photo_Collage_Block_Attributes {
 	public string $caption_width;
 
 	/**
+	 * Caption Placement
+	 *
+	 * @var string
+	 */
+	public string $caption_placement;
+
+	/**
 	 * Lightbox settings
 	 *
 	 * @var array
@@ -280,6 +288,7 @@ final readonly class Photo_Collage_Block_Attributes {
 		$this->show_caption          = (bool) ( $attributes['showCaption'] ?? true );
 		$this->caption_align         = (string) ( $attributes['captionAlign'] ?? 'center' );
 		$this->caption_width         = (string) ( $attributes['captionWidth'] ?? '100%' );
+		$this->caption_placement     = (string) ( $attributes['captionPlacement'] ?? 'bottom-left' );
 		$this->is_decorative         = (bool) ( $attributes['isDecorative'] ?? false );
 		$this->use_absolute_position = (bool) ( $attributes['useAbsolutePosition'] ?? false );
 		$this->z_index               = (int) ( $attributes['zIndex'] ?? 1 );
@@ -305,5 +314,4 @@ final readonly class Photo_Collage_Block_Attributes {
 		$this->description           = (string) ( $attributes['description'] ?? '' );
 		$this->lightbox              = (array) ( $attributes['lightbox'] ?? array() );
 	}
-
 }

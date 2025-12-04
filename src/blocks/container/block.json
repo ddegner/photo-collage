@@ -8,11 +8,17 @@
 	"icon": "grid-view",
 	"description": "A container for creating freeform photo layouts.",
 	"supports": {
-		"align": [ "wide", "full" ],
+		"align": [
+			"wide",
+			"full"
+		],
 		"html": false,
 		"spacing": {
 			"margin": true,
 			"padding": true
+		},
+		"layout": {
+			"allowEditing": false
 		}
 	},
 	"textdomain": "photo-collage",

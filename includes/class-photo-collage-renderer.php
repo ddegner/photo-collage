@@ -17,6 +17,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Photo_Collage_Renderer {
 
 
+
+
+
 	/**
 	 * Normalize attributes with defaults
 	 *
@@ -196,13 +199,25 @@ final class Photo_Collage_Renderer {
 		}
 
 		$caption_style = '';
+		$figure_style  = '';
 		if ( $has_caption ) {
 			$caption_style = "text-align: {$attributes->caption_align}; width: {$attributes->caption_width};";
+
+			// Apply flexbox to figure for caption placement.
+			$align_items = match ( $attributes->caption_placement ) {
+				'bottom-left' => 'flex-start',
+				'bottom-center' => 'center',
+				'bottom-right' => 'flex-end',
+				default => 'flex-start',
+			};
+
+			$figure_style = "display: flex; flex-direction: column; align-items: {$align_items};";
 		}
 
 		$html = match ( true ) {
 			$has_caption => sprintf(
-				'<figure class="photo-collage-image-figure">%s<figcaption class="photo-collage-image-caption wp-element-caption" style="%s">%s</figcaption></figure>',
+				'<figure class="photo-collage-image-figure" style="%s">%s<figcaption class="photo-collage-image-caption wp-element-caption" style="%s">%s</figcaption></figure>',
+				esc_attr( $figure_style ),
 				$img_html,
 				esc_attr( $caption_style ),
 				wp_kses_post( $attributes->caption )
@@ -285,6 +300,16 @@ final class Photo_Collage_Renderer {
 			$allowed_html['div']['data-wp-interactive'] = true;
 			$allowed_html['div']['data-wp-on--click']   = true;
 			$allowed_html['div']['data-wp-context']     = true;
+			$allowed_html['div']['style']               = true;
+			$allowed_html['div']['class']               = true;
+		} else {
+			$allowed_html['div'] = array(
+				'data-wp-interactive' => true,
+				'data-wp-on--click'   => true,
+				'data-wp-context'     => true,
+				'style'               => true,
+				'class'               => true,
+			);
 		}
 
 		// Ensure figcaption allows style attribute for caption positioning.
