@@ -16,55 +16,53 @@
 
 declare(strict_types=1);
 
-if (!defined('ABSPATH')) {
+if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
 /**
  * Plugin version constant
  */
-define('PHOTO_COLLAGE_VERSION', '0.5.3');
+define( 'PHOTO_COLLAGE_VERSION', '0.5.3' );
 
 /**
  * Registers the blocks.
  */
-function photo_collage_block_init(): void
-{
+function photo_collage_block_init(): void {
 	register_block_type(
-		block_type: plugin_dir_path(__FILE__) . 'build/blocks/container/block.json',
+		block_type: plugin_dir_path( __FILE__ ) . 'build/blocks/container/block.json',
 		args: array(
 			'style' => 'photo-collage-container-inline',
 		)
 	);
 	register_block_type(
-		block_type: plugin_dir_path(__FILE__) . 'build/blocks/image/block.json',
+		block_type: plugin_dir_path( __FILE__ ) . 'build/blocks/image/block.json',
 		args: array(
 			'style' => 'photo-collage-image-inline',
 		)
 	);
 }
-add_action('init', photo_collage_block_init(...));
+add_action( 'init', photo_collage_block_init( ... ) );
 
 /**
  * Load asset manager
  */
-require_once plugin_dir_path(__FILE__) . 'includes/class-photo-collage-assets.php';
+require_once plugin_dir_path( __FILE__ ) . 'includes/class-photo-collage-assets.php';
 Photo_Collage_Assets::init();
 
 /**
  * Load admin settings page
  */
-function photo_collage_load_admin(): void
-{
-	if (is_admin()) {
-		require_once plugin_dir_path(__FILE__) . 'includes/class-photo-collage-admin-settings.php';
+function photo_collage_load_admin(): void {
+	if ( is_admin() ) {
+		require_once plugin_dir_path( __FILE__ ) . 'includes/class-photo-collage-admin-settings.php';
 		new Photo_Collage_Admin_Settings();
 	}
 }
-add_action('plugins_loaded', photo_collage_load_admin(...));
+add_action( 'plugins_loaded', photo_collage_load_admin( ... ) );
 
 /**
  * Load renderer
  */
-require_once plugin_dir_path(__FILE__) . 'includes/class-photo-collage-block-attributes.php';
-require_once plugin_dir_path(__FILE__) . 'includes/class-photo-collage-renderer.php';
+require_once plugin_dir_path( __FILE__ ) . 'includes/class-photo-collage-block-attributes.php';
+require_once plugin_dir_path( __FILE__ ) . 'includes/class-photo-collage-renderer.php';
