@@ -5,8 +5,11 @@
 .vscode
 .DS_Store
 node_modules
+src
+vendor
 composer.json
 composer.lock
 phpcs.xml
 README.md
+verify-distribution.sh
 .distignore
