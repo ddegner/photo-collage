@@ -11,5 +11,5 @@ composer.json
 composer.lock
 phpcs.xml
 README.md
-verify-distribution.sh
+DEPLOY.md
 .distignore
