@@ -400,7 +400,7 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 				/>
 				{ isLinkPopoverOpen && (
 					<Popover
-						position="bottom center"
+						placement="bottom"
 						onClose={ () => setIsLinkPopoverOpen( false ) }
 					>
 						<LinkControl
@@ -674,7 +674,7 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 						<div className="photo-collage-z-index-buttons">
 							<Button
 								variant="secondary"
-								isSmall
+								size="small"
 								onClick={ () =>
 									setAttributes( { zIndex: zIndex - 1 } )
 								}
@@ -683,7 +683,7 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 							/>
 							<Button
 								variant="secondary"
-								isSmall
+								size="small"
 								onClick={ () =>
 									setAttributes( { zIndex: zIndex + 1 } )
 								}
@@ -740,7 +740,7 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 						</span>
 						{ rotation !== 0 && (
 							<Button
-								isSmall
+								size="small"
 								variant="tertiary"
 								onClick={ () =>
 									setAttributes( { rotation: 0 } )
