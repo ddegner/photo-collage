@@ -15,7 +15,7 @@ $attributes = $attributes ?? [];
 $content = $content ?? '';
 
 $stack_on_mobile = $attributes['stackOnMobile'] ?? true;
-$height = $attributes['containerHeight'] ?? '500px';
+$height = $attributes['containerHeight'] ?? '';
 
 $classes = 'wp-block-photo-collage-container';
 if ($stack_on_mobile) {

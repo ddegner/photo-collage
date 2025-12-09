@@ -175,7 +175,21 @@ return array(
 			),
 			'captionPlacement' => array(
 				'type' => 'string',
-				'default' => 'bottom-left'
+				'default' => 'bottom-left',
+				'enum' => array(
+					'top-left',
+					'top-center',
+					'top-right',
+					'left-top',
+					'left-center',
+					'left-bottom',
+					'right-top',
+					'right-center',
+					'right-bottom',
+					'bottom-left',
+					'bottom-center',
+					'bottom-right'
+				)
 			),
 			'title' => array(
 				'type' => 'string',

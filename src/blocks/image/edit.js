@@ -1,5 +1,5 @@
 import { __ } from '@wordpress/i18n';
-import { useEffect } from '@wordpress/element';
+import { useEffect, useState } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 import {
 	useBlockProps,
@@ -8,7 +8,7 @@ import {
 	BlockControls,
 	MediaReplaceFlow,
 	RichText,
-	__experimentalLinkControl as LinkControl,
+	LinkControl,
 	AlignmentControl,
 } from '@wordpress/block-editor';
 import {
@@ -16,79 +16,116 @@ import {
 	RangeControl,
 	TextControl,
 	ToggleControl,
-	__experimentalUnitControl as UnitControl,
+	UnitControl,
 	Button,
 	SelectControl,
-	ToolbarButton,
 	Popover,
 	ToolbarDropdownMenu,
 } from '@wordpress/components';
-import { useState } from '@wordpress/element';
-import {
-	link as linkIcon,
-	unlink,
-	caption as captionIcon,
-} from '@wordpress/icons';
+import { link as linkIcon } from '@wordpress/icons';
 import './editor.scss';
+import CaptionPositionControl from './components/caption-position-control';
 
-const BoxControl = ({
+/**
+ * Get flex-direction based on caption placement.
+ * Side placements (left-*, right-*) use row layout.
+ * Top/bottom placements use column layout.
+ *
+ * @param {string} placement Caption placement value.
+ * @return {string} CSS flex-direction value.
+ */
+export const getFlexDirection = ( placement ) => {
+	if ( placement.startsWith( 'left-' ) || placement.startsWith( 'right-' ) ) {
+		return 'row';
+	}
+	return 'column';
+};
+
+/**
+ * Get align-items based on caption placement suffix.
+ * Maps placement alignment to CSS align-items value.
+ *
+ * @param {string} placement Caption placement value.
+ * @return {string} CSS align-items value.
+ */
+export const getAlignItems = ( placement ) => {
+	// Extract the suffix after the hyphen
+	const suffix = placement.split( '-' )[ 1 ];
+
+	// Map suffix to align-items value
+	switch ( suffix ) {
+		case 'left':
+		case 'top':
+			return 'flex-start';
+		case 'center':
+			return 'center';
+		case 'right':
+		case 'bottom':
+			return 'flex-end';
+		default:
+			return 'flex-start';
+	}
+};
+
+const BoxControl = ( {
 	values,
 	onChange,
 	centerLabel = 'M',
 	isDashed = true,
-}) => (
+} ) => (
 	<div className="photo-collage-box-control">
-		{ /* Top */}
+		{ /* Top */ }
 		<div className="photo-collage-box-row is-center">
 			<UnitControl
-				label={__('Top', 'photo-collage')}
+				label={ __( 'Top', 'photo-collage' ) }
 				labelPosition="top"
-				value={values.top}
-				onChange={(value) => onChange('top', value)}
+				value={ values.top }
+				onChange={ ( value ) => onChange( 'top', value ) }
 				className="photo-collage-unit-control-small"
 			/>
 		</div>
 
-		{ /* Middle row: Left, Center symbol, Right */}
+		{ /* Middle row: Left, Center symbol, Right */ }
 		<div className="photo-collage-box-row is-space-between">
 			<UnitControl
-				label={__('Left', 'photo-collage')}
+				label={ __( 'Left', 'photo-collage' ) }
 				labelPosition="top"
-				value={values.left}
-				onChange={(value) => onChange('left', value)}
+				value={ values.left }
+				onChange={ ( value ) => onChange( 'left', value ) }
 				className="photo-collage-unit-control-small"
 			/>
 
 			<div
-				className={`photo-collage-box-center ${isDashed ? 'is-dashed' : 'is-solid'
-					}`}
+				className={ `photo-collage-box-center ${
+					isDashed ? 'is-dashed' : 'is-solid'
+				}` }
 			>
-				{centerLabel}
+				{ centerLabel }
 			</div>
 
 			<UnitControl
-				label={__('Right', 'photo-collage')}
+				label={ __( 'Right', 'photo-collage' ) }
 				labelPosition="top"
-				value={values.right}
-				onChange={(value) => onChange('right', value)}
+				value={ values.right }
+				onChange={ ( value ) => onChange( 'right', value ) }
 				className="photo-collage-unit-control-small"
 			/>
 		</div>
 
-		{ /* Bottom */}
+		{ /* Bottom */ }
 		<div className="photo-collage-box-row is-center">
 			<UnitControl
-				label={__('Bottom', 'photo-collage')}
+				label={ __( 'Bottom', 'photo-collage' ) }
 				labelPosition="top"
-				value={values.bottom}
-				onChange={(value) => onChange('bottom', value)}
+				value={ values.bottom }
+				onChange={ ( value ) => onChange( 'bottom', value ) }
 				className="photo-collage-unit-control-small"
 			/>
 		</div>
 	</div>
 );
 
-export default function Edit({ attributes, setAttributes, isSelected }) {
+export default function Edit( { attributes, setAttributes, isSelected } ) {
 	const {
 		url,
 		alt,
@@ -110,7 +147,6 @@ export default function Edit({ attributes, setAttributes, isSelected }) {
 		zIndex,
 		width,
 		height,
-		objectFit = 'contain',
 		rotation = 0,
 		opacity = 1,
 		caption = '',
@@ -120,8 +156,8 @@ export default function Edit({ attributes, setAttributes, isSelected }) {
 
 		href,
 		linkTarget,
-		rel,
-		linkClass,
+		rel, // eslint-disable-line no-unused-vars
+		linkClass, // eslint-disable-line no-unused-vars
 		linkDestination = 'none',
 		showCaption = true,
 		captionAlign = 'left',
@@ -130,71 +166,75 @@ export default function Edit({ attributes, setAttributes, isSelected }) {
 		lightbox = { enabled: false },
 	} = attributes;
 
-	const [isLinkPopoverOpen, setIsLinkPopoverOpen] = useState(false);
+	const [ isLinkPopoverOpen, setIsLinkPopoverOpen ] = useState( false );
 
-	const onSetLink = ({ url, opensInNewTab }) => {
-		setAttributes({
-			href: url,
+	const onSetLink = ( { url: newUrl, opensInNewTab } ) => {
+		setAttributes( {
+			href: newUrl,
 			linkTarget: opensInNewTab ? '_blank' : undefined,
 			rel: opensInNewTab ? 'noreferrer noopener' : undefined,
 			lightbox: { enabled: false },
-		});
-		setIsLinkPopoverOpen(false);
-		setAttributes({ linkDestination: 'custom' });
+		} );
+		setIsLinkPopoverOpen( false );
+		setAttributes( { linkDestination: 'custom' } );
 	};
 
 	const onRemoveLink = () => {
-		setAttributes({
+		setAttributes( {
 			href: undefined,
 			linkTarget: undefined,
 			rel: undefined,
 			linkClass: undefined,
 			linkDestination: 'none',
 			lightbox: { enabled: false },
-		});
+		} );
 	};
 
 	const onLinkToMedia = () => {
-		if (!media || !media.source_url) return;
-		setAttributes({
+		if ( ! media || ! media.source_url ) {
+			return;
+		}
+		setAttributes( {
 			href: media.source_url,
 			linkDestination: 'media',
 			linkTarget: undefined,
 			rel: undefined,
 			linkClass: undefined,
 			lightbox: { enabled: false },
-		});
+		} );
 	};
 
 	const onLinkToAttachment = () => {
-		if (!media || !media.link) return;
-		setAttributes({
+		if ( ! media || ! media.link ) {
+			return;
+		}
+		setAttributes( {
 			href: media.link,
 			linkDestination: 'attachment',
 			linkTarget: undefined,
 			rel: undefined,
 			linkClass: undefined,
 			lightbox: { enabled: false },
-		});
+		} );
 	};
 
 	const onEnlargeOnClick = () => {
-		setAttributes({
+		setAttributes( {
 			href: undefined,
 			linkDestination: 'none',
 			linkTarget: undefined,
 			rel: undefined,
 			linkClass: undefined,
 			lightbox: { enabled: true },
-		});
+		} );
 	};
 
-	const onSelectImage = (media) => {
-		if (!media || !media.url) {
+	const onSelectImage = ( media ) => {
+		if ( ! media || ! media.url ) {
 			return;
 		}
 
-		setAttributes({
+		setAttributes( {
 			url: media.url,
 			alt: media.alt || '',
 			id: media.id,
@@ -204,90 +244,111 @@ export default function Edit({ attributes, setAttributes, isSelected }) {
 			linkDestination: 'none',
 			href: undefined,
 			lightbox: { enabled: false },
-		});
+		} );
 	};
 
 	// Fetch media object for link functionality and legacy recovery
 	const media = useSelect(
-		(select) => (id ? select('core').getMedia(id) : null),
-		[id]
+		( select ) => ( id ? select( 'core' ).getMedia( id ) : null ),
+		[ id ]
 	);
 
-	useEffect(() => {
+	useEffect( () => {
 		// Only auto-recover if URL is missing
-		if (!url && media && media.source_url) {
-			setAttributes({
+		if ( ! url && media && media.source_url ) {
+			setAttributes( {
 				url: media.source_url,
 				alt: media.alt_text || alt,
 				title: media.title?.rendered || title,
 				caption: media.caption?.rendered || caption,
-			});
+			} );
 		}
-	}, [media, url]);
+	}, [ media, url, alt, title, caption, setAttributes ] );
 
-	const onChangeAlt = (newAlt) => {
-		setAttributes({ alt: newAlt });
+	const onCaptionPlacementChange = ( newPlacement ) => {
+		const newAttributes = { captionPlacement: newPlacement };
+
+		const isSide = ( p ) =>
+			p.startsWith( 'left-' ) || p.startsWith( 'right-' );
+		const isNewSide = isSide( newPlacement );
+		const isOldSide = isSide( captionPlacement );
+
+		// Switching to side layout with default 100% width -> reset to 30%
+		if ( isNewSide && ! isOldSide && captionWidth === '100%' ) {
+			newAttributes.captionWidth = '30%';
+		}
+
+		// Switching from side layout to top/bottom with 30% width -> reset to 100%
+		if ( ! isNewSide && isOldSide && captionWidth === '30%' ) {
+			newAttributes.captionWidth = '100%';
+		}
+
+		setAttributes( newAttributes );
+	};
+
+	const onChangeAlt = ( newAlt ) => {
+		setAttributes( { alt: newAlt } );
 	};
 
 	const onToggleDecorative = () => {
-		setAttributes({
-			isDecorative: !isDecorative,
-			alt: !isDecorative ? '' : alt,
-		});
+		setAttributes( {
+			isDecorative: ! isDecorative,
+			alt: ! isDecorative ? '' : alt,
+		} );
 	};
 
-	const blockProps = useBlockProps({
+	const blockProps = useBlockProps( {
 		style: {
-			...(useAbsolutePosition
+			...( useAbsolutePosition
 				? {
-					position: 'absolute',
-					top: top && top !== 'auto' ? top : undefined,
-					right: right && right !== 'auto' ? right : undefined,
-					bottom:
-						bottom && bottom !== 'auto' ? bottom : undefined,
-					left: left && left !== 'auto' ? left : undefined,
-				}
+						position: 'absolute',
+						top: top && top !== 'auto' ? top : undefined,
+						right: right && right !== 'auto' ? right : undefined,
+						bottom:
+							bottom && bottom !== 'auto' ? bottom : undefined,
+						left: left && left !== 'auto' ? left : undefined,
+				  }
 				: {
-					position: 'relative',
-					marginTop:
-						!align || marginTop !== '0%'
-							? marginTop
-							: undefined,
-					marginRight:
-						!align || marginRight !== '0%'
-							? marginRight
-							: undefined,
-					marginBottom:
-						!align || marginBottom !== '0%'
-							? marginBottom
-							: undefined,
-					marginLeft:
-						!align || marginLeft !== '0%'
-							? marginLeft
-							: undefined,
-				}),
+						position: 'relative',
+						marginTop:
+							! align || marginTop !== '0%'
+								? marginTop
+								: undefined,
+						marginRight:
+							! align || marginRight !== '0%'
+								? marginRight
+								: undefined,
+						marginBottom:
+							! align || marginBottom !== '0%'
+								? marginBottom
+								: undefined,
+						marginLeft:
+							! align || marginLeft !== '0%'
+								? marginLeft
+								: undefined,
+				  } ),
 			paddingTop,
 			paddingRight,
 			paddingBottom,
 			paddingLeft,
-			width: !align || width !== '50%' ? width : undefined,
+			width: ! align || width !== '50%' ? width : undefined,
 			height,
 			zIndex,
-			transform: `rotate(${rotation}deg)`,
+			transform: `rotate(${ rotation }deg)`,
 			opacity,
 		},
-	});
+	} );
 
-	if (!url) {
+	if ( ! url ) {
 		return (
-			<div {...blockProps}>
+			<div { ...blockProps }>
 				<MediaPlaceholder
 					icon="format-image"
-					onSelect={onSelectImage}
+					onSelect={ onSelectImage }
 					accept="image/*"
-					allowedTypes={['image']}
-					multiple={false}
-					labels={{ title: __('Collage Image', 'photo-collage') }}
+					allowedTypes={ [ 'image' ] }
+					multiple={ false }
+					labels={ { title: __( 'Collage Image', 'photo-collage' ) } }
 				/>
 			</div>
 		);
@@ -297,15 +358,15 @@ export default function Edit({ attributes, setAttributes, isSelected }) {
 		<>
 			<BlockControls>
 				<ToolbarDropdownMenu
-					icon={linkIcon}
-					label={__('Link', 'photo-collage')}
-					controls={[
+					icon={ linkIcon }
+					label={ __( 'Link', 'photo-collage' ) }
+					controls={ [
 						{
-							title: __('Link to image file', 'photo-collage'),
+							title: __( 'Link to image file', 'photo-collage' ),
 							icon:
 								linkDestination === 'media' ? 'yes' : undefined,
 							onClick: onLinkToMedia,
-							isDisabled: !media || !media.source_url,
+							isDisabled: ! media || ! media.source_url,
 						},
 						{
 							title: __(
@@ -317,10 +378,10 @@ export default function Edit({ attributes, setAttributes, isSelected }) {
 									? 'yes'
 									: undefined,
 							onClick: onLinkToAttachment,
-							isDisabled: !media || !media.link,
+							isDisabled: ! media || ! media.link,
 						},
 						{
-							title: __('Enlarge on click', 'photo-collage'),
+							title: __( 'Enlarge on click', 'photo-collage' ),
 							icon:
 								linkDestination === 'none' && lightbox?.enabled
 									? 'yes'
@@ -328,175 +389,179 @@ export default function Edit({ attributes, setAttributes, isSelected }) {
 							onClick: onEnlargeOnClick,
 						},
 						{
-							title: __('Custom URL', 'photo-collage'),
+							title: __( 'Custom URL', 'photo-collage' ),
 							icon:
 								linkDestination === 'custom'
 									? 'yes'
 									: undefined,
-							onClick: () => setIsLinkPopoverOpen(true),
+							onClick: () => setIsLinkPopoverOpen( true ),
 						},
-					]}
+					] }
 				/>
-				{isLinkPopoverOpen && (
+				{ isLinkPopoverOpen && (
 					<Popover
 						position="bottom center"
-						onClose={() => setIsLinkPopoverOpen(false)}
+						onClose={ () => setIsLinkPopoverOpen( false ) }
 					>
 						<LinkControl
 							className="wp-block-navigation-link__inline-link-input"
-							value={{
+							value={ {
 								url: href,
 								opensInNewTab: linkTarget === '_blank',
-							}}
-							onChange={onSetLink}
-							onRemove={onRemoveLink}
-							forceIsEditingLink={isLinkPopoverOpen}
+							} }
+							onChange={ onSetLink }
+							onRemove={ onRemoveLink }
+							forceIsEditingLink={ isLinkPopoverOpen }
 						/>
 					</Popover>
-				)}
+				) }
 			</BlockControls>
 			<BlockControls>
 				<MediaReplaceFlow
-					mediaId={id}
-					mediaURL={url}
-					allowedTypes={['image']}
+					mediaId={ id }
+					mediaURL={ url }
+					allowedTypes={ [ 'image' ] }
 					accept="image/*"
-					onSelect={onSelectImage}
+					onSelect={ onSelectImage }
 				/>
 			</BlockControls>
 			<InspectorControls>
 				<PanelBody
-					title={__('Dimensions', 'photo-collage')}
-					initialOpen={true}
+					title={ __( 'Dimensions', 'photo-collage' ) }
+					initialOpen={ true }
 				>
 					<UnitControl
-						label={__('Width', 'photo-collage')}
-						value={width}
-						onChange={(value) =>
-							setAttributes({ width: value })
+						label={ __( 'Width', 'photo-collage' ) }
+						value={ width }
+						onChange={ ( value ) =>
+							setAttributes( { width: value } )
 						}
 					/>
 					<UnitControl
-						label={__('Height', 'photo-collage')}
-						value={height}
-						onChange={(value) =>
-							setAttributes({ height: value })
+						label={ __( 'Height', 'photo-collage' ) }
+						value={ height }
+						onChange={ ( value ) =>
+							setAttributes( { height: value } )
 						}
 					/>
 				</PanelBody>
 
 				<PanelBody
-					title={__('Positioning', 'photo-collage')}
-					initialOpen={true}
+					title={ __( 'Positioning', 'photo-collage' ) }
+					initialOpen={ true }
 				>
 					<ToggleControl
-						label={__(
+						label={ __(
 							'Use Absolute Positioning',
 							'photo-collage'
-						)}
-						help={__(
+						) }
+						help={ __(
 							'Position image relative to container edges instead of using margins.',
 							'photo-collage'
-						)}
-						checked={useAbsolutePosition}
-						onChange={(value) =>
-							setAttributes({ useAbsolutePosition: value })
+						) }
+						checked={ useAbsolutePosition }
+						onChange={ ( value ) =>
+							setAttributes( { useAbsolutePosition: value } )
 						}
 					/>
-					{useAbsolutePosition && (
+					{ useAbsolutePosition && (
 						<>
 							<p className="photo-collage-help-text">
-								{__(
+								{ __(
 									'Click an anchor point to pin the image to that corner.',
 									'photo-collage'
-								)}
+								) }
 							</p>
 							<div className="photo-collage-anchor-control">
 								<div className="photo-collage-anchor-grid">
-									{ /* Top Left */}
+									{ /* Top Left */ }
 									<Button
-										className={`photo-collage-anchor-btn ${top !== 'auto' && left !== 'auto'
-											? 'is-active'
-											: ''
-											}`}
-										onClick={() =>
-											setAttributes({
+										className={ `photo-collage-anchor-btn ${
+											top !== 'auto' && left !== 'auto'
+												? 'is-active'
+												: ''
+										}` }
+										onClick={ () =>
+											setAttributes( {
 												top: '0%',
 												left: '0%',
 												bottom: 'auto',
 												right: 'auto',
-											})
+											} )
 										}
 										icon="arrow-left-alt2"
-										style={{ transform: 'rotate(45deg)' }}
-										label={__(
+										style={ { transform: 'rotate(45deg)' } }
+										label={ __(
 											'Top Left',
 											'photo-collage'
-										)}
+										) }
 									/>
-									{ /* Top Right */}
+									{ /* Top Right */ }
 									<Button
-										className={`photo-collage-anchor-btn ${top !== 'auto' && right !== 'auto'
-											? 'is-active'
-											: ''
-											}`}
-										onClick={() =>
-											setAttributes({
+										className={ `photo-collage-anchor-btn ${
+											top !== 'auto' && right !== 'auto'
+												? 'is-active'
+												: ''
+										}` }
+										onClick={ () =>
+											setAttributes( {
 												top: '0%',
 												right: '0%',
 												bottom: 'auto',
 												left: 'auto',
-											})
+											} )
 										}
 										icon="arrow-up-alt2"
-										style={{ transform: 'rotate(45deg)' }}
-										label={__(
+										style={ { transform: 'rotate(45deg)' } }
+										label={ __(
 											'Top Right',
 											'photo-collage'
-										)}
+										) }
 									/>
-									{ /* Bottom Left */}
+									{ /* Bottom Left */ }
 									<Button
-										className={`photo-collage-anchor-btn ${bottom !== 'auto' && left !== 'auto'
-											? 'is-active'
-											: ''
-											}`}
-										onClick={() =>
-											setAttributes({
+										className={ `photo-collage-anchor-btn ${
+											bottom !== 'auto' && left !== 'auto'
+												? 'is-active'
+												: ''
+										}` }
+										onClick={ () =>
+											setAttributes( {
 												bottom: '0%',
 												left: '0%',
 												top: 'auto',
 												right: 'auto',
-											})
+											} )
 										}
 										icon="arrow-down-alt2"
-										style={{ transform: 'rotate(45deg)' }}
-										label={__(
+										style={ { transform: 'rotate(45deg)' } }
+										label={ __(
 											'Bottom Left',
 											'photo-collage'
-										)}
+										) }
 									/>
-									{ /* Bottom Right */}
+									{ /* Bottom Right */ }
 									<Button
-										className={`photo-collage-anchor-btn ${bottom !== 'auto' &&
+										className={ `photo-collage-anchor-btn ${
+											bottom !== 'auto' &&
 											right !== 'auto'
-											? 'is-active'
-											: ''
-											}`}
-										onClick={() =>
-											setAttributes({
+												? 'is-active'
+												: ''
+										}` }
+										onClick={ () =>
+											setAttributes( {
 												bottom: '0%',
 												right: '0%',
 												top: 'auto',
 												left: 'auto',
-											})
+											} )
 										}
 										icon="arrow-right-alt2"
-										style={{ transform: 'rotate(45deg)' }}
-										label={__(
+										style={ { transform: 'rotate(45deg)' } }
+										label={ __(
 											'Bottom Right',
 											'photo-collage'
-										)}
+										) }
 									/>
 								</div>
 							</div>
@@ -504,402 +569,382 @@ export default function Edit({ attributes, setAttributes, isSelected }) {
 							<div className="photo-collage-position-controls">
 								<div className="photo-collage-position-row is-center">
 									<UnitControl
-										label={__('Top', 'photo-collage')}
-										value={top}
-										onChange={(value) => {
+										label={ __( 'Top', 'photo-collage' ) }
+										value={ top }
+										onChange={ ( value ) => {
 											const newValue = value || 'auto';
-											setAttributes({
+											setAttributes( {
 												top: newValue,
 												bottom:
 													newValue !== 'auto'
 														? 'auto'
 														: bottom,
-											});
-										}}
+											} );
+										} }
 									/>
 								</div>
 								<div className="photo-collage-position-row is-space-between">
 									<UnitControl
-										label={__('Left', 'photo-collage')}
-										value={left}
-										onChange={(value) => {
+										label={ __( 'Left', 'photo-collage' ) }
+										value={ left }
+										onChange={ ( value ) => {
 											const newValue = value || 'auto';
-											setAttributes({
+											setAttributes( {
 												left: newValue,
 												right:
 													newValue !== 'auto'
 														? 'auto'
 														: right,
-											});
-										}}
+											} );
+										} }
 									/>
 									<UnitControl
-										label={__('Right', 'photo-collage')}
-										value={right}
-										onChange={(value) => {
+										label={ __( 'Right', 'photo-collage' ) }
+										value={ right }
+										onChange={ ( value ) => {
 											const newValue = value || 'auto';
-											setAttributes({
+											setAttributes( {
 												right: newValue,
 												left:
 													newValue !== 'auto'
 														? 'auto'
 														: left,
-											});
-										}}
+											} );
+										} }
 									/>
 								</div>
 								<div className="photo-collage-position-row is-center">
 									<UnitControl
-										label={__(
+										label={ __(
 											'Bottom',
 											'photo-collage'
-										)}
-										value={bottom}
-										onChange={(value) => {
+										) }
+										value={ bottom }
+										onChange={ ( value ) => {
 											const newValue = value || 'auto';
-											setAttributes({
+											setAttributes( {
 												bottom: newValue,
 												top:
 													newValue !== 'auto'
 														? 'auto'
 														: top,
-											});
-										}}
+											} );
+										} }
 									/>
 								</div>
 							</div>
 						</>
-					)}
-					{!useAbsolutePosition && (
+					) }
+					{ ! useAbsolutePosition && (
 						<BoxControl
-							values={{
+							values={ {
 								top: marginTop,
 								right: marginRight,
 								bottom: marginBottom,
 								left: marginLeft,
-							}}
-							onChange={(side, value) => {
-								const key = `margin${side.charAt(0).toUpperCase() +
-									side.slice(1)
-									}`;
-								setAttributes({ [key]: value });
-							}}
+							} }
+							onChange={ ( side, value ) => {
+								const key = `margin${
+									side.charAt( 0 ).toUpperCase() +
+									side.slice( 1 )
+								}`;
+								setAttributes( { [ key ]: value } );
+							} }
 							centerLabel="M"
-							isDashed={true}
+							isDashed={ true }
 						/>
-					)}
+					) }
 					<div className="photo-collage-z-index-control">
 						<RangeControl
-							label={__(
+							label={ __(
 								'Z-Index (Layer Order)',
 								'photo-collage'
-							)}
-							value={zIndex}
-							onChange={(value) =>
-								setAttributes({ zIndex: value })
+							) }
+							value={ zIndex }
+							onChange={ ( value ) =>
+								setAttributes( { zIndex: value } )
 							}
-							min={-10}
-							max={100}
-							help={__(
+							min={ -10 }
+							max={ 100 }
+							help={ __(
 								'Higher numbers are on top.',
 								'photo-collage'
-							)}
+							) }
 						/>
 						<div className="photo-collage-z-index-buttons">
 							<Button
 								variant="secondary"
 								isSmall
-								onClick={() =>
-									setAttributes({ zIndex: zIndex - 1 })
+								onClick={ () =>
+									setAttributes( { zIndex: zIndex - 1 } )
 								}
 								icon="minus"
-								label={__('Move Backward', 'photo-collage')}
+								label={ __( 'Move Backward', 'photo-collage' ) }
 							/>
 							<Button
 								variant="secondary"
 								isSmall
-								onClick={() =>
-									setAttributes({ zIndex: zIndex + 1 })
+								onClick={ () =>
+									setAttributes( { zIndex: zIndex + 1 } )
 								}
 								icon="plus"
-								label={__('Move Forward', 'photo-collage')}
+								label={ __( 'Move Forward', 'photo-collage' ) }
 							/>
 						</div>
 					</div>
 				</PanelBody>
 
 				<PanelBody
-					title={__('Padding', 'photo-collage')}
-					initialOpen={true}
+					title={ __( 'Padding', 'photo-collage' ) }
+					initialOpen={ true }
 				>
 					<BoxControl
-						values={{
+						values={ {
 							top: paddingTop,
 							right: paddingRight,
 							bottom: paddingBottom,
 							left: paddingLeft,
-						}}
-						onChange={(side, value) => {
-							const key = `padding${side.charAt(0).toUpperCase() + side.slice(1)
-								}`;
-							setAttributes({ [key]: value });
-						}}
+						} }
+						onChange={ ( side, value ) => {
+							const key = `padding${
+								side.charAt( 0 ).toUpperCase() + side.slice( 1 )
+							}`;
+							setAttributes( { [ key ]: value } );
+						} }
 						centerLabel="P"
-						isDashed={false}
+						isDashed={ false }
 					/>
 				</PanelBody>
 
 				<PanelBody
-					title={__('Effects', 'photo-collage')}
-					initialOpen={true}
+					title={ __( 'Effects', 'photo-collage' ) }
+					initialOpen={ true }
 				>
 					<div
-						style={{
+						style={ {
 							display: 'flex',
 							alignItems: 'center',
 							justifyContent: 'space-between',
 							marginBottom: '8px',
-						}}
+						} }
 					>
 						<span
-							style={{
+							style={ {
 								fontSize: '11px',
 								fontWeight: '500',
 								textTransform: 'uppercase',
 								color: '#1e1e1e',
-							}}
+							} }
 						>
-							{__('Rotation', 'photo-collage')}
+							{ __( 'Rotation', 'photo-collage' ) }
 						</span>
-						{rotation !== 0 && (
+						{ rotation !== 0 && (
 							<Button
 								isSmall
 								variant="tertiary"
-								onClick={() =>
-									setAttributes({ rotation: 0 })
+								onClick={ () =>
+									setAttributes( { rotation: 0 } )
 								}
 							>
-								{__('Reset', 'photo-collage')}
+								{ __( 'Reset', 'photo-collage' ) }
 							</Button>
-						)}
+						) }
 					</div>
 					<RangeControl
-						value={rotation}
-						onChange={(value) =>
-							setAttributes({ rotation: value })
+						value={ rotation }
+						onChange={ ( value ) =>
+							setAttributes( { rotation: value } )
 						}
-						min={-180}
-						max={180}
+						min={ -180 }
+						max={ 180 }
 						help={
 							rotation !== 0
-								? `${rotation}°`
-								: __('No rotation applied', 'photo-collage')
+								? `${ rotation }°`
+								: __( 'No rotation applied', 'photo-collage' )
 						}
 					/>
 					<RangeControl
-						label={__('Opacity', 'photo-collage')}
-						value={opacity}
-						onChange={(value) =>
-							setAttributes({ opacity: value })
+						label={ __( 'Opacity', 'photo-collage' ) }
+						value={ opacity }
+						onChange={ ( value ) =>
+							setAttributes( { opacity: value } )
 						}
-						min={0}
-						max={1}
-						step={0.01}
-						help={`${Math.round(opacity * 100)}%`}
+						min={ 0 }
+						max={ 1 }
+						step={ 0.01 }
+						help={ `${ Math.round( opacity * 100 ) }%` }
 					/>
 				</PanelBody>
 
 				<PanelBody
-					title={__('Accessibility', 'photo-collage')}
-					initialOpen={true}
+					title={ __( 'Accessibility', 'photo-collage' ) }
+					initialOpen={ true }
 				>
 					<ToggleControl
-						label={__('Mark as decorative', 'photo-collage')}
+						label={ __( 'Mark as decorative', 'photo-collage' ) }
 						help={
 							isDecorative
 								? __(
-									'This image will be hidden from screen readers.',
-									'photo-collage'
-								)
+										'This image will be hidden from screen readers.',
+										'photo-collage'
+								  )
 								: __(
-									'This image requires alt text for screen readers.',
-									'photo-collage'
-								)
+										'This image requires alt text for screen readers.',
+										'photo-collage'
+								  )
 						}
-						checked={isDecorative}
-						onChange={onToggleDecorative}
+						checked={ isDecorative }
+						onChange={ onToggleDecorative }
 					/>
-					{!isDecorative && (
+					{ ! isDecorative && (
 						<>
 							<TextControl
-								label={__('Alt Text', 'photo-collage')}
-								value={alt}
-								onChange={onChangeAlt}
-								help={__(
+								label={ __( 'Alt Text', 'photo-collage' ) }
+								value={ alt }
+								onChange={ onChangeAlt }
+								help={ __(
 									'Describe what the image shows and its purpose in the collage.',
 									'photo-collage'
-								)}
-								placeholder={__(
-									'Enter image description...',
+								) }
+								placeholder={ __(
+									'Enter image description…',
 									'photo-collage'
-								)}
+								) }
 							/>
 							<TextControl
-								label={__('Title', 'photo-collage')}
-								value={title}
-								onChange={(value) =>
-									setAttributes({ title: value })
+								label={ __( 'Title', 'photo-collage' ) }
+								value={ title }
+								onChange={ ( value ) =>
+									setAttributes( { title: value } )
 								}
-								help={__(
+								help={ __(
 									'Optional. Appears as a tooltip when hovering over the image.',
 									'photo-collage'
-								)}
-								placeholder={__(
-									'Enter image title...',
+								) }
+								placeholder={ __(
+									'Enter image title…',
 									'photo-collage'
-								)}
+								) }
 							/>
 							<TextControl
-								label={__('Description', 'photo-collage')}
-								value={description}
-								onChange={(value) =>
-									setAttributes({ description: value })
+								label={ __( 'Description', 'photo-collage' ) }
+								value={ description }
+								onChange={ ( value ) =>
+									setAttributes( { description: value } )
 								}
-								help={__(
+								help={ __(
 									'Optional. Extended description for additional context.',
 									'photo-collage'
-								)}
-								placeholder={__(
-									'Enter extended description...',
+								) }
+								placeholder={ __(
+									'Enter extended description…',
 									'photo-collage'
-								)}
+								) }
 							/>
 						</>
-					)}
+					) }
 				</PanelBody>
 
 				<PanelBody
-					title={__('Caption Settings', 'photo-collage')}
-					initialOpen={true}
+					title={ __( 'Caption Settings', 'photo-collage' ) }
+					initialOpen={ true }
 				>
 					<ToggleControl
-						label={__('Show Caption', 'photo-collage')}
-						checked={showCaption}
-						onChange={() =>
-							setAttributes({ showCaption: !showCaption })
+						label={ __( 'Show Caption', 'photo-collage' ) }
+						checked={ showCaption }
+						onChange={ () =>
+							setAttributes( { showCaption: ! showCaption } )
 						}
 					/>
-					{showCaption && (
+					{ showCaption && (
 						<>
-							<SelectControl
-								label={__(
-									'Caption Placement',
-									'photo-collage'
-								)}
-								value={captionPlacement}
-								options={[
-									{
-										label: __('Bottom Left', 'photo-collage'),
-										value: 'bottom-left',
-									},
-									{
-										label: __('Bottom Center', 'photo-collage'),
-										value: 'bottom-center',
-									},
-									{
-										label: __('Bottom Right', 'photo-collage'),
-										value: 'bottom-right',
-									},
-								]}
-								onChange={(value) =>
-									setAttributes({ captionPlacement: value })
-								}
+							<p
+								className="components-base-control__label"
+								style={ { marginBottom: '8px' } }
+							>
+								{ __( 'Caption Position', 'photo-collage' ) }
+							</p>
+							<CaptionPositionControl
+								value={ captionPlacement }
+								onChange={ onCaptionPlacementChange }
 							/>
 							<SelectControl
-								label={__(
+								label={ __(
 									'Text Alignment',
 									'photo-collage'
-								)}
-								value={captionAlign}
-								options={[
+								) }
+								value={ captionAlign }
+								options={ [
 									{
-										label: __('Left', 'photo-collage'),
+										label: __( 'Left', 'photo-collage' ),
 										value: 'left',
 									},
 									{
-										label: __('Center', 'photo-collage'),
+										label: __( 'Center', 'photo-collage' ),
 										value: 'center',
 									},
 									{
-										label: __('Right', 'photo-collage'),
+										label: __( 'Right', 'photo-collage' ),
 										value: 'right',
 									},
-								]}
-								onChange={(value) =>
-									setAttributes({ captionAlign: value })
+								] }
+								onChange={ ( value ) =>
+									setAttributes( { captionAlign: value } )
 								}
 							/>
 							<UnitControl
-								label={__('Caption Width', 'photo-collage')}
-								value={captionWidth}
-								onChange={(value) =>
-									setAttributes({ captionWidth: value })
+								label={ __( 'Caption Width', 'photo-collage' ) }
+								value={ captionWidth }
+								onChange={ ( value ) =>
+									setAttributes( { captionWidth: value } )
 								}
 							/>
 						</>
-					)}
+					) }
 				</PanelBody>
 			</InspectorControls>
-			<div {...blockProps}>
+			<div { ...blockProps }>
 				<figure
 					className="photo-collage-image-figure"
-					style={{
+					style={ {
 						display: showCaption ? 'flex' : undefined,
-						flexDirection: showCaption ? 'column' : undefined,
-						alignItems: showCaption
-							? captionPlacement === 'bottom-center'
-								? 'center'
-								: captionPlacement === 'bottom-right'
-									? 'flex-end'
-									: 'flex-start'
+						flexDirection: showCaption
+							? getFlexDirection( captionPlacement )
 							: undefined,
-					}}
+						alignItems: showCaption
+							? getAlignItems( captionPlacement )
+							: undefined,
+					} }
 				>
-					<img
-						src={url}
-						alt={alt}
-						style={{
-							objectFit: 'contain',
-							width: '100%',
-							height: '100%',
-						}}
-					/>
-					{showCaption &&
-						(!RichText.isEmpty(caption) || isSelected) && (
+					{ /* Caption before image for left-* and top-* placements */ }
+					{ showCaption &&
+						( captionPlacement.startsWith( 'left-' ) ||
+							captionPlacement.startsWith( 'top-' ) ) &&
+						( ! RichText.isEmpty( caption ) || isSelected ) && (
 							<>
 								<BlockControls group="block">
 									<AlignmentControl
-										value={captionAlign}
-										onChange={(value) =>
-											setAttributes({
+										value={ captionAlign }
+										onChange={ ( value ) =>
+											setAttributes( {
 												captionAlign: value,
-											})
+											} )
 										}
 									/>
 								</BlockControls>
 								<RichText
 									tagName="figcaption"
 									className="photo-collage-image-caption wp-element-caption"
-									placeholder={__(
+									placeholder={ __(
 										'Write caption…',
 										'photo-collage'
-									)}
-									value={caption}
-									onChange={(value) =>
-										setAttributes({ caption: value })
+									) }
+									value={ caption }
+									onChange={ ( value ) =>
+										setAttributes( { caption: value } )
 									}
 									inlineToolbar
-									allowedFormats={[
+									allowedFormats={ [
 										'core/bold',
 										'core/italic',
 										'core/link',
@@ -907,14 +952,80 @@ export default function Edit({ attributes, setAttributes, isSelected }) {
 										'core/text-color',
 										'core/subscript',
 										'core/superscript',
-									]}
-									style={{
+									] }
+									style={ {
 										textAlign: captionAlign,
 										width: captionWidth,
-									}}
+									} }
 								/>
 							</>
-						)}
+						) }
+					<img
+						src={ url }
+						alt={ alt }
+						style={ {
+							objectFit: 'contain',
+							width:
+								showCaption &&
+								( captionPlacement.startsWith( 'left-' ) ||
+									captionPlacement.startsWith( 'right-' ) )
+									? 'auto'
+									: '100%',
+							height:
+								showCaption &&
+								( captionPlacement.startsWith( 'top-' ) ||
+									captionPlacement.startsWith( 'bottom-' ) )
+									? 'auto'
+									: '100%',
+							flex: showCaption ? '1' : undefined,
+							minWidth: showCaption ? '0' : undefined,
+							minHeight: showCaption ? '0' : undefined,
+						} }
+					/>
+					{ /* Caption after image for right-* and bottom-* placements */ }
+					{ showCaption &&
+						( captionPlacement.startsWith( 'right-' ) ||
+							captionPlacement.startsWith( 'bottom-' ) ) &&
+						( ! RichText.isEmpty( caption ) || isSelected ) && (
+							<>
+								<BlockControls group="block">
+									<AlignmentControl
+										value={ captionAlign }
+										onChange={ ( value ) =>
+											setAttributes( {
+												captionAlign: value,
+											} )
+										}
+									/>
+								</BlockControls>
+								<RichText
+									tagName="figcaption"
+									className="photo-collage-image-caption wp-element-caption"
+									placeholder={ __(
+										'Write caption…',
+										'photo-collage'
+									) }
+									value={ caption }
+									onChange={ ( value ) =>
+										setAttributes( { caption: value } )
+									}
+									inlineToolbar
+									allowedFormats={ [
+										'core/bold',
+										'core/italic',
+										'core/link',
+										'core/strikethrough',
+										'core/text-color',
+										'core/subscript',
+										'core/superscript',
+									] }
+									style={ {
+										textAlign: captionAlign,
+										width: captionWidth,
+									} }
+								/>
+							</>
+						) }
 				</figure>
 			</div>
 		</>
