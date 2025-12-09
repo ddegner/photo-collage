@@ -34,11 +34,8 @@ $wrapper_attributes = get_block_wrapper_attributes(
 $inner_html = Photo_Collage_Renderer::render_inner_html($normalized_attrs);
 
 
-echo wp_kses(
-    sprintf(
-        '<div %s>%s</div>',
-        $wrapper_attributes,
-        $inner_html
-    ),
-    Photo_Collage_Renderer::get_allowed_html()
+echo sprintf(
+    '<div %s>%s</div>',
+    $wrapper_attributes,
+    $inner_html
 );

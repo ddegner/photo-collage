@@ -4,10 +4,16 @@
 	flex-wrap: wrap;
 	align-items: flex-start;
 	width: 100%;
+
+	&.alignfull,
+	&.alignwide {
+		width: auto;
+		max-width: none;
+	}
 	gap: 0; // Ensure no gap between items for precise percentage layouts
 
 	/* Ensure predictable box model for all children on frontend */
-	& > * {
+	> * {
 		box-sizing: border-box !important;
 		max-width: none;
 	}
@@ -20,8 +26,9 @@
 			height: auto !important;
 			min-height: auto !important;
 
-			// We must use !important to override inline styles applied by the editor/render
-			&>.wp-block-photo-collage-image {
+			// We must use !important to override inline styles applied by the
+			// editor/render
+			> .wp-block-photo-collage-image {
 				position: static !important;
 				margin: 0 0 20px 0 !important;
 				padding: 0 !important;

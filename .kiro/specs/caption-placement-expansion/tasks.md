@@ -1,0 +1,79 @@
+# Implementation Plan
+
+- [x] 1. Update block attributes and add CaptionPositionControl component
+  - [x] 1.1 Update `captionPlacement` attribute in `src/blocks/image/block.json`
+    - Change default from `"bottom-left"` to support all 12 positions
+    - Add JSDoc comment listing all valid values
+    - _Requirements: 1.1, 1.2_
+  - [x] 1.2 Create `CaptionPositionControl` component in `src/blocks/image/components/`
+    - Create new file `caption-position-control.js`
+    - Implement CSS Grid layout with 12 clickable position buttons
+    - Add center image icon area (non-clickable)
+    - Use WordPress Button component for each position
+    - Apply WordPress admin theme color for active state
+    - _Requirements: 1.1, 1.2, 3.1, 3.2, 3.3_
+  - [x] 1.3 Add styles for CaptionPositionControl in `src/blocks/image/editor.scss`
+    - Implement CSS Grid layout (~180px wide)
+    - Style button states (default, hover, active, focus)
+    - Ensure accessibility with visible focus states
+    - _Requirements: 3.1, 3.2_
+  - [ ]* 1.4 Write property test for position selector rendering
+    - **Property 1: Side placement uses row layout**
+    - **Validates: Requirements 1.3**
+
+- [x] 2. Update editor component to use new position control and render captions correctly
+  - [x] 2.1 Replace SelectControl with CaptionPositionControl in `edit.js`
+    - Import and use new CaptionPositionControl component
+    - Remove old captionPlacement SelectControl
+    - Wire up onChange to setAttributes
+    - _Requirements: 1.1, 1.2_
+  - [x] 2.2 Update figure styles in editor for all 12 placements
+    - Implement `getFlexDirection()` helper (row for left-*/right-*, column for top-*/bottom-*)
+    - Implement `getAlignItems()` helper based on placement suffix
+    - Update blockProps style object
+    - _Requirements: 1.3, 1.4, 1.5, 1.6, 1.7_
+  - [x] 2.3 Update DOM order for caption rendering in editor
+    - Caption before image for left-* and top-* placements
+    - Caption after image for right-* and bottom-* placements
+    - _Requirements: 1.3, 1.4_
+  - [ ]* 2.4 Write property test for flex-direction mapping
+    - **Property 2: Top and bottom placement uses column layout**
+    - **Validates: Requirements 1.4**
+  - [ ]* 2.5 Write property test for align-items mapping
+    - **Property 4: Horizontal alignment maps to CSS correctly**
+    - **Validates: Requirements 1.5, 1.6, 1.7**
+
+- [x] 3. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 4. Update server-side renderer for new placements
+  - [ ] 4.1 Update `render_inner_html` in `class-photo-collage-renderer.php`
+    - Add helper method to determine flex-direction from placement
+    - Add helper method to determine align-items from placement
+    - Update figure style generation for all 12 placements
+    - _Requirements: 4.3_
+  - [ ] 4.2 Update DOM order in PHP renderer
+    - Render caption before image for left-* and top-* placements
+    - Render caption after image for right-* and bottom-* placements
+    - _Requirements: 4.2_
+  - [ ]* 4.3 Write property test for editor/server consistency
+    - **Property 5: Editor and server render consistency**
+    - **Validates: Requirements 4.1, 4.2, 4.3**
+  - [ ]* 4.4 Write property test for DOM order
+    - **Property 6: Top and left placements render caption before image**
+    - **Property 7: Right and bottom placements render caption after image**
+    - **Validates: Requirements 1.3, 1.4**
+
+- [x] 5. Add responsive styles for mobile stacking
+  - [x] 5.1 Update `style.scss` with mobile responsive rules
+    - Add media query for mobile viewport (< 782px)
+    - Override flex-direction to column for side placements when stacking enabled
+    - Maintain caption text alignment on mobile
+    - _Requirements: 5.1, 5.2_
+  - [ ]* 5.2 Write unit tests for responsive behavior
+    - Test that side captions stack on mobile
+    - Test that text alignment is preserved
+    - _Requirements: 5.1, 5.2_
+
+- [ ] 6. Final Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.

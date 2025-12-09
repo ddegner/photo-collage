@@ -1,179 +1,276 @@
 .wp-block-photo-collage-image {
-    /* Editor-only styles - keep minimal to match front-end */
-    box-sizing: border-box;
-    position: relative;
 
-    /* When aspect ratio is set via inline style, let it control sizing */
-    &[style*="aspect-ratio"] {
-        min-height: unset;
-    }
+	/* Editor-only styles - keep minimal to match front-end */
+	box-sizing: border-box !important;
+	position: relative;
 
-    /* Only use min-height fallback when no aspect ratio is set */
-    &:not([style*="aspect-ratio"]) {
-        min-height: 150px;
-    }
+	/* When aspect ratio is set via inline style, let it control sizing */
+	&[style*="aspect-ratio"] {
+		min-height: unset;
+	}
 
-    &.is-selected {
-        outline: 2px solid var(--wp-admin-theme-color, #007cba);
-        outline-offset: -2px;
-    }
+	/* Only use min-height fallback when no aspect ratio is set */
+	&:not([style*="aspect-ratio"]) {
+		min-height: 150px;
+	}
 
-    /* Ensure visibility when absolutely positioned */
-    background-color: rgba(0, 0, 0, 0.03);
-    outline: 1px dashed rgba(0, 0, 0, 0.1);
-    outline-offset: -1px;
-    border: none;
+	&.is-selected {
+		outline: 2px solid var(--wp-admin-theme-color, #007cba);
+		outline-offset: -2px;
+	}
 
-    /* Safety for flex layouts: ensure border/padding don't break 50% width */
-    box-sizing: border-box !important;
+	/* Ensure visibility when absolutely positioned */
+	background-color: rgba(0, 0, 0, 0.03);
+	outline: 1px dashed rgba(0, 0, 0, 0.1);
+	outline-offset: -1px;
+	border: none;
 
-    img {
-        display: block;
-        pointer-events: none;
-    }
+	img {
+		display: block;
+		pointer-events: none;
+	}
 
-    /* Make placeholder fill the container */
-    .components-placeholder {
-        width: 100% !important;
-        height: 100% !important;
-        min-height: 150px !important;
-        background: transparent;
+	/* Make placeholder fill the container */
+	.components-placeholder {
+		width: 100% !important;
+		height: 100% !important;
+		min-height: 150px !important;
+		background: transparent;
 
-        /* Center the icon */
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+		/* Center the icon */
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
 
-    .photo-collage-image-figure {
-        margin: 0;
-        width: 100%;
-        height: 100%;
-    }
+	.photo-collage-image-figure {
+		margin: 0;
+		width: 100%;
+		height: 100%;
+	}
 
-    .photo-collage-image-caption {
-        &:focus {
-            outline: 1px solid var(--wp-admin-theme-color, #007cba);
-            outline-offset: 2px;
-        }
+	.photo-collage-image-caption {
 
-        &[data-is-placeholder-visible="true"] {
-            opacity: 0.62;
-        }
-    }
+		&:focus {
+			outline: 1px solid var(--wp-admin-theme-color, #007cba);
+			outline-offset: 2px;
+		}
+
+		&[data-is-placeholder-visible="true"] {
+			opacity: 0.62;
+		}
+	}
 }
 
 .photo-collage-position-controls {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-top: 12px;
 }
 
 .photo-collage-position-row,
 .photo-collage-box-row {
-    display: flex;
-    gap: 8px;
+	display: flex;
+	gap: 8px;
 
-    &.is-center {
-        justify-content: center;
+	&.is-center {
+		justify-content: center;
 
-        >* {
-            width: 120px;
-        }
-    }
+		>* {
+			width: 120px;
+		}
+	}
 
-    &.is-space-between {
-        justify-content: space-between;
+	&.is-space-between {
+		justify-content: space-between;
 
-        >* {
-            flex: 1;
-        }
-    }
+		>* {
+			flex: 1;
+		}
+	}
 }
 
 .photo-collage-help-text {
-    font-size: 12px;
-    color: #757575;
-    margin-top: 8px;
-    margin-bottom: 12px;
+	font-size: 12px;
+	color: #757575;
+	margin-top: 8px;
+	margin-bottom: 12px;
 }
 
 .photo-collage-anchor-control {
-    margin-bottom: 16px;
-    padding: 12px;
-    background: #f0f0f0;
-    border-radius: 4px;
-    display: flex;
-    justify-content: center;
+	margin-bottom: 16px;
+	padding: 12px;
+	background: #f0f0f0;
+	border-radius: 4px;
+	display: flex;
+	justify-content: center;
 }
 
 .photo-collage-anchor-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    width: 100px;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 8px;
+	width: 100px;
 }
 
 .photo-collage-anchor-btn {
-    width: 40px !important;
-    height: 40px !important;
-    padding: 0 !important;
-    justify-content: center;
-    border: 1px solid #ccc !important;
-    background: #fff !important;
+	width: 40px !important;
+	height: 40px !important;
+	padding: 0 !important;
+	justify-content: center;
+	border: 1px solid #ccc !important;
+	background: #fff !important;
 
-    &.is-active {
-        background: var(--wp-admin-theme-color, #007cba) !important;
-        color: #fff !important;
-        border-color: var(--wp-admin-theme-color, #007cba) !important;
-    }
+	&.is-active {
+		background: var(--wp-admin-theme-color, #007cba) !important;
+		color: #fff !important;
+		border-color: var(--wp-admin-theme-color, #007cba) !important;
+	}
 
-    &:hover:not(.is-active) {
-        background: #f0f0f0 !important;
-    }
+	&:hover:not(.is-active) {
+		background: #f0f0f0 !important;
+	}
 }
 
 .photo-collage-z-index-control {
-    margin-top: 16px;
-    padding-top: 16px;
-    border-top: 1px solid #eee;
+	margin-top: 16px;
+	padding-top: 16px;
+	border-top: 1px solid #eee;
 }
 
 .photo-collage-z-index-buttons {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-top: -8px;
-    /* Pull up closer to range control */
-    margin-bottom: 16px;
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: -8px;
+
+	/* Pull up closer to range control */
+	margin-bottom: 16px;
 }
 
 /* Box Control Styles */
 .photo-collage-box-control {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-top: 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	margin-top: 12px;
 }
 
 .photo-collage-box-center {
-    width: 60px;
-    height: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    color: #8c8f94;
-    font-weight: 600;
-    flex-shrink: 0;
-    border: 2px solid #8c8f94;
+	width: 60px;
+	height: 60px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 10px;
+	color: #8c8f94;
+	font-weight: 600;
+	flex-shrink: 0;
+	border: 2px solid #8c8f94;
 
-    &.is-dashed {
-        border-style: dashed;
-    }
+	&.is-dashed {
+		border-style: dashed;
+	}
 }
 
 .photo-collage-unit-control-small {
-    width: 80px;
+	width: 80px;
+}
+
+/*
+Caption Position Control Styles */
+.caption-position-control {
+	display: grid;
+	grid-template-columns: 28px 1fr 28px;
+	grid-template-rows: 28px 1fr 28px;
+	gap: 2px;
+	width: 180px;
+	margin: 8px auto;
+}
+
+.caption-position-top {
+	grid-column: 2;
+	grid-row: 1;
+	display: flex;
+	gap: 2px;
+	justify-content: center;
+}
+
+.caption-position-left {
+	grid-column: 1;
+	grid-row: 2;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	justify-content: center;
+}
+
+.caption-position-center {
+	grid-column: 2;
+	grid-row: 2;
+	background: #f0f0f0;
+	border: 1px dashed #ccc;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 50px;
+	border-radius: 2px;
+}
+
+.caption-position-center-icon {
+	color: #8c8f94;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	svg {
+		width: 24px;
+		height: 24px;
+	}
+}
+
+.caption-position-right {
+	grid-column: 3;
+	grid-row: 2;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	justify-content: center;
+}
+
+.caption-position-bottom {
+	grid-column: 2;
+	grid-row: 3;
+	display: flex;
+	gap: 2px;
+	justify-content: center;
+}
+
+.caption-position-btn {
+	width: 28px !important;
+	height: 28px !important;
+	min-width: 28px !important;
+	padding: 0 !important;
+	border: 1px solid #ddd !important;
+	background: #f0f0f0 !important;
+	border-radius: 2px !important;
+	cursor: pointer;
+	transition: background-color 0.1s ease, border-color 0.1s ease;
+
+	&:focus {
+		box-shadow: 0 0 0 2px var(--wp-admin-theme-color, #007cba) !important;
+		outline: none !important;
+	}
+
+	&:hover:not(.is-active) {
+		background: #e0e0e0 !important;
+		border-color: #ccc !important;
+	}
+
+	&.is-active {
+		background: var(--wp-admin-theme-color, #007cba) !important;
+		border-color: var(--wp-admin-theme-color, #007cba) !important;
+		color: #fff !important;
+	}
 }

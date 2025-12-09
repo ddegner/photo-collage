@@ -1,4 +1,4 @@
-import { SVG, Path, Rect } from '@wordpress/components';
+import { SVG, Rect } from '@wordpress/components';
 
 export const SideBySideIcon = (
 	<SVG

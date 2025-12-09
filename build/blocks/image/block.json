@@ -145,6 +145,22 @@
         "bottom-right"
       ]
     },
+    "imgClass": {
+      "type": "string",
+      "default": ""
+    },
+    "imgStyle": {
+      "type": "string",
+      "default": ""
+    },
+    "captionClass": {
+      "type": "string",
+      "default": ""
+    },
+    "captionStyle": {
+      "type": "string",
+      "default": ""
+    },
     "title": {
       "type": "string",
       "default": ""

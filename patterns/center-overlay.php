@@ -8,16 +8,13 @@
  * @package PhotoCollage
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
+if (!defined('ABSPATH')) {
 	exit;
 }
 ?>
 <!-- wp:photo-collage/container -->
 <div class="wp-block-photo-collage-container" style="min-height: 200px;">
-	<!-- wp:photo-collage/image {"width":"100%","marginLeft":"0%","marginTop":"0%","zIndex":1} /-->
-	<!-- wp:photo-collage/image {"width":"50%","marginLeft":"25%","marginTop":"-40%","zIndex":2} /-->
+	<!-- wp:photo-collage/image {"width":"100%","zIndex":1} /-->
+	<!-- wp:photo-collage/image {"width":"50%","useAbsolutePosition":true,"top":"25%","left":"25%","zIndex":2} /-->
 </div>
 <!-- /wp:photo-collage/container -->
-
-
-

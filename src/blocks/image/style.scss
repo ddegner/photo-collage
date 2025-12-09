@@ -1,22 +1,47 @@
 .wp-block-photo-collage-image {
-    box-sizing: border-box;
+	box-sizing: border-box;
 
-    img {
-        display: block;
-    }
+	img {
+		display: block;
+	}
 
-    .photo-collage-image-figure {
-        margin: 0;
-        width: 100%;
-        height: 100%;
+	.photo-collage-image-figure {
+		margin: 0;
+		width: 100%;
+		height: 100%;
 
-        img {
-            flex: 1;
-            min-height: 0;
-        }
-    }
+		img {
+			flex: 1;
+			min-height: 0;
+		}
+	}
 
-    .photo-collage-image-caption {
-        // Inherit styles from wp-element-caption
-    }
+	.photo-collage-image-caption {
+		// Inherit styles from wp-element-caption
+	}
+}
+
+// Mobile responsive styles for side captions when Stack on Mobile is enabled
+.wp-block-photo-collage-container.is-stack-on-mobile {
+
+	@media (max-width: 782px) {
+
+		.wp-block-photo-collage-image {
+
+			.photo-collage-image-figure {
+				// Override flex-direction to column for side placements
+				// This stacks the caption below the image on mobile
+				flex-direction: column !important;
+
+				// Reset align-items for stacked layout
+				align-items: stretch !important;
+			}
+
+			// Caption maintains its text alignment on mobile
+			// The text-align property is set inline, so it will be preserved
+			.photo-collage-image-caption {
+				width: 100% !important;
+			}
+		}
+	}
 }
