@@ -8,7 +8,7 @@
  * @package PhotoCollage
  */
 
-if (!defined('ABSPATH')) {
+if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 ?>

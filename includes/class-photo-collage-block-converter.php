@@ -22,6 +22,8 @@ require_once __DIR__ . '/class-photo-collage-renderer.php';
  */
 final class Photo_Collage_Block_Converter {
 
+
+
 	/**
 	 * Get the base WHERE clause for finding posts with collage blocks.
 	 *
@@ -44,9 +46,9 @@ final class Photo_Collage_Block_Converter {
 
 		$where = self::get_collage_posts_where_clause();
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$post_ids = $wpdb->get_col(
-			"SELECT ID FROM {$wpdb->posts} WHERE {$where}"
+			"SELECT ID FROM {$wpdb->posts} WHERE {$where}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		) ?? array();
 
 		return array_map( 'intval', $post_ids );
@@ -62,9 +64,9 @@ final class Photo_Collage_Block_Converter {
 
 		$where = self::get_collage_posts_where_clause();
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		return $wpdb->get_col(
-			"SELECT post_content FROM {$wpdb->posts} WHERE {$where}"
+			"SELECT post_content FROM {$wpdb->posts} WHERE {$where}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		) ?? array();
 	}
 
@@ -291,6 +293,3 @@ final class Photo_Collage_Block_Converter {
 		);
 	}
 }
-
-
-
