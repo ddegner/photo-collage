@@ -3,7 +3,7 @@
 **Contributors:** ddegner  
 **Tags:** block, photo collage, image gallery, overlapping images, visual design  
 **Tested up to:** 6.9  
-**Stable tag:** 0.5.10  
+**Stable tag:** 0.5.11  
 **Requires at least:** 6.8  
 **Requires PHP:** 8.3  
 **License:** GPL-2.0-or-later  
@@ -106,6 +106,15 @@ Photo Collage is optimized for performance. It uses modern CSS for positioning a
 4.  Mobile-responsive stacking in action
 
 ## Changelog
+
+### 0.5.11
+*   FIX: Removed readonly class keyword for WordPress.org compatibility
+
+### 0.5.10
+*   IMPROVEMENT: Ensure release changelog is complete
+
+### 0.5.9
+*   FIX: Restored dynamic readme.txt generation in release workflow
 
 ### 0.5.8
 *   FIX: Improved deployment workflow reliability
