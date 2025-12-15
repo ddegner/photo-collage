@@ -35,39 +35,8 @@ jobs:
             - name: Install composer dependencies
               run: composer install --prefer-dist --no-progress --no-dev
 
-            - name: Generate readme.txt from README.md
-              run: |
-                # Simple conversion from Markdown to WordPress readme.txt format
-                # 1. Copy header fields (up to first description) from existing readme.txt or defined here?
-                # The user wants to use the MD file. But MD doesn't have the "Stable tag" and "Requires" metadata usually in the same way.
-                # I'll check if the MD has the metadata YAML or similar. 
-                # The user's new MD has the metadata as bolded lists. I can parse that.
-                
-                # Actually, relying on a custom script might be error prone. 
-                # Let's simple copy the content for now or better, use a regex to convert headers.
-                cp README.md readme.txt
-                sed -i 's/[ \t]*$//' readme.txt
-                sed -i 's/^# \(.*\)/=== \1 ===/' readme.txt
-                sed -i 's/^## \(.*\)/== \1 ==/' readme.txt
-                sed -i 's/^### \(.*\)/= \1 =/' readme.txt
-                # Convert bolded metadata lines to standard wp string
-                sed -i 's/^\*\*Contributors:\*\* \(.*\)/Contributors: \1/' readme.txt
-                sed -i 's/^\*\*Tags:\*\* \(.*\)/Tags: \1/' readme.txt
-                sed -i 's/^\*\*Tested up to:\*\* \(.*\)/Tested up to: \1/' readme.txt
-                sed -i 's/^\*\*Stable tag:\*\* \(.*\)/Stable tag: \1/' readme.txt
-                sed -i 's/^\*\*Requires at least:\*\* \(.*\)/Requires at least: \1/' readme.txt
-                sed -i 's/^\*\*Requires PHP:\*\* \(.*\)/Requires PHP: \1/' readme.txt
-                sed -i 's/^\*\*License:\*\* \(.*\)/License: \1/' readme.txt
-                sed -i 's/^\*\*License URI:\*\* \(.*\)/License URI: \1/' readme.txt
-                
             - name: Build plugin
               run: npm run build
-
-            - name: Deploy to WordPress.org
-              uses: 10up/action-wordpress-plugin-deploy@stable
-              env:
-                  SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
-                  SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
 
             - name: Create Release Zip
               run: |
@@ -84,3 +53,9 @@ jobs:
                   generate_release_notes: true
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Deploy to WordPress.org
+              uses: 10up/action-wordpress-plugin-deploy@stable
+              env:
+                  SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+                  SVN_USERNAME: ${{ secrets.SVN_USERNAME }}

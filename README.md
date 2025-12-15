@@ -107,6 +107,9 @@ Photo Collage is optimized for performance. It uses modern CSS for positioning a
 
 ## Changelog
 
+### 0.5.8
+*   FIX: Improved deployment workflow reliability
+
 ### 0.5.7
 *   FIX: Fixed GitHub release workflow permissions
 
