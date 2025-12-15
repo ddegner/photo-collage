@@ -38,6 +38,22 @@ jobs:
             - name: Build plugin
               run: npm run build
 
+            - name: Generate readme.txt from README.md
+              run: |
+                cp README.md readme.txt
+                sed -i 's/[ \t]*$//' readme.txt
+                sed -i 's/^# \(.*\)/=== \1 ===/' readme.txt
+                sed -i 's/^## \(.*\)/== \1 ==/' readme.txt
+                sed -i 's/^### \(.*\)/= \1 =/' readme.txt
+                sed -i 's/^\*\*Contributors:\*\* \(.*\)/Contributors: \1/' readme.txt
+                sed -i 's/^\*\*Tags:\*\* \(.*\)/Tags: \1/' readme.txt
+                sed -i 's/^\*\*Tested up to:\*\* \(.*\)/Tested up to: \1/' readme.txt
+                sed -i 's/^\*\*Stable tag:\*\* \(.*\)/Stable tag: \1/' readme.txt
+                sed -i 's/^\*\*Requires at least:\*\* \(.*\)/Requires at least: \1/' readme.txt
+                sed -i 's/^\*\*Requires PHP:\*\* \(.*\)/Requires PHP: \1/' readme.txt
+                sed -i 's/^\*\*License:\*\* \(.*\)/License: \1/' readme.txt
+                sed -i 's/^\*\*License URI:\*\* \(.*\)/License URI: \1/' readme.txt
+
             - name: Create Release Zip
               run: |
                   mkdir -p photo-collage-release/photo-collage
