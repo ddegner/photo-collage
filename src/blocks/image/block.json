@@ -13,6 +13,9 @@
 		"interactivity": true,
 		"lightbox": {
 			"allowEditing": true
+		},
+		"spacing": {
+			"padding": true
 		}
 	},
 	"textdomain": "photo-collage",
@@ -62,22 +65,6 @@
 		"height": {
 			"type": "string",
 			"default": "auto"
-		},
-		"paddingTop": {
-			"type": "string",
-			"default": "0%"
-		},
-		"paddingRight": {
-			"type": "string",
-			"default": "0%"
-		},
-		"paddingBottom": {
-			"type": "string",
-			"default": "0%"
-		},
-		"paddingLeft": {
-			"type": "string",
-			"default": "0%"
 		},
 		"useAbsolutePosition": {
 			"type": "boolean",
@@ -184,6 +171,46 @@
 		"linkDestination": {
 			"type": "string",
 			"default": "none"
+		},
+		"backgroundType": {
+			"type": "string",
+			"default": "none",
+			"enum": [
+				"none",
+				"color",
+				"gradient",
+				"tiling-image",
+				"full-image"
+			]
+		},
+		"backgroundColor": {
+			"type": "string"
+		},
+		"gradient": {
+			"type": "string"
+		},
+		"backgroundImageId": {
+			"type": "number"
+		},
+		"backgroundImageUrl": {
+			"type": "string"
+		},
+		"backgroundSize": {
+			"type": "string",
+			"default": "cover",
+			"enum": [
+				"cover",
+				"contain",
+				"auto"
+			]
+		},
+		"backgroundPosition": {
+			"type": "string",
+			"default": "center center"
+		},
+		"backgroundRepeat": {
+			"type": "boolean",
+			"default": false
 		}
 	}
 }

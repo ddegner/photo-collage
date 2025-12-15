@@ -39,10 +39,171 @@ return array(
 			'containerHeight' => array(
 				'type' => 'string',
 				'default' => ''
+			),
+			'backgroundType' => array(
+				'type' => 'string',
+				'default' => 'none',
+				'enum' => array(
+					'none',
+					'color',
+					'gradient',
+					'tiling-image',
+					'full-image'
+				)
+			),
+			'backgroundColor' => array(
+				'type' => 'string'
+			),
+			'gradient' => array(
+				'type' => 'string'
+			),
+			'backgroundImageId' => array(
+				'type' => 'number'
+			),
+			'backgroundImageUrl' => array(
+				'type' => 'string'
+			),
+			'backgroundSize' => array(
+				'type' => 'string',
+				'default' => 'cover',
+				'enum' => array(
+					'cover',
+					'contain',
+					'auto'
+				)
+			),
+			'backgroundPosition' => array(
+				'type' => 'string',
+				'default' => 'center center'
+			),
+			'backgroundRepeat' => array(
+				'type' => 'boolean',
+				'default' => false
 			)
 		),
 		'style' => 'file:./style-index.css',
 		'render' => 'file:./render.php'
+	),
+	'frame' => array(
+		'$schema' => 'https://schemas.wp.org/trunk/block.json',
+		'apiVersion' => 3,
+		'name' => 'photo-collage/frame',
+		'version' => '0.1.0',
+		'title' => 'Collage Frame',
+		'category' => 'design',
+		'icon' => 'layout',
+		'description' => 'A wrapper block for positioning any content within a Collage Container.',
+		'supports' => array(
+			'align' => true,
+			'html' => false,
+			'reusable' => false,
+			'spacing' => array(
+				'padding' => true
+			)
+		),
+		'textdomain' => 'photo-collage',
+		'editorScript' => 'file:./index.js',
+		'editorStyle' => 'file:./index.css',
+		'style' => 'file:./style-index.css',
+		'render' => 'file:./render.php',
+		'attributes' => array(
+			'marginTop' => array(
+				'type' => 'string',
+				'default' => '0%'
+			),
+			'marginRight' => array(
+				'type' => 'string',
+				'default' => '0%'
+			),
+			'marginBottom' => array(
+				'type' => 'string',
+				'default' => '0%'
+			),
+			'marginLeft' => array(
+				'type' => 'string',
+				'default' => '0%'
+			),
+			'zIndex' => array(
+				'type' => 'number',
+				'default' => 1
+			),
+			'width' => array(
+				'type' => 'string',
+				'default' => '50%'
+			),
+			'height' => array(
+				'type' => 'string',
+				'default' => 'auto'
+			),
+			'useAbsolutePosition' => array(
+				'type' => 'boolean',
+				'default' => false
+			),
+			'top' => array(
+				'type' => 'string',
+				'default' => 'auto'
+			),
+			'right' => array(
+				'type' => 'string',
+				'default' => 'auto'
+			),
+			'bottom' => array(
+				'type' => 'string',
+				'default' => 'auto'
+			),
+			'left' => array(
+				'type' => 'string',
+				'default' => 'auto'
+			),
+			'rotation' => array(
+				'type' => 'number',
+				'default' => 0
+			),
+			'opacity' => array(
+				'type' => 'number',
+				'default' => 1
+			),
+			'backgroundType' => array(
+				'type' => 'string',
+				'default' => 'none',
+				'enum' => array(
+					'none',
+					'color',
+					'gradient',
+					'tiling-image',
+					'full-image'
+				)
+			),
+			'backgroundColor' => array(
+				'type' => 'string'
+			),
+			'gradient' => array(
+				'type' => 'string'
+			),
+			'backgroundImageId' => array(
+				'type' => 'number'
+			),
+			'backgroundImageUrl' => array(
+				'type' => 'string'
+			),
+			'backgroundSize' => array(
+				'type' => 'string',
+				'default' => 'cover',
+				'enum' => array(
+					'cover',
+					'contain',
+					'auto'
+				)
+			),
+			'backgroundPosition' => array(
+				'type' => 'string',
+				'default' => 'center center'
+			),
+			'backgroundRepeat' => array(
+				'type' => 'boolean',
+				'default' => false
+			)
+		)
 	),
 	'image' => array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
@@ -59,6 +220,9 @@ return array(
 			'interactivity' => true,
 			'lightbox' => array(
 				'allowEditing' => true
+			),
+			'spacing' => array(
+				'padding' => true
 			)
 		),
 		'textdomain' => 'photo-collage',
@@ -108,22 +272,6 @@ return array(
 			'height' => array(
 				'type' => 'string',
 				'default' => 'auto'
-			),
-			'paddingTop' => array(
-				'type' => 'string',
-				'default' => '0%'
-			),
-			'paddingRight' => array(
-				'type' => 'string',
-				'default' => '0%'
-			),
-			'paddingBottom' => array(
-				'type' => 'string',
-				'default' => '0%'
-			),
-			'paddingLeft' => array(
-				'type' => 'string',
-				'default' => '0%'
 			),
 			'useAbsolutePosition' => array(
 				'type' => 'boolean',
@@ -230,6 +378,46 @@ return array(
 			'linkDestination' => array(
 				'type' => 'string',
 				'default' => 'none'
+			),
+			'backgroundType' => array(
+				'type' => 'string',
+				'default' => 'none',
+				'enum' => array(
+					'none',
+					'color',
+					'gradient',
+					'tiling-image',
+					'full-image'
+				)
+			),
+			'backgroundColor' => array(
+				'type' => 'string'
+			),
+			'gradient' => array(
+				'type' => 'string'
+			),
+			'backgroundImageId' => array(
+				'type' => 'number'
+			),
+			'backgroundImageUrl' => array(
+				'type' => 'string'
+			),
+			'backgroundSize' => array(
+				'type' => 'string',
+				'default' => 'cover',
+				'enum' => array(
+					'cover',
+					'contain',
+					'auto'
+				)
+			),
+			'backgroundPosition' => array(
+				'type' => 'string',
+				'default' => 'center center'
+			),
+			'backgroundRepeat' => array(
+				'type' => 'boolean',
+				'default' => false
 			)
 		)
 	)

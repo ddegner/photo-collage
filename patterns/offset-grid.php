@@ -19,6 +19,3 @@ if ( ! defined( 'ABSPATH' ) ) {
 </div>
 <!-- /wp:photo-collage/container -->
 
-
-
-

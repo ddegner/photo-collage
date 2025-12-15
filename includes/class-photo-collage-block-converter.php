@@ -22,26 +22,59 @@ require_once __DIR__ . '/class-photo-collage-renderer.php';
  */
 final class Photo_Collage_Block_Converter {
 
-
+	/**
+	 * Get the base WHERE clause for finding posts with collage blocks.
+	 *
+	 * @return string SQL WHERE clause fragment.
+	 */
+	private static function get_collage_posts_where_clause(): string {
+		global $wpdb;
+		return "post_content LIKE '%wp:photo-collage/container%' 
+            AND post_status IN ('publish', 'draft', 'pending', 'future', 'private') 
+            AND post_type IN ('post', 'page')";
+	}
 
 	/**
-	 * Scan all posts for collage blocks
+	 * Get all post IDs that contain collage blocks.
+	 *
+	 * @return array<int> Array of post IDs.
+	 */
+	public static function get_posts_with_collage_blocks(): array {
+		global $wpdb;
+
+		$where = self::get_collage_posts_where_clause();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$post_ids = $wpdb->get_col(
+			"SELECT ID FROM {$wpdb->posts} WHERE {$where}"
+		) ?? array();
+
+		return array_map( 'intval', $post_ids );
+	}
+
+	/**
+	 * Get post content for posts containing collage blocks.
+	 *
+	 * @return array<string> Array of post content strings.
+	 */
+	public static function get_collage_post_content(): array {
+		global $wpdb;
+
+		$where = self::get_collage_posts_where_clause();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		return $wpdb->get_col(
+			"SELECT post_content FROM {$wpdb->posts} WHERE {$where}"
+		) ?? array();
+	}
+
+	/**
+	 * Scan all posts for collage blocks (legacy method, use get_posts_with_collage_blocks instead)
 	 *
 	 * @return array<int> Array of post IDs.
 	 */
 	public function scan_all_posts(): array {
-		global $wpdb;
-
-		// Use a LIKE query to find posts with the block.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$post_ids = $wpdb->get_col(
-			"SELECT ID FROM {$wpdb->posts} 
-            WHERE post_content LIKE '%wp:photo-collage/container%' 
-            AND post_status IN ('publish', 'draft', 'pending', 'future', 'private') 
-            AND post_type IN ('post', 'page')"
-		) ?? array();
-
-		return array_map( 'intval', $post_ids );
+		return self::get_posts_with_collage_blocks();
 	}
 
 	/**
@@ -258,3 +291,6 @@ final class Photo_Collage_Block_Converter {
 		);
 	}
 }
+
+
+

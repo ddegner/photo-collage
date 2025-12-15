@@ -12,341 +12,121 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Readonly class for block attributes
+ * Readonly class for block attributes using PHP 8.3 constructor property promotion.
  */
-final class Photo_Collage_Block_Attributes
+final readonly class Photo_Collage_Block_Attributes
 {
-
-
-
-
 	/**
-	 * Image URL
-	 *
-	 * @var string
+	 * Constructor with property promotion.
 	 */
-	public string $url;
+	public function __construct(
+		public string $url = '',
+		public int $id = 0,
+		public string $href = '',
+		public string $link_target = '',
+		public string $rel = '',
+		public string $link_class = '',
+		public string $alt = '',
+		public bool $is_decorative = false,
+		public bool $use_absolute_position = false,
+		public int $z_index = 1,
+		public string $width = '50%',
+		public string $height = 'auto',
+		public string $object_fit = 'contain',
+		public int $rotation = 0,
+		public float $opacity = 1.0,
+		public string $top = 'auto',
+		public string $right = 'auto',
+		public string $bottom = 'auto',
+		public string $left = 'auto',
+		public string $margin_top = '0%',
+		public string $margin_right = '0%',
+		public string $margin_bottom = '0%',
+		public string $margin_left = '0%',
+		public string $padding_top = '0%',
+		public string $padding_right = '0%',
+		public string $padding_bottom = '0%',
+		public string $padding_left = '0%',
+		public string $caption = '',
+		public string $title = '',
+		public string $description = '',
+		public string $align = '',
+		public bool $show_caption = true,
+		public string $caption_align = 'center',
+		public string $caption_width = '100%',
+		public string $caption_placement = 'bottom-left',
+		public array $lightbox = [],
+		public string $img_class = '',
+		public string $img_style = '',
+		public string $caption_class = '',
+		public string $caption_style = '',
+		public string $background_type = 'none',
+		public string $background_color = '',
+		public string $gradient = '',
+		public int $background_image_id = 0,
+		public string $background_image_url = '',
+		public string $background_size = 'cover',
+		public string $background_position = 'center center',
+		public bool $background_repeat = false,
+	) {}
 
 	/**
-	 * Image ID
-	 *
-	 * @var int
-	 */
-	public int $id;
-
-	/**
-	 * Link HREF
-	 *
-	 * @var string
-	 */
-	public string $href;
-
-	/**
-	 * Link Target
-	 *
-	 * @var string
-	 */
-	public string $link_target;
-
-	/**
-	 * Link Rel
-	 *
-	 * @var string
-	 */
-	public string $rel;
-
-	/**
-	 * Link Class
-	 *
-	 * @var string
-	 */
-	public string $link_class;
-
-	/**
-	 * Image Alt Text
-	 *
-	 * @var string
-	 */
-	public string $alt;
-
-	/**
-	 * Is Decorative
-	 *
-	 * @var bool
-	 */
-	public bool $is_decorative;
-
-	/**
-	 * Use Absolute Position
-	 *
-	 * @var bool
-	 */
-	public bool $use_absolute_position;
-
-	/**
-	 * Z-Index
-	 *
-	 * @var int
-	 */
-	public int $z_index;
-
-	/**
-	 * Width
-	 *
-	 * @var string
-	 */
-	public string $width;
-
-	/**
-	 * Height
-	 *
-	 * @var string
-	 */
-	public string $height;
-
-	/**
-	 * Object Fit
-	 *
-	 * @var string
-	 */
-	public string $object_fit;
-
-	/**
-	 * Rotation
-	 *
-	 * @var int
-	 */
-	public int $rotation;
-
-	/**
-	 * Opacity
-	 *
-	 * @var float
-	 */
-	public float $opacity;
-
-	/**
-	 * Top position
-	 *
-	 * @var string
-	 */
-	public string $top;
-
-	/**
-	 * Right position
-	 *
-	 * @var string
-	 */
-	public string $right;
-
-	/**
-	 * Bottom position
-	 *
-	 * @var string
-	 */
-	public string $bottom;
-
-	/**
-	 * Left position
-	 *
-	 * @var string
-	 */
-	public string $left;
-
-	/**
-	 * Margin Top
-	 *
-	 * @var string
-	 */
-	public string $margin_top;
-
-	/**
-	 * Margin Right
-	 *
-	 * @var string
-	 */
-	public string $margin_right;
-
-	/**
-	 * Margin Bottom
-	 *
-	 * @var string
-	 */
-	public string $margin_bottom;
-
-	/**
-	 * Margin Left
-	 *
-	 * @var string
-	 */
-	public string $margin_left;
-
-	/**
-	 * Padding Top
-	 *
-	 * @var string
-	 */
-	public string $padding_top;
-
-	/**
-	 * Padding Right
-	 *
-	 * @var string
-	 */
-	public string $padding_right;
-
-	/**
-	 * Padding Bottom
-	 *
-	 * @var string
-	 */
-	public string $padding_bottom;
-
-	/**
-	 * Padding Left
-	 *
-	 * @var string
-	 */
-	public string $padding_left;
-
-	/**
-	 * Caption
-	 *
-	 * @var string
-	 */
-	public string $caption;
-
-	/**
-	 * Title
-	 *
-	 * @var string
-	 */
-	public string $title;
-
-	/**
-	 * Description
-	 *
-	 * @var string
-	 */
-	public string $description;
-
-	/**
-	 * Alignment
-	 *
-	 * @var string
-	 */
-	public string $align;
-
-	/**
-	 * Show Caption
-	 *
-	 * @var bool
-	 */
-	public bool $show_caption;
-
-	/**
-	 * Caption Alignment
-	 *
-	 * @var string
-	 */
-	public string $caption_align;
-
-	/**
-	 * Caption Width
-	 *
-	 * @var string
-	 */
-	public string $caption_width;
-
-	/**
-	 * Caption Placement
-	 *
-	 * @var string
-	 */
-	public string $caption_placement;
-
-	/**
-	 * Lightbox settings
-	 *
-	 * @var array
-	 */
-	public array $lightbox;
-
-	/**
-	 * Image CSS Class
-	 *
-	 * @var string
-	 */
-	public string $img_class;
-
-	/**
-	 * Image Inline Style
-	 *
-	 * @var string
-	 */
-	public string $img_style;
-
-	/**
-	 * Caption CSS Class
-	 *
-	 * @var string
-	 */
-	public string $caption_class;
-
-	/**
-	 * Caption Inline Style
-	 *
-	 * @var string
-	 */
-	public string $caption_style;
-
-	/**
-	 * Constructor
+	 * Create instance from attributes array.
 	 *
 	 * @param array $attributes Block attributes.
+	 * @return self
 	 */
-	public function __construct(array $attributes)
+	public static function from_array(array $attributes): self
 	{
-		$this->url = (string) ($attributes['url'] ?? '');
-		$this->id = (int) ($attributes['id'] ?? 0);
-		$this->href = (string) ($attributes['href'] ?? '');
-		$this->link_target = (string) ($attributes['linkTarget'] ?? '');
-		$this->rel = (string) ($attributes['rel'] ?? '');
-		$this->link_class = (string) ($attributes['linkClass'] ?? '');
-		$this->alt = (string) ($attributes['alt'] ?? '');
-		$this->align = (string) ($attributes['align'] ?? '');
-
-		$this->show_caption = (bool) ($attributes['showCaption'] ?? true);
-		$this->caption_align = (string) ($attributes['captionAlign'] ?? 'center');
-		$this->caption_width = (string) ($attributes['captionWidth'] ?? '100%');
-		$this->caption_placement = (string) ($attributes['captionPlacement'] ?? 'bottom-left');
-		$this->is_decorative = (bool) ($attributes['isDecorative'] ?? false);
-		$this->use_absolute_position = (bool) ($attributes['useAbsolutePosition'] ?? false);
-		$this->z_index = (int) ($attributes['zIndex'] ?? 1);
-		$this->width = (string) ($attributes['width'] ?? '50%');
-		$this->height = (string) ($attributes['height'] ?? 'auto');
-		$this->object_fit = (string) ($attributes['objectFit'] ?? 'contain');
-		$this->rotation = (int) ($attributes['rotation'] ?? 0);
-		$this->opacity = (float) ($attributes['opacity'] ?? 1);
-		$this->top = (string) ($attributes['top'] ?? 'auto');
-		$this->right = (string) ($attributes['right'] ?? 'auto');
-		$this->bottom = (string) ($attributes['bottom'] ?? 'auto');
-		$this->left = (string) ($attributes['left'] ?? 'auto');
-		$this->margin_top = (string) ($attributes['marginTop'] ?? '0%');
-		$this->margin_right = (string) ($attributes['marginRight'] ?? '0%');
-		$this->margin_bottom = (string) ($attributes['marginBottom'] ?? '0%');
-		$this->margin_left = (string) ($attributes['marginLeft'] ?? '0%');
-		$this->padding_top = (string) ($attributes['paddingTop'] ?? '0%');
-		$this->padding_right = (string) ($attributes['paddingRight'] ?? '0%');
-		$this->padding_bottom = (string) ($attributes['paddingBottom'] ?? '0%');
-		$this->padding_left = (string) ($attributes['paddingLeft'] ?? '0%');
-		$this->caption = (string) ($attributes['caption'] ?? '');
-		$this->title = (string) ($attributes['title'] ?? '');
-		$this->description = (string) ($attributes['description'] ?? '');
-		$this->lightbox = (array) ($attributes['lightbox'] ?? array());
-		$this->img_class = (string) ($attributes['imgClass'] ?? '');
-		$this->img_style = (string) ($attributes['imgStyle'] ?? '');
-		$this->caption_class = (string) ($attributes['captionClass'] ?? '');
-		$this->caption_style = (string) ($attributes['captionStyle'] ?? '');
+		return new self(
+			url: (string) ($attributes['url'] ?? ''),
+			id: (int) ($attributes['id'] ?? 0),
+			href: (string) ($attributes['href'] ?? ''),
+			link_target: (string) ($attributes['linkTarget'] ?? ''),
+			rel: (string) ($attributes['rel'] ?? ''),
+			link_class: (string) ($attributes['linkClass'] ?? ''),
+			alt: (string) ($attributes['alt'] ?? ''),
+			is_decorative: (bool) ($attributes['isDecorative'] ?? false),
+			use_absolute_position: (bool) ($attributes['useAbsolutePosition'] ?? false),
+			z_index: (int) ($attributes['zIndex'] ?? 1),
+			width: (string) ($attributes['width'] ?? '50%'),
+			height: (string) ($attributes['height'] ?? 'auto'),
+			object_fit: (string) ($attributes['objectFit'] ?? 'contain'),
+			rotation: max(-180, min(180, (int) ($attributes['rotation'] ?? 0))),
+			opacity: (float) ($attributes['opacity'] ?? 1.0),
+			top: (string) ($attributes['top'] ?? 'auto'),
+			right: (string) ($attributes['right'] ?? 'auto'),
+			bottom: (string) ($attributes['bottom'] ?? 'auto'),
+			left: (string) ($attributes['left'] ?? 'auto'),
+			margin_top: (string) ($attributes['marginTop'] ?? '0%'),
+			margin_right: (string) ($attributes['marginRight'] ?? '0%'),
+			margin_bottom: (string) ($attributes['marginBottom'] ?? '0%'),
+			margin_left: (string) ($attributes['marginLeft'] ?? '0%'),
+			padding_top: (string) ($attributes['paddingTop'] ?? '0%'),
+			padding_right: (string) ($attributes['paddingRight'] ?? '0%'),
+			padding_bottom: (string) ($attributes['paddingBottom'] ?? '0%'),
+			padding_left: (string) ($attributes['paddingLeft'] ?? '0%'),
+			caption: (string) ($attributes['caption'] ?? ''),
+			title: (string) ($attributes['title'] ?? ''),
+			description: (string) ($attributes['description'] ?? ''),
+			align: (string) ($attributes['align'] ?? ''),
+			show_caption: (bool) ($attributes['showCaption'] ?? true),
+			caption_align: (string) ($attributes['captionAlign'] ?? 'center'),
+			caption_width: (string) ($attributes['captionWidth'] ?? '100%'),
+			caption_placement: (string) ($attributes['captionPlacement'] ?? 'bottom-left'),
+			lightbox: (array) ($attributes['lightbox'] ?? []),
+			img_class: (string) ($attributes['imgClass'] ?? ''),
+			img_style: (string) ($attributes['imgStyle'] ?? ''),
+			caption_class: (string) ($attributes['captionClass'] ?? ''),
+			caption_style: (string) ($attributes['captionStyle'] ?? ''),
+			background_type: (string) ($attributes['backgroundType'] ?? 'none'),
+			background_color: (string) ($attributes['backgroundColor'] ?? ''),
+			gradient: (string) ($attributes['gradient'] ?? ''),
+			background_image_id: (int) ($attributes['backgroundImageId'] ?? 0),
+			background_image_url: (string) ($attributes['backgroundImageUrl'] ?? ''),
+			background_size: (string) ($attributes['backgroundSize'] ?? 'cover'),
+			background_position: (string) ($attributes['backgroundPosition'] ?? 'center center'),
+			background_repeat: (bool) ($attributes['backgroundRepeat'] ?? false),
+		);
 	}
 }

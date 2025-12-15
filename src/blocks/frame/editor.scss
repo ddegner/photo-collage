@@ -1,0 +1,13 @@
+@use '../shared-editor';
+
+.wp-block-photo-collage-frame {
+	/* Editor-only styles */
+	box-sizing: border-box !important;
+	position: relative;
+	border: 1px dashed rgba(0, 0, 0, 0.15);
+
+	&.is-selected {
+		outline: 2px solid var(--wp-admin-theme-color, #007cba);
+		outline-offset: -2px;
+	}
+}

@@ -14,6 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 require_once __DIR__ . '/enums.php';
+require_once __DIR__ . '/class-photo-collage-block-converter.php';
 
 /**
  * Class Photo_Collage_Admin_Settings
@@ -101,16 +102,8 @@ final class Photo_Collage_Admin_Settings {
 			return (int) $cached_count;
 		}
 
-		global $wpdb;
-
-		// Efficiently count posts with the block using LIKE.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$posts_with_blocks = $wpdb->get_col(
-			"SELECT post_content FROM {$wpdb->posts}
-            WHERE post_content LIKE '%wp:photo-collage/container%'
-            AND post_status IN ('publish', 'draft', 'pending', 'future', 'private')
-            AND post_type IN ('post', 'page')"
-		) ?? array();
+		// Use shared method from converter class.
+		$posts_with_blocks = Photo_Collage_Block_Converter::get_collage_post_content();
 
 		$count = 0;
 		foreach ( $posts_with_blocks as $content ) {

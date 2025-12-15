@@ -1,0 +1,121 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "photo-collage/frame",
+	"version": "0.1.0",
+	"title": "Collage Frame",
+	"category": "design",
+	"icon": "layout",
+	"description": "A wrapper block for positioning any content within a Collage Container.",
+	"supports": {
+		"align": true,
+		"html": false,
+		"reusable": false,
+		"spacing": {
+			"padding": true
+		}
+	},
+	"textdomain": "photo-collage",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php",
+	"attributes": {
+		"marginTop": {
+			"type": "string",
+			"default": "0%"
+		},
+		"marginRight": {
+			"type": "string",
+			"default": "0%"
+		},
+		"marginBottom": {
+			"type": "string",
+			"default": "0%"
+		},
+		"marginLeft": {
+			"type": "string",
+			"default": "0%"
+		},
+		"zIndex": {
+			"type": "number",
+			"default": 1
+		},
+		"width": {
+			"type": "string",
+			"default": "50%"
+		},
+		"height": {
+			"type": "string",
+			"default": "auto"
+		},
+		"useAbsolutePosition": {
+			"type": "boolean",
+			"default": false
+		},
+		"top": {
+			"type": "string",
+			"default": "auto"
+		},
+		"right": {
+			"type": "string",
+			"default": "auto"
+		},
+		"bottom": {
+			"type": "string",
+			"default": "auto"
+		},
+		"left": {
+			"type": "string",
+			"default": "auto"
+		},
+		"rotation": {
+			"type": "number",
+			"default": 0
+		},
+		"opacity": {
+			"type": "number",
+			"default": 1
+		},
+		"backgroundType": {
+			"type": "string",
+			"default": "none",
+			"enum": [
+				"none",
+				"color",
+				"gradient",
+				"tiling-image",
+				"full-image"
+			]
+		},
+		"backgroundColor": {
+			"type": "string"
+		},
+		"gradient": {
+			"type": "string"
+		},
+		"backgroundImageId": {
+			"type": "number"
+		},
+		"backgroundImageUrl": {
+			"type": "string"
+		},
+		"backgroundSize": {
+			"type": "string",
+			"default": "cover",
+			"enum": [
+				"cover",
+				"contain",
+				"auto"
+			]
+		},
+		"backgroundPosition": {
+			"type": "string",
+			"default": "center center"
+		},
+		"backgroundRepeat": {
+			"type": "boolean",
+			"default": false
+		}
+	}
+}

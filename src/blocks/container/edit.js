@@ -6,9 +6,7 @@ import {
 import {
 	PanelBody,
 	ToggleControl,
-	RangeControl,
-	UnitControl as UnitControlBase,
-	__experimentalUnitControl,
+	__experimentalUnitControl as UnitControl,
 	Button,
 } from '@wordpress/components';
 import { useSelect, useDispatch } from '@wordpress/data';
@@ -28,9 +26,9 @@ import {
 	OffsetGalleryIcon,
 	CenterOverlayIcon,
 } from './icons';
+import BackgroundControls from '../components/BackgroundControls';
+import { getBackgroundStyle } from '../utils/background-styles';
 import './editor.scss';
-
-const UnitControl = UnitControlBase || __experimentalUnitControl;
 
 const PRESETS = {
 	'side-by-side': [
@@ -187,14 +185,18 @@ const PRESET_BUTTONS = [
 
 export default function Edit({ attributes, setAttributes, clientId }) {
 	const { stackOnMobile, containerHeight } = attributes;
+	
+	const backgroundStyle = getBackgroundStyle(attributes);
+	
 	const blockProps = useBlockProps({
 		className: stackOnMobile ? 'is-stack-on-mobile' : '',
 		style: {
 			height: containerHeight,
 			minHeight: '200px', // Ensure container is visible
+			...backgroundStyle,
 		},
 	});
-	const ALLOWED_BLOCKS = ['photo-collage/image'];
+	const ALLOWED_BLOCKS = ['photo-collage/image', 'photo-collage/frame'];
 
 	const { replaceInnerBlocks } = useDispatch('core/block-editor');
 	const innerBlocks = useSelect(
@@ -204,21 +206,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 		},
 		[clientId]
 	);
-
-	const updateImageCount = (newCount) => {
-		const currentCount = innerBlocks.length;
-
-		if (newCount > currentCount) {
-			const blocksToAdd = newCount - currentCount;
-			const newBlocks = Array.from({ length: blocksToAdd }).map(() =>
-				createBlock('photo-collage/image')
-			);
-			replaceInnerBlocks(clientId, [...innerBlocks, ...newBlocks]);
-		} else if (newCount < currentCount) {
-			const newBlocks = innerBlocks.slice(0, newCount);
-			replaceInnerBlocks(clientId, newBlocks);
-		}
-	};
 
 	const applyPreset = (preset) => {
 		const config = PRESETS[preset];
@@ -302,23 +289,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 							'photo-collage'
 						)}
 					/>
-					<RangeControl
-						label={__('Number of Images', 'photo-collage')}
-						value={innerBlocks.length}
-						onChange={updateImageCount}
-						min={1}
-						max={10}
-						help={
-							innerBlocks.length === 1
-								? __('1 image in collage', 'photo-collage')
-								: `${innerBlocks.length} ${__(
-									'images in collage',
-									'photo-collage'
-								)}`
-						}
-						__next40pxDefaultSize={true}
-						__nextHasNoMarginBottom={true}
-					/>
 				</PanelBody>
 				<PanelBody
 					title={__('Responsive Settings', 'photo-collage')}
@@ -334,6 +304,17 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 							setAttributes({ stackOnMobile: value })
 						}
 						__nextHasNoMarginBottom={true}
+					/>
+				</PanelBody>
+			</InspectorControls>
+			<InspectorControls group="styles">
+				<PanelBody
+					title={__('Background', 'photo-collage')}
+					initialOpen={true}
+				>
+					<BackgroundControls
+						attributes={attributes}
+						setAttributes={setAttributes}
 					/>
 				</PanelBody>
 			</InspectorControls>
