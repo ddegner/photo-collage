@@ -1,17 +1,17 @@
-# Photo Collage
+=== Photo Collage ===
 
-**Contributors:** ddegner  
-**Tags:** block, photo collage, image gallery, overlapping images, visual design  
-**Tested up to:** 6.9  
-**Stable tag:** 0.5.5  
-**Requires at least:** 6.8  
-**Requires PHP:** 8.3  
-**License:** GPL-2.0-or-later  
-**License URI:** https://www.gnu.org/licenses/gpl-2.0.html  
+Contributors: ddegner  
+Tags: block, photo collage, image gallery, overlapping images, visual design  
+Tested up to: 6.9  
+Stable tag: 0.5.5  
+Requires at least: 6.8  
+Requires PHP: 8.3  
+License: GPL-2.0-or-later  
+License URI: https://www.gnu.org/licenses/gpl-2.0.html  
 
 Create stunning photo collages with overlapping images, advanced positioning controls, and professional layout presets.
 
-## Description
+== Description ==
 
 Photo Collage transforms the way you display images in WordPress. Build beautiful, magazine-style photo collages with overlapping images, custom positioning, and professional layout presets - all within the familiar block editor interface.
 
@@ -21,7 +21,7 @@ Perfect for photographers, designers, and content creators who want to showcase 
 
 **GitHub Repository:** [https://github.com/ddegner/photo-collage](https://github.com/ddegner/photo-collage)
 
-### Key Features
+= Key Features =
 
 *   **12 Professional Layout Presets** - Choose from Side by Side, Three Columns, Overlap Left/Right, Grid, Scatter, Hero Layered, Vertical Wave, Staggered Story, Offset Gallery, and Center Overlay
 *   **Advanced Image Controls** - Fine-tune each image with rotation, opacity, padding, margins, and z-index layering
@@ -33,7 +33,7 @@ Perfect for photographers, designers, and content creators who want to showcase 
 *   **Caption Support** - Add captions to individual images within your collage
 *   **Theme Compatible** - Works seamlessly with any WordPress theme that supports the block editor
 
-### Perfect For
+= Perfect For =
 
 *   Photography portfolios
 *   Before/after comparisons
@@ -43,7 +43,7 @@ Perfect for photographers, designers, and content creators who want to showcase 
 *   Magazine-style layouts
 *   Event galleries
 
-### How It Works
+= How It Works =
 
 1.  Add the Photo Collage block to any post or page
 2.  Choose a Quick Layout preset or start from scratch
@@ -51,16 +51,16 @@ Perfect for photographers, designers, and content creators who want to showcase 
 4.  Adjust responsive settings for mobile devices
 5.  Publish and enjoy your stunning photo collage
 
-## Installation
+== Installation ==
 
-### Automatic Installation
+= Automatic Installation =
 
 1.  Log in to your WordPress dashboard
 2.  Navigate to Plugins -> Add New
 3.  Search for "Photo Collage"
 4.  Click "Install Now" and then "Activate"
 
-### Manual Installation
+= Manual Installation =
 
 1.  Download the plugin zip file
 2.  Log in to your WordPress dashboard
@@ -68,59 +68,59 @@ Perfect for photographers, designers, and content creators who want to showcase 
 4.  Choose the downloaded zip file and click "Install Now"
 5.  Activate the plugin through the 'Plugins' screen
 
-## Frequently Asked Questions
+== Frequently Asked Questions ==
 
-### Can I use this with any WordPress theme?
+= Can I use this with any WordPress theme? =
 
 Yes! Photo Collage is designed to work with any WordPress theme that supports the block editor (Gutenberg). The collages are built using standard WordPress blocks and will inherit your theme's styling.
 
-### Is it responsive on mobile devices?
+= Is it responsive on mobile devices? =
 
 Absolutely. You can enable the "Stack on Mobile" option to automatically arrange images vertically on screens smaller than 782px. This ensures your collages look great on all devices.
 
-### How many images can I add to a collage?
+= How many images can I add to a collage? =
 
 You can add as many images as you need. The Quick Layout presets range from 2 to 6 images, but you can manually add more images to any collage.
 
-### Can I adjust the position of individual images?
+= Can I adjust the position of individual images? =
 
 Yes! Each image has extensive positioning controls including margins, padding, absolute positioning (top/right/bottom/left), rotation, opacity, and z-index layering.
 
-### Does it work with the classic editor?
+= Does it work with the classic editor? =
 
 No, Photo Collage requires the block editor (Gutenberg). If you're still using the classic editor, you'll need to switch to the block editor to use this plugin.
 
-### Can I convert existing collages if I uninstall the plugin?
+= Can I convert existing collages if I uninstall the plugin? =
 
 Yes! The plugin includes an uninstall settings page where you can choose to convert your Photo Collage blocks to either static HTML (preserving the visual layout) or core WordPress image blocks (preserving editability) before uninstalling.
 
-### Are there any performance concerns?
+= Are there any performance concerns? =
 
 Photo Collage is optimized for performance. It uses modern CSS for positioning and transforms, avoiding heavy JavaScript. Images are loaded using WordPress's native media handling, which includes lazy loading support.
 
-## Screenshots
+== Screenshots ==
 
 1.  The Photo Collage block in the editor with Quick Layout presets
 2.  Advanced positioning controls for individual images
 3.  Example of an overlapping photo collage on the front-end
 4.  Mobile-responsive stacking in action
 
-## Changelog
+== Changelog ==
 
-### 0.5.5
+= 0.5.5 =
 *   FIX: Fixed PHP linting errors introduced in 0.5.4
 *   IMPROVEMENT: Cleaned up codebase
 
-### 0.5.4
+= 0.5.4 =
 *   IMPROVEMENT: Removed debug code
 *   IMPROVEMENT: Version bump and cleanup
 
-### 0.5.3
+= 0.5.3 =
 *   FIX: Fixed WordPress.org SVN tag deployment
 *   IMPROVEMENT: Removed obsolete development files
 *   IMPROVEMENT: Updated distribution configuration
 
-### 0.5.2
+= 0.5.2 =
 *   SECURITY: Enhanced security with comprehensive output escaping and nonce checks
 *   SECURITY: Added sanitization for all register_settings calls
 *   FIX: Fixed PHP syntax errors for better compatibility
@@ -129,13 +129,13 @@ Photo Collage is optimized for performance. It uses modern CSS for positioning a
 *   IMPROVEMENT: Added composer linting to build process
 *   IMPROVEMENT: Fixed caption spacing consistency between editor and frontend
 
-### 0.5.1
+= 0.5.1 =
 *   IMPROVEMENT: Refactored PHP codebase to adhere to WordPress Coding Standards
 *   IMPROVEMENT: Improved code organization by splitting renderer and attribute classes
 *   DEV: Renamed class files for better PSR-4 and WP standard compliance
 *   DEV: Fixed various coding standard violations (whitespace, yoda conditions, doc blocks)
 
-### 0.5.0
+= 0.5.0 =
 *   IMPROVEMENT: Updated Collage Image block link options to mirror native WordPress Image block
 *   IMPROVEMENT: Added "Link to attachment page" and "Enlarge on click" (Lightbox) support
 *   IMPROVEMENT: Added toggle for image captions in the toolbar
@@ -143,14 +143,14 @@ Photo Collage is optimized for performance. It uses modern CSS for positioning a
 *   FIX: Fixed fallback rendering logic for images with Lightbox enabled
 *   COMPATIBILITY: Tested up to WordPress 6.9
 
-### 0.4.0
+= 0.4.0 =
 *   MODERNIZATION: Updated requirements to PHP 8.3+ and WordPress 6.8+
 *   PERFORMANCE: Implemented strict typing and readonly classes for better performance
 *   SECURITY: Switched to WordPress HTML API for safer HTML generation
 *   DEV EXPERIENCE: Refactored codebase with modern PHP 8.3 features (Enums, Match expressions)
 *   COMPATIBILITY: Full support for latest WordPress features
 
-### 0.3.0
+= 0.3.0 =
 *   Added 12 professional Quick Layout presets (Side by Side, Three Columns, Overlap Left/Right, Grid, Scatter, Hero Layered, Vertical Wave, Staggered Story, Offset Gallery, Center Overlay)
 *   Added rotation and opacity controls for individual images
 *   Added caption, title, and description support for images
@@ -163,7 +163,7 @@ Photo Collage is optimized for performance. It uses modern CSS for positioning a
 *   Added uninstall settings page with block conversion options
 *   Removed unused server-side rendering code
 
-### 0.2.0
+= 0.2.0 =
 *   SECURITY: Added server-side rendering and sanitization to prevent XSS attacks
 *   SECURITY: Implemented CSS value validation to prevent injection attacks
 *   Fixed deprecated API usage (__experimentalUnitControl replaced with stable UnitControl)
@@ -173,7 +173,7 @@ Photo Collage is optimized for performance. It uses modern CSS for positioning a
 *   Updated mobile breakpoint to WordPress standard (782px)
 *   Requires WordPress 6.4+ and PHP 7.4+
 
-### 0.1.0
+= 0.1.0 =
 *   Initial release
 *   Basic photo collage functionality with overlapping images
 *   Z-index layering support
