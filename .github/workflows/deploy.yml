@@ -63,3 +63,19 @@ jobs:
               env:
                   SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
                   SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+
+            - name: Create Release Zip
+              run: |
+                  mkdir -p photo-collage-release/photo-collage
+                  rsync -rc --exclude-from=.distignore . photo-collage-release/photo-collage/
+                  cd photo-collage-release
+                  zip -r ../photo-collage.zip photo-collage
+                  cd ..
+
+            - name: Create GitHub Release
+              uses: softprops/action-gh-release@v1
+              with:
+                  files: photo-collage.zip
+                  generate_release_notes: true
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
