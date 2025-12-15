@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Photo Collage
  * Description:       Blocks for creating freeform photo layouts with more natural and chaotic structures that can overlap.
- * Version:           0.5.4
+ * Version:           0.5.5
  * Requires at least: 6.8
  * Requires PHP:      8.3
  * Author:            David Degner
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Plugin version constant
  */
-define( 'PHOTO_COLLAGE_VERSION', '0.5.4' );
+define( 'PHOTO_COLLAGE_VERSION', '0.5.5' );
 
 /**
  * Registers the blocks.
