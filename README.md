@@ -107,6 +107,9 @@ Photo Collage is optimized for performance. It uses modern CSS for positioning a
 
 ## Changelog
 
+### 0.5.7
+*   FIX: Fixed GitHub release workflow permissions
+
 ### 0.5.6
 *   FIX: Fixed PHP linting errors
 *   IMPROVEMENT: Added correct README.md file

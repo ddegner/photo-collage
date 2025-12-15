@@ -5,6 +5,10 @@ on:
         tags:
             - '*'
 
+permissions:
+    contents: write
+
+
 jobs:
     deploy:
         name: Deploy to WordPress.org
@@ -42,6 +46,7 @@ jobs:
                 # Actually, relying on a custom script might be error prone. 
                 # Let's simple copy the content for now or better, use a regex to convert headers.
                 cp README.md readme.txt
+                sed -i 's/[ \t]*$//' readme.txt
                 sed -i 's/^# \(.*\)/=== \1 ===/' readme.txt
                 sed -i 's/^## \(.*\)/== \1 ==/' readme.txt
                 sed -i 's/^### \(.*\)/= \1 =/' readme.txt
