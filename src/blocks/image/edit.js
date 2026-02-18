@@ -10,6 +10,7 @@ import {
 	RichText,
 	LinkControl as LinkControlBase,
 	AlignmentToolbar,
+	getTypographyClassesAndStyles,
 } from '@wordpress/block-editor';
 import { useInstanceId } from '@wordpress/compose';
 
@@ -18,6 +19,8 @@ import {
 	RangeControl,
 	TextControl,
 	ToggleControl,
+	// WordPress core currently exposes UnitControl only via this export.
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalUnitControl as UnitControl,
 	Button,
 	SelectControl,
@@ -25,13 +28,13 @@ import {
 	ToolbarGroup,
 	ToolbarDropdownMenu,
 	TextareaControl,
+	ExternalLink,
 } from '@wordpress/components';
 import { link as linkIcon } from '@wordpress/icons';
 import './editor.scss';
 import CaptionPositionControl from './components/caption-position-control';
 import BackgroundControls from '../components/BackgroundControls';
 import AbsolutePositionControls from '../components/AbsolutePositionControls';
-import BoxControl from '../components/BoxControl';
 import { getBackgroundStyle } from '../utils/background-styles';
 import { getBlockStyles } from '../utils/positioning-styles';
 
@@ -101,16 +104,15 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 		url,
 		alt,
 		id,
+		aspectRatio = '',
+		sizeSlug = 'large',
+		anchor = '',
 		isDecorative,
 		useAbsolutePosition,
 		top,
 		right,
 		bottom,
 		left,
-		marginTop,
-		marginRight,
-		marginBottom,
-		marginLeft,
 		zIndex,
 		width,
 		height,
@@ -118,7 +120,6 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 		opacity = 1,
 		caption: rawCaption = '',
 		title: rawTitle = '',
-		description: rawDescription = '',
 
 		href,
 		linkTarget,
@@ -128,6 +129,8 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 		captionWidth = '100%',
 		captionPlacement = 'bottom-left',
 		lightbox = { enabled: false },
+		divClass = '',
+		divStyle = '',
 		imgClass = '',
 		imgStyle = '',
 		captionClass = '',
@@ -139,7 +142,6 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 	// Safely extract string values from potentially corrupted attributes
 	const caption = safeStringValue( rawCaption );
 	const title = safeStringValue( rawTitle );
-	const description = safeStringValue( rawDescription );
 
 	const [ isLinkPopoverOpen, setIsLinkPopoverOpen ] = useState( false );
 
@@ -215,7 +217,6 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 			id: media.id,
 			title: media.title?.rendered || media.title || '',
 			caption: media.caption?.rendered || media.caption || '',
-			description: media.description?.rendered || media.description || '',
 			linkDestination: 'none',
 			href: undefined,
 			lightbox: { enabled: false },
@@ -280,6 +281,7 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 	};
 
 	const blockProps = useBlockProps( {
+		id: anchor,
 		style: getBlockStyles( attributes, getBackgroundStyle ),
 	} );
 
@@ -384,31 +386,349 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 			</BlockControls>
 			<InspectorControls>
 				<PanelBody
-					title={ __( 'Dimensions', 'photo-collage' ) }
+					title={ __( 'Settings', 'photo-collage' ) }
 					initialOpen={ true }
 				>
-					<UnitControl
-						label={ __( 'Width', 'photo-collage' ) }
-						id={ `inspector-image-width-${ instanceId }` }
-						value={ width }
+					{ ! isDecorative && (
+						<>
+							<TextareaControl
+								label={ __(
+									'Alternative Text',
+									'photo-collage'
+								) }
+								value={ alt }
+								onChange={ onChangeAlt }
+								help={
+									<>
+										<ExternalLink href="https://www.w3.org/WAI/tutorials/images/decision-tree">
+											{ __(
+												'Describe the purpose of the image',
+												'photo-collage'
+											) }
+										</ExternalLink>
+										{ __(
+											'Leave empty if decorative.',
+											'photo-collage'
+										) }
+									</>
+								}
+								__nextHasNoMarginBottom={ true }
+							/>
+						</>
+					) }
+					<SelectControl
+						label={ __( 'Aspect Ratio', 'photo-collage' ) }
+						value={ aspectRatio }
+						options={ [
+							{
+								label: __( 'Original', 'photo-collage' ),
+								value: 'auto',
+							},
+							{
+								label: __( 'Square (1:1)', 'photo-collage' ),
+								value: '1/1',
+							},
+							{
+								label: __( 'Standard (4:3)', 'photo-collage' ),
+								value: '4/3',
+							},
+							{
+								label: __( 'Portrait (3:4)', 'photo-collage' ),
+								value: '3/4',
+							},
+							{
+								label: __( 'Classic (3:2)', 'photo-collage' ),
+								value: '3/2',
+							},
+							{
+								label: __(
+									'Classic Portrait (2:3)',
+									'photo-collage'
+								),
+								value: '2/3',
+							},
+							{
+								label: __( 'Wide (16:9)', 'photo-collage' ),
+								value: '16/9',
+							},
+							{
+								label: __( 'Tall (9:16)', 'photo-collage' ),
+								value: '9/16',
+							},
+						] }
 						onChange={ ( value ) =>
-							setAttributes( { width: value } )
+							setAttributes( { aspectRatio: value } )
 						}
+						__nextHasNoMarginBottom={ true }
 						__next40pxDefaultSize={ true }
 					/>
-					<UnitControl
-						label={ __( 'Height', 'photo-collage' ) }
-						id={ `inspector-image-height-${ instanceId }` }
-						value={ height }
+					<div
+						className="photo-collage-dimensions-row"
+						style={ { display: 'flex', gap: '10px' } }
+					>
+						<UnitControl
+							label={ __( 'Width', 'photo-collage' ) }
+							value={ width }
+							onChange={ ( value ) =>
+								setAttributes( { width: value } )
+							}
+							__next40pxDefaultSize={ true }
+						/>
+						<UnitControl
+							label={ __( 'Height', 'photo-collage' ) }
+							value={ height }
+							onChange={ ( value ) =>
+								setAttributes( { height: value } )
+							}
+							__next40pxDefaultSize={ true }
+						/>
+					</div>
+					<SelectControl
+						label={ __( 'Resolution', 'photo-collage' ) }
+						value={ sizeSlug }
+						options={ [
+							{
+								label: __( 'Thumbnail', 'photo-collage' ),
+								value: 'thumbnail',
+							},
+							{
+								label: __( 'Medium', 'photo-collage' ),
+								value: 'medium',
+							},
+							{
+								label: __( 'Large', 'photo-collage' ),
+								value: 'large',
+							},
+							{
+								label: __( 'Full Size', 'photo-collage' ),
+								value: 'full',
+							},
+						] }
+						onChange={ ( value ) => {
+							setAttributes( { sizeSlug: value } );
+							if (
+								media &&
+								media.media_details &&
+								media.media_details.sizes &&
+								media.media_details.sizes[ value ]
+							) {
+								setAttributes( {
+									url: media.media_details.sizes[ value ]
+										.source_url,
+								} );
+							} else if (
+								value === 'full' &&
+								media &&
+								media.source_url
+							) {
+								setAttributes( { url: media.source_url } );
+							}
+						} }
+						__nextHasNoMarginBottom={ true }
+						__next40pxDefaultSize={ true }
+					/>
+				</PanelBody>
+
+				<PanelBody
+					title={ __( 'Caption', 'photo-collage' ) }
+					initialOpen={ false }
+				>
+					{ ! isDecorative && (
+						<TextControl
+							label={ __( 'Title', 'photo-collage' ) }
+							value={ title }
+							onChange={ ( value ) =>
+								setAttributes( { title: value } )
+							}
+							help={ __(
+								'Optional. Appears as a tooltip when hovering over the image.',
+								'photo-collage'
+							) }
+							__next40pxDefaultSize={ true }
+							__nextHasNoMarginBottom={ true }
+						/>
+					) }
+					<TextareaControl
+						label={ __( 'Caption', 'photo-collage' ) }
+						value={ caption }
 						onChange={ ( value ) =>
-							setAttributes( { height: value } )
+							setAttributes( { caption: value } )
+						}
+						__nextHasNoMarginBottom={ true }
+					/>
+					<div
+						className="components-base-control"
+						style={ {
+							borderTop: '1px solid #ddd',
+							marginTop: '16px',
+							paddingTop: '16px',
+						} }
+					></div>
+					<p
+						className="components-base-control__label"
+						style={ { marginBottom: '8px' } }
+					>
+						{ __( 'Caption Position', 'photo-collage' ) }
+					</p>
+					<CaptionPositionControl
+						value={ captionPlacement }
+						onChange={ onCaptionPlacementChange }
+					/>
+					<SelectControl
+						label={ __( 'Text Alignment', 'photo-collage' ) }
+						value={ captionAlign }
+						options={ [
+							{
+								label: __( 'Left', 'photo-collage' ),
+								value: 'left',
+							},
+							{
+								label: __( 'Center', 'photo-collage' ),
+								value: 'center',
+							},
+							{
+								label: __( 'Right', 'photo-collage' ),
+								value: 'right',
+							},
+						] }
+						onChange={ ( value ) =>
+							setAttributes( { captionAlign: value } )
+						}
+						__next40pxDefaultSize={ true }
+						__nextHasNoMarginBottom={ true }
+					/>
+					<UnitControl
+						label={ __( 'Caption Width', 'photo-collage' ) }
+						value={ captionWidth }
+						onChange={ ( value ) =>
+							setAttributes( { captionWidth: value } )
 						}
 						__next40pxDefaultSize={ true }
 					/>
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Positioning', 'photo-collage' ) }
+					title={ __( 'Advanced', 'photo-collage' ) }
+					initialOpen={ false }
+				>
+					<TextControl
+						label={ __( 'HTML Anchor', 'photo-collage' ) }
+						value={ anchor }
+						onChange={ ( value ) =>
+							setAttributes( { anchor: value } )
+						}
+						help={ __(
+							'Enter a word or two — without spaces — to make a unique web address just for this block, called an "anchor".',
+							'photo-collage'
+						) }
+						__next40pxDefaultSize={ true }
+						__nextHasNoMarginBottom={ true }
+					/>
+					<ToggleControl
+						label={ __( 'Mark as decorative', 'photo-collage' ) }
+						checked={ isDecorative }
+						onChange={ onToggleDecorative }
+						help={
+							isDecorative
+								? __(
+										'This image will be hidden from screen readers.',
+										'photo-collage'
+								  )
+								: __(
+										'This image requires alt text for screen readers.',
+										'photo-collage'
+								  )
+						}
+						__nextHasNoMarginBottom={ true }
+					/>
+
+					<div
+						style={ {
+							height: '16px',
+							borderTop: '1px solid #ddd',
+							margin: '16px 0',
+						} }
+					/>
+
+					<p className="components-base-control__label">
+						{ __( 'Wrapper Styles', 'photo-collage' ) }
+					</p>
+					<TextControl
+						label={ __( 'DIV CSS Classes', 'photo-collage' ) }
+						value={ divClass }
+						onChange={ ( value ) =>
+							setAttributes( { divClass: value } )
+						}
+						__next40pxDefaultSize={ true }
+						__nextHasNoMarginBottom={ true }
+					/>
+					<TextareaControl
+						label={ __( 'DIV Inline Style', 'photo-collage' ) }
+						value={ divStyle }
+						onChange={ ( value ) =>
+							setAttributes( { divStyle: value } )
+						}
+						__nextHasNoMarginBottom={ true }
+					/>
+
+					<div style={ { height: '16px' } } />
+					<p className="components-base-control__label">
+						{ __( 'Image Styles', 'photo-collage' ) }
+					</p>
+					<TextControl
+						label={ __( 'Image CSS Class', 'photo-collage' ) }
+						value={ imgClass }
+						onChange={ ( value ) =>
+							setAttributes( { imgClass: value } )
+						}
+						__next40pxDefaultSize={ true }
+						__nextHasNoMarginBottom={ true }
+					/>
+					<TextareaControl
+						label={ __( 'Image Inline Style', 'photo-collage' ) }
+						value={ imgStyle }
+						onChange={ ( value ) =>
+							setAttributes( { imgStyle: value } )
+						}
+						__nextHasNoMarginBottom={ true }
+					/>
+
+					{ showCaption && (
+						<>
+							<div style={ { height: '16px' } } />
+							<p className="components-base-control__label">
+								{ __( 'Caption Styles', 'photo-collage' ) }
+							</p>
+							<TextControl
+								label={ __(
+									'Caption CSS Class',
+									'photo-collage'
+								) }
+								value={ captionClass }
+								onChange={ ( value ) =>
+									setAttributes( { captionClass: value } )
+								}
+								__next40pxDefaultSize={ true }
+								__nextHasNoMarginBottom={ true }
+							/>
+							<TextareaControl
+								label={ __(
+									'Caption Inline Style',
+									'photo-collage'
+								) }
+								value={ captionStyle }
+								onChange={ ( value ) =>
+									setAttributes( { captionStyle: value } )
+								}
+								__nextHasNoMarginBottom={ true }
+							/>
+						</>
+					) }
+				</PanelBody>
+			</InspectorControls>
+			<InspectorControls group="styles">
+				<PanelBody
+					title={ __( 'Layout', 'photo-collage' ) }
 					initialOpen={ true }
 				>
 					<ToggleControl
@@ -436,25 +756,6 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 							setAttributes={ setAttributes }
 							instanceId={ instanceId }
 							idPrefix="inspector-image"
-						/>
-					) }
-					{ ! useAbsolutePosition && (
-						<BoxControl
-							values={ {
-								top: marginTop,
-								right: marginRight,
-								bottom: marginBottom,
-								left: marginLeft,
-							} }
-							onChange={ ( side, value ) => {
-								const key = `margin${
-									side.charAt( 0 ).toUpperCase() +
-									side.slice( 1 )
-								}`;
-								setAttributes( { [ key ]: value } );
-							} }
-							centerLabel="M"
-							isDashed={ true }
 						/>
 					) }
 					<div className="photo-collage-z-index-control">
@@ -567,226 +868,7 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Accessibility', 'photo-collage' ) }
-					initialOpen={ true }
-				>
-					<ToggleControl
-						label={ __( 'Mark as decorative', 'photo-collage' ) }
-						id={ `inspector-image-is-decorative-${ instanceId }` }
-						help={
-							isDecorative
-								? __(
-										'This image will be hidden from screen readers.',
-										'photo-collage'
-								  )
-								: __(
-										'This image requires alt text for screen readers.',
-										'photo-collage'
-								  )
-						}
-						checked={ isDecorative }
-						onChange={ onToggleDecorative }
-						__nextHasNoMarginBottom={ true }
-					/>
-					{ ! isDecorative && (
-						<>
-							<TextControl
-								label={ __( 'Alt Text', 'photo-collage' ) }
-								id={ `inspector-image-alt-${ instanceId }` }
-								value={ alt }
-								onChange={ onChangeAlt }
-								help={ __(
-									'Describe what the image shows and its purpose in the collage.',
-									'photo-collage'
-								) }
-								placeholder={ __(
-									'Enter image description…',
-									'photo-collage'
-								) }
-								__next40pxDefaultSize={ true }
-								__nextHasNoMarginBottom={ true }
-							/>
-							<TextControl
-								label={ __( 'Title', 'photo-collage' ) }
-								id={ `inspector-image-title-${ instanceId }` }
-								value={ title }
-								onChange={ ( value ) =>
-									setAttributes( { title: value } )
-								}
-								help={ __(
-									'Optional. Appears as a tooltip when hovering over the image.',
-									'photo-collage'
-								) }
-								placeholder={ __(
-									'Enter image title…',
-									'photo-collage'
-								) }
-								__next40pxDefaultSize={ true }
-								__nextHasNoMarginBottom={ true }
-							/>
-							<TextControl
-								label={ __( 'Description', 'photo-collage' ) }
-								id={ `inspector-image-description-${ instanceId }` }
-								value={ description }
-								onChange={ ( value ) =>
-									setAttributes( { description: value } )
-								}
-								help={ __(
-									'Optional. Extended description for additional context.',
-									'photo-collage'
-								) }
-								placeholder={ __(
-									'Enter extended description…',
-									'photo-collage'
-								) }
-								__next40pxDefaultSize={ true }
-								__nextHasNoMarginBottom={ true }
-							/>
-						</>
-					) }
-				</PanelBody>
-
-				<PanelBody
-					title={ __( 'Caption Settings', 'photo-collage' ) }
-					initialOpen={ true }
-				>
-					<ToggleControl
-						label={ __( 'Show Caption', 'photo-collage' ) }
-						id={ `inspector-image-show-caption-${ instanceId }` }
-						checked={ showCaption }
-						onChange={ () =>
-							setAttributes( { showCaption: ! showCaption } )
-						}
-						__nextHasNoMarginBottom={ true }
-					/>
-					{ showCaption && (
-						<>
-							<p
-								className="components-base-control__label"
-								style={ { marginBottom: '8px' } }
-							>
-								{ __( 'Caption Position', 'photo-collage' ) }
-							</p>
-							<CaptionPositionControl
-								value={ captionPlacement }
-								onChange={ onCaptionPlacementChange }
-							/>
-							<SelectControl
-								label={ __(
-									'Text Alignment',
-									'photo-collage'
-								) }
-								id={ `inspector-image-caption-align-${ instanceId }` }
-								value={ captionAlign }
-								options={ [
-									{
-										label: __( 'Left', 'photo-collage' ),
-										value: 'left',
-									},
-									{
-										label: __( 'Center', 'photo-collage' ),
-										value: 'center',
-									},
-									{
-										label: __( 'Right', 'photo-collage' ),
-										value: 'right',
-									},
-								] }
-								onChange={ ( value ) =>
-									setAttributes( { captionAlign: value } )
-								}
-								__next40pxDefaultSize={ true }
-								__nextHasNoMarginBottom={ true }
-							/>
-							<UnitControl
-								label={ __( 'Caption Width', 'photo-collage' ) }
-								id={ `inspector-image-caption-width-${ instanceId }` }
-								value={ captionWidth }
-								onChange={ ( value ) =>
-									setAttributes( { captionWidth: value } )
-								}
-								__next40pxDefaultSize={ true }
-							/>
-						</>
-					) }
-				</PanelBody>
-
-				<PanelBody
-					title={ __( 'Custom Styles', 'photo-collage' ) }
-					initialOpen={ false }
-				>
-					<p className="components-base-control__label">
-						{ __( 'Image Styles', 'photo-collage' ) }
-					</p>
-					<TextControl
-						label={ __( 'Image CSS Class', 'photo-collage' ) }
-						value={ imgClass }
-						onChange={ ( value ) =>
-							setAttributes( { imgClass: value } )
-						}
-						help={ __(
-							'Add custom CSS classes to the image element.',
-							'photo-collage'
-						) }
-						__next40pxDefaultSize={ true }
-						__nextHasNoMarginBottom={ true }
-					/>
-					<TextareaControl
-						label={ __( 'Image Inline Style', 'photo-collage' ) }
-						value={ imgStyle }
-						onChange={ ( value ) =>
-							setAttributes( { imgStyle: value } )
-						}
-						help={ __(
-							'Add custom inline CSS styles to the image element (e.g., border: 1px solid red;).',
-							'photo-collage'
-						) }
-						__nexthasNoMarginBottom={ true }
-					/>
-
-					{ showCaption && (
-						<>
-							<div style={ { height: '20px' } } />
-							<p className="components-base-control__label">
-								{ __( 'Caption Styles', 'photo-collage' ) }
-							</p>
-							<TextControl
-								label={ __(
-									'Caption CSS Class',
-									'photo-collage'
-								) }
-								value={ captionClass }
-								onChange={ ( value ) =>
-									setAttributes( { captionClass: value } )
-								}
-								help={ __(
-									'Add custom CSS classes to the caption element.',
-									'photo-collage'
-								) }
-								__next40pxDefaultSize={ true }
-								__nextHasNoMarginBottom={ true }
-							/>
-							<TextareaControl
-								label={ __(
-									'Caption Inline Style',
-									'photo-collage'
-								) }
-								value={ captionStyle }
-								onChange={ ( value ) =>
-									setAttributes( { captionStyle: value } )
-								}
-								help={ __(
-									'Add custom inline CSS styles to the caption element.',
-									'photo-collage'
-								) }
-								__nexthasNoMarginBottom={ true }
-							/>
-						</>
-					) }
-				</PanelBody>
-
-				<PanelBody
-					title={ __( 'Background', 'photo-collage' ) }
+					title={ __( 'Background Image', 'photo-collage' ) }
 					initialOpen={ false }
 				>
 					<BackgroundControls
@@ -848,6 +930,7 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 									style={ {
 										textAlign: captionAlign,
 										width: captionWidth,
+										flex: '0 0 ' + captionWidth,
 									} }
 								/>
 							</>
@@ -856,7 +939,14 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 						src={ url }
 						alt={ alt }
 						style={ {
-							objectFit: 'contain',
+							objectFit:
+								aspectRatio && aspectRatio !== 'auto'
+									? 'cover'
+									: 'contain',
+							aspectRatio:
+								aspectRatio && aspectRatio !== 'auto'
+									? aspectRatio
+									: undefined,
 							width:
 								showCaption &&
 								( captionPlacement.startsWith( 'left-' ) ||
@@ -892,7 +982,23 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 								</BlockControls>
 								<RichText
 									tagName="figcaption"
-									className="photo-collage-image-caption wp-element-caption"
+									className={ `photo-collage-image-caption wp-element-caption ${
+										attributes.fontSize
+											? 'has-' +
+											  attributes.fontSize +
+											  '-font-size'
+											: ''
+									} ${
+										attributes.fontFamily
+											? 'has-' +
+											  attributes.fontFamily +
+											  '-font-family'
+											: ''
+									} ${
+										getTypographyClassesAndStyles(
+											attributes
+										)?.className || ''
+									}` }
 									placeholder={ __(
 										'Write caption…',
 										'photo-collage'
@@ -914,6 +1020,28 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 									style={ {
 										textAlign: captionAlign,
 										width: captionWidth,
+										flex: '0 0 ' + captionWidth,
+										fontSize:
+											attributes.style?.typography
+												?.fontSize,
+										fontWeight:
+											attributes.style?.typography
+												?.fontWeight,
+										fontStyle:
+											attributes.style?.typography
+												?.fontStyle,
+										lineHeight:
+											attributes.style?.typography
+												?.lineHeight,
+										fontFamily:
+											attributes.style?.typography
+												?.fontFamily,
+										textDecoration:
+											attributes.style?.typography
+												?.textDecoration,
+										...( getTypographyClassesAndStyles(
+											attributes
+										)?.style || {} ),
 									} }
 								/>
 							</>

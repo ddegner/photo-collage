@@ -22,7 +22,7 @@
 	&.is-center {
 		justify-content: center;
 
-		> * {
+		>* {
 			width: 120px;
 		}
 	}
@@ -30,7 +30,7 @@
 	&.is-space-between {
 		justify-content: space-between;
 
-		> * {
+		>* {
 			flex: 1;
 		}
 	}
@@ -122,4 +122,35 @@
 
 .photo-collage-unit-control-small {
 	width: 80px;
+}
+
+// BoxControl Overrides - make input fields wider to show 3+ characters
+.components-box-control {
+
+	// Widen the unit control inputs within box control
+	.components-unit-control-wrapper {
+		// Minimum width to show values like "10%" or "-5%"
+		min-width: 70px;
+
+		input[type="number"] {
+			// Ensure number input has enough space
+			min-width: 45px;
+			text-align: center;
+		}
+	}
+
+	// Also target the input group
+	.components-input-control__input {
+		min-width: 40px;
+		text-align: center;
+	}
+}
+
+// Layout panel BoxControl specific overrides
+.components-panel__body .components-box-control {
+
+	.components-unit-control-wrapper {
+		flex: 1;
+		min-width: 60px;
+	}
 }

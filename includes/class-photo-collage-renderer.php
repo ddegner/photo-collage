@@ -22,6 +22,7 @@ final class Photo_Collage_Renderer {
 
 
 
+
 	/**
 	 * Normalize attributes with defaults
 	 *
@@ -45,21 +46,6 @@ final class Photo_Collage_Renderer {
 			'z-index' => $attributes->z_index,
 		);
 
-		// Legacy padding support for backwards compatibility
-		// WordPress native spacing (style.spacing.padding) is handled by get_block_wrapper_attributes().
-		if ( ! empty( $attributes->padding_top ) && '0%' !== $attributes->padding_top ) {
-			$styles['padding-top'] = $attributes->padding_top;
-		}
-		if ( ! empty( $attributes->padding_right ) && '0%' !== $attributes->padding_right ) {
-			$styles['padding-right'] = $attributes->padding_right;
-		}
-		if ( ! empty( $attributes->padding_bottom ) && '0%' !== $attributes->padding_bottom ) {
-			$styles['padding-bottom'] = $attributes->padding_bottom;
-		}
-		if ( ! empty( $attributes->padding_left ) && '0%' !== $attributes->padding_left ) {
-			$styles['padding-left'] = $attributes->padding_left;
-		}
-
 		// If aligned, and width is default, remove inline width to let alignment classes handle it.
 		if ( ! empty( $attributes->align ) && '50%' === $attributes->width ) {
 			unset( $styles['width'] );
@@ -74,8 +60,7 @@ final class Photo_Collage_Renderer {
 				'left'     => $attributes->left,
 			);
 		} else {
-			// Only apply default margins if NOT aligned or if user explicitly set custom margins.
-			// This allows standard alignment classes (aligncenter, alignleft, etc.) to work.
+			// If aligned and margins are defaults, allow alignment classes to control margins.
 			$has_custom_margins = (
 				'0%' !== $attributes->margin_top ||
 				'0%' !== $attributes->margin_right ||
@@ -83,7 +68,11 @@ final class Photo_Collage_Renderer {
 				'0%' !== $attributes->margin_left
 			);
 
-			if ( empty( $attributes->align ) || $has_custom_margins ) {
+			if ( ! empty( $attributes->align ) && ! $has_custom_margins ) {
+				$styles += array(
+					'position' => 'relative',
+				);
+			} else {
 				$styles += array(
 					'position'      => 'relative',
 					'margin-top'    => $attributes->margin_top,
@@ -91,8 +80,6 @@ final class Photo_Collage_Renderer {
 					'margin-bottom' => $attributes->margin_bottom,
 					'margin-left'   => $attributes->margin_left,
 				);
-			} else {
-				$styles += array( 'position' => 'relative' );
 			}
 		}
 
@@ -118,13 +105,13 @@ final class Photo_Collage_Renderer {
 
 		switch ( $attributes->background_type ) {
 			case 'color':
-				if ( ! empty( $attributes->background_color ) ) {
+				if ( ! $attributes->has_native_background && ! empty( $attributes->background_color ) ) {
 					$styles['background-color'] = $attributes->background_color;
 				}
 				break;
 
 			case 'gradient':
-				if ( ! empty( $attributes->gradient ) ) {
+				if ( ! $attributes->has_native_background && ! empty( $attributes->gradient ) ) {
 					$styles['background-image'] = $attributes->gradient;
 				}
 				break;
@@ -171,9 +158,15 @@ final class Photo_Collage_Renderer {
 	 * Generate inner HTML using WP_HTML_Tag_Processor
 	 *
 	 * @param Photo_Collage_Block_Attributes $attributes Normalized attributes.
+	 * @param string                         $typography_classes Typography CSS classes for caption.
+	 * @param string                         $typography_styles Typography inline styles for caption.
 	 * @return string HTML content.
 	 */
-	public static function render_inner_html( Photo_Collage_Block_Attributes $attributes ): string {
+	public static function render_inner_html(
+		Photo_Collage_Block_Attributes $attributes,
+		string $typography_classes = '',
+		string $typography_styles = ''
+	): string {
 		if ( empty( $attributes->url ) ) {
 			return '';
 		}
@@ -183,6 +176,10 @@ final class Photo_Collage_Renderer {
 		$alt_attr      = $is_decorative ? '' : $attributes->alt;
 
 		$img_style = 'object-fit: contain;';
+		if ( ! empty( $attributes->aspect_ratio ) && 'auto' !== $attributes->aspect_ratio ) {
+			// Convert ratio string (e.g. "16/9") to CSS property if needed, though aspect-ratio supports "16/9".
+			$img_style = "aspect-ratio: {$attributes->aspect_ratio}; object-fit: cover;";
+		}
 
 		if ( $has_caption ) {
 			$placement       = $attributes->caption_placement;
@@ -246,7 +243,8 @@ final class Photo_Collage_Renderer {
 				$img_attributes['style']              .= ' cursor: zoom-in;';
 			}
 
-			$img_html = wp_get_attachment_image( $attributes->id, 'full', false, $img_attributes );
+			$image_size = ! empty( $attributes->size_slug ) ? $attributes->size_slug : 'full';
+			$img_html   = wp_get_attachment_image( $attributes->id, $image_size, false, $img_attributes );
 
 			// Fallback if image ID is invalid or deleted.
 			if ( empty( $img_html ) ) {
@@ -286,7 +284,13 @@ final class Photo_Collage_Renderer {
 		$caption_style = '';
 		$figure_style  = '';
 		if ( $has_caption ) {
-			$caption_style = "text-align: {$attributes->caption_align}; width: {$attributes->caption_width};";
+			$caption_style = "text-align: {$attributes->caption_align}; width: {$attributes->caption_width}; flex: 0 0 {$attributes->caption_width};";
+
+			// Add typography styles.
+			if ( ! empty( $typography_styles ) ) {
+				$caption_style .= ' ' . $typography_styles;
+			}
+
 			if ( ! empty( $attributes->caption_style ) ) {
 				$caption_style .= ' ' . $attributes->caption_style;
 			}
@@ -317,20 +321,23 @@ final class Photo_Collage_Renderer {
 			$caption_before_image = str_starts_with( $placement, 'left-' ) || str_starts_with( $placement, 'top-' );
 		}
 
+		// Caption classes - include typography classes for proper styling.
+		$caption_classes = trim( 'photo-collage-image-caption wp-element-caption ' . $typography_classes . ' ' . $attributes->caption_class );
+
 		$html = match ( true ) {
 			$has_caption && $caption_before_image => sprintf(
-				'<figure class="photo-collage-image-figure" style="%s"><figcaption class="photo-collage-image-caption wp-element-caption %s" style="%s">%s</figcaption>%s</figure>',
+				'<figure class="photo-collage-image-figure" style="%s"><figcaption class="%s" style="%s">%s</figcaption>%s</figure>',
 				esc_attr( $figure_style ),
-				esc_attr( $attributes->caption_class ),
+				esc_attr( $caption_classes ),
 				esc_attr( $caption_style ),
 				wp_kses_post( $attributes->caption ),
 				$img_html
 			),
 			$has_caption => sprintf(
-				'<figure class="photo-collage-image-figure" style="%s">%s<figcaption class="photo-collage-image-caption wp-element-caption %s" style="%s">%s</figcaption></figure>',
+				'<figure class="photo-collage-image-figure" style="%s">%s<figcaption class="%s" style="%s">%s</figcaption></figure>',
 				esc_attr( $figure_style ),
 				$img_html,
-				esc_attr( $attributes->caption_class ),
+				esc_attr( $caption_classes ),
 				esc_attr( $caption_style ),
 				wp_kses_post( $attributes->caption )
 			),

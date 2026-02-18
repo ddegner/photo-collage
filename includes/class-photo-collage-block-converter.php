@@ -22,18 +22,89 @@ require_once __DIR__ . '/class-photo-collage-renderer.php';
  */
 final class Photo_Collage_Block_Converter {
 
+	/**
+	 * Cache group for collage scan query results.
+	 *
+	 * @var string
+	 */
+	private const COLLAGE_SCAN_CACHE_GROUP = 'photo_collage';
+
+	/**
+	 * Cache TTL for collage scan query results.
+	 *
+	 * @var int
+	 */
+	private const COLLAGE_SCAN_CACHE_TTL = 300;
 
 
 	/**
-	 * Get the base WHERE clause for finding posts with collage blocks.
+	 * Get public post types we should scan for collage blocks.
 	 *
-	 * @return string SQL WHERE clause fragment.
+	 * @return array<string>
 	 */
-	private static function get_collage_posts_where_clause(): string {
-		global $wpdb;
-		return "post_content LIKE '%wp:photo-collage/container%' 
-            AND post_status IN ('publish', 'draft', 'pending', 'future', 'private') 
-            AND post_type IN ('post', 'page')";
+	private static function get_supported_post_types(): array {
+		$post_types = get_post_types( array( 'public' => true ), 'names' );
+		$excluded   = array(
+			'attachment',
+			'wp_block',
+			'wp_navigation',
+			'wp_template',
+			'wp_template_part',
+			'wp_font_face',
+			'wp_global_styles',
+		);
+
+		return array_values( array_diff( $post_types, $excluded ) );
+	}
+
+	/**
+	 * Get all posts that contain photo collage blocks.
+	 *
+	 * @return array<WP_Post>
+	 */
+	private static function get_collage_posts(): array {
+		$post_types = self::get_supported_post_types();
+		if ( empty( $post_types ) ) {
+			return array();
+		}
+
+		$cache_seed = wp_json_encode( $post_types );
+		if ( false === $cache_seed ) {
+			$cache_seed = implode( '|', $post_types );
+		}
+
+		$cache_key    = 'collage_posts_' . md5( $cache_seed );
+		$cached_posts = wp_cache_get( $cache_key, self::COLLAGE_SCAN_CACHE_GROUP );
+
+		if ( false !== $cached_posts && is_array( $cached_posts ) ) {
+			return $cached_posts;
+		}
+
+		$posts = get_posts(
+			array(
+				'post_type'      => $post_types,
+				'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private' ),
+				'posts_per_page' => -1,
+				'orderby'        => 'ID',
+				'order'          => 'ASC',
+				's'              => 'wp:photo-collage/container',
+				'search_columns' => array( 'post_content' ),
+				'no_found_rows'  => true,
+			)
+		);
+
+		$collage_posts = array_values(
+			array_filter(
+				$posts,
+				static function ( $post ): bool {
+					return $post instanceof WP_Post && str_contains( (string) $post->post_content, 'wp:photo-collage/container' );
+				}
+			)
+		);
+
+		wp_cache_set( $cache_key, $collage_posts, self::COLLAGE_SCAN_CACHE_GROUP, self::COLLAGE_SCAN_CACHE_TTL );
+
+		return $collage_posts;
 	}
 
 	/**
@@ -42,16 +113,14 @@ final class Photo_Collage_Block_Converter {
 	 * @return array<int> Array of post IDs.
 	 */
 	public static function get_posts_with_collage_blocks(): array {
-		global $wpdb;
+		$posts = self::get_collage_posts();
 
-		$where = self::get_collage_posts_where_clause();
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$post_ids = $wpdb->get_col(
-			"SELECT ID FROM {$wpdb->posts} WHERE {$where}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		) ?? array();
-
-		return array_map( 'intval', $post_ids );
+		return array_map(
+			static function ( WP_Post $post ): int {
+				return (int) $post->ID;
+			},
+			$posts
+		);
 	}
 
 	/**
@@ -60,14 +129,35 @@ final class Photo_Collage_Block_Converter {
 	 * @return array<string> Array of post content strings.
 	 */
 	public static function get_collage_post_content(): array {
-		global $wpdb;
+		$posts = self::get_collage_posts();
 
-		$where = self::get_collage_posts_where_clause();
+		return array_map(
+			static function ( WP_Post $post ): string {
+				return (string) $post->post_content;
+			},
+			$posts
+		);
+	}
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		return $wpdb->get_col(
-			"SELECT post_content FROM {$wpdb->posts} WHERE {$where}" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		) ?? array();
+	/**
+	 * Get detailed post records containing collage blocks.
+	 *
+	 * @return array<object{ID:int,post_title:string,post_content:string,post_type:string}>
+	 */
+	public static function get_posts_with_collage_blocks_details(): array {
+		$posts = self::get_collage_posts();
+
+		return array_map(
+			static function ( WP_Post $post ): object {
+				return (object) array(
+					'ID'           => (int) $post->ID,
+					'post_title'   => (string) $post->post_title,
+					'post_content' => (string) $post->post_content,
+					'post_type'    => (string) $post->post_type,
+				);
+			},
+			$posts
+		);
 	}
 
 	/**
@@ -176,9 +266,7 @@ final class Photo_Collage_Block_Converter {
 		$html = sprintf( '<div class="%s" style="%s">', esc_attr( $classes ), esc_attr( $style ) );
 
 		foreach ( $inner_blocks as $inner_block ) {
-			if ( ( $inner_block['blockName'] ?? '' ) === 'photo-collage/image' ) {
-				$html .= $this->generate_image_html( $inner_block );
-			}
+			$html .= $this->render_static_inner_block( $inner_block );
 		}
 
 		$html .= '</div>';
@@ -212,13 +300,18 @@ final class Photo_Collage_Block_Converter {
 		// get_container_styles accepts object.
 		$styles       = Photo_Collage_Renderer::get_container_styles( $normalized_attrs );
 		$style_string = Photo_Collage_Renderer::build_style_string( $styles );
+		if ( ! empty( $attrs['divStyle'] ) ) {
+			$style_string .= ' ' . $attrs['divStyle'];
+		}
 
 		// Render inner content (accepts object).
 		$inner_html = Photo_Collage_Renderer::render_inner_html( $normalized_attrs );
 
 		// Wrap with static class.
-		$html = sprintf(
-			'<div class="photo-collage-image-static" style="%s; box-sizing: border-box;">',
+		$wrapper_class = trim( 'photo-collage-image-static ' . (string) ( $attrs['divClass'] ?? '' ) );
+		$html          = sprintf(
+			'<div class="%s" style="%s; box-sizing: border-box;">',
+			esc_attr( $wrapper_class ),
 			esc_attr( $style_string )
 		);
 
@@ -229,56 +322,189 @@ final class Photo_Collage_Block_Converter {
 	}
 
 	/**
-	 * Convert collage to Core Group with Image blocks
+	 * Render an inner block as static HTML.
+	 *
+	 * @param array $inner_block Parsed block.
+	 * @return string
+	 */
+	private function render_static_inner_block( array $inner_block ): string {
+		$block_name = $inner_block['blockName'] ?? '';
+
+		return match ( $block_name ) {
+			'photo-collage/image' => $this->generate_image_html( $inner_block ),
+			'photo-collage/frame' => $this->generate_frame_html( $inner_block ),
+			default => render_block( $inner_block ),
+		};
+	}
+
+	/**
+	 * Generate static HTML for a frame block.
+	 *
+	 * @param array $frame_block Frame block data.
+	 * @return string
+	 */
+	private function generate_frame_html( array $frame_block ): string {
+		$attrs        = $frame_block['attrs'] ?? array();
+		$inner_blocks = $frame_block['innerBlocks'] ?? array();
+
+		$normalized_attrs = Photo_Collage_Renderer::normalize_attributes( $attrs );
+		$styles           = Photo_Collage_Renderer::get_container_styles( $normalized_attrs );
+		$background       = Photo_Collage_Renderer::get_background_styles( $normalized_attrs );
+		$style_string     = Photo_Collage_Renderer::build_style_string( array_merge( $styles, $background ) );
+		$wrapper_class    = trim( 'photo-collage-frame-static ' . (string) ( $attrs['className'] ?? '' ) );
+
+		$html = sprintf(
+			'<div class="%s" style="%s; box-sizing: border-box;">',
+			esc_attr( $wrapper_class ),
+			esc_attr( $style_string )
+		);
+
+		foreach ( $inner_blocks as $inner_block ) {
+			$html .= $this->render_static_inner_block( $inner_block );
+		}
+
+		$html .= '</div>';
+
+		return $html;
+	}
+
+	/**
+	 * Convert collage to Core Group with converted inner blocks.
 	 *
 	 * @param array $block Block data.
 	 * @return array New block data (Group block).
 	 */
 	private function convert_to_core_blocks( array $block ): array {
-		$inner_blocks     = $block['innerBlocks'] ?? array();
+		$inner_blocks = $block['innerBlocks'] ?? array();
+		return $this->build_core_group_block( $this->convert_inner_blocks_to_core( $inner_blocks ) );
+	}
+
+	/**
+	 * Convert child blocks to core equivalents for uninstall conversion.
+	 *
+	 * @param array $inner_blocks Child blocks.
+	 * @return array
+	 */
+	private function convert_inner_blocks_to_core( array $inner_blocks ): array {
 		$new_inner_blocks = array();
-
 		foreach ( $inner_blocks as $inner_block ) {
-			if ( ( $inner_block['blockName'] ?? '' ) === 'photo-collage/image' ) {
-				$attrs = $inner_block['attrs'] ?? array();
-				if ( empty( $attrs['url'] ) ) {
-					continue;
+			$block_name = $inner_block['blockName'] ?? '';
+
+			if ( 'photo-collage/image' === $block_name ) {
+				$converted_image = $this->convert_image_to_core_image( $inner_block );
+				if ( null !== $converted_image ) {
+					$new_inner_blocks[] = $converted_image;
 				}
+				continue;
+			}
 
-				$image_attrs = array(
-					'url'     => $attrs['url'],
-					'alt'     => $attrs['alt'] ?? '',
-					'caption' => $attrs['caption'] ?? '',
-					'title'   => $attrs['title'] ?? '',
-					'id'      => $attrs['id'] ?? null,
+			if ( 'photo-collage/frame' === $block_name ) {
+				$frame_inner_blocks = $inner_block['innerBlocks'] ?? array();
+				$new_inner_blocks[] = $this->build_core_group_block(
+					$this->convert_inner_blocks_to_core( $frame_inner_blocks )
 				);
+				continue;
+			}
 
-				// Create core/image block using WP_HTML_Tag_Processor.
-				// Start with figure and img skeleton.
-				$tags = new WP_HTML_Tag_Processor( '<figure class="wp-block-image"><img /></figure>' );
+			$new_inner_blocks[] = $inner_block;
+		}
 
-				// Configure img.
-				$tags->next_tag( 'img' );
-				$tags->set_attribute( 'src', $attrs['url'] );
-				$tags->set_attribute( 'alt', $attrs['alt'] ?? '' );
+		return $new_inner_blocks;
+	}
 
-				if ( isset( $attrs['id'] ) ) {
-					$tags->set_attribute( 'class', 'wp-image-' . $attrs['id'] );
-				}
+	/**
+	 * Convert a collage image block to core/image.
+	 *
+	 * @param array $image_block Image block data.
+	 * @return array|null
+	 */
+	private function convert_image_to_core_image( array $image_block ): ?array {
+		$attrs = $image_block['attrs'] ?? array();
+		if ( empty( $attrs['url'] ) ) {
+			return null;
+		}
 
-				$img_html = $tags->get_updated_html();
-
-				$new_inner_blocks[] = array(
-					'blockName'    => 'core/image',
-					'attrs'        => $image_attrs,
-					'innerBlocks'  => array(),
-					'innerHTML'    => $img_html,
-					'innerContent' => array( $img_html ),
-				);
+		$image_attrs = array(
+			'url'      => (string) $attrs['url'],
+			'alt'      => (string) ( $attrs['alt'] ?? '' ),
+			'sizeSlug' => (string) ( $attrs['sizeSlug'] ?? 'full' ),
+		);
+		if ( ! empty( $attrs['id'] ) ) {
+			$image_attrs['id'] = (int) $attrs['id'];
+		}
+		if ( ! empty( $attrs['href'] ) ) {
+			$image_attrs['href']            = (string) $attrs['href'];
+			$image_attrs['linkDestination'] = 'custom';
+			if ( ! empty( $attrs['linkTarget'] ) ) {
+				$image_attrs['linkTarget'] = (string) $attrs['linkTarget'];
+			}
+			if ( ! empty( $attrs['rel'] ) ) {
+				$image_attrs['rel'] = (string) $attrs['rel'];
 			}
 		}
 
-		// Return a Group block containing the images.
+		$img_tags = new WP_HTML_Tag_Processor( '<img />' );
+		$img_tags->next_tag();
+		$img_tags->set_attribute( 'src', (string) $attrs['url'] );
+		$img_tags->set_attribute( 'alt', (string) ( $attrs['alt'] ?? '' ) );
+		if ( ! empty( $attrs['id'] ) ) {
+			$img_tags->set_attribute( 'class', 'wp-image-' . (int) $attrs['id'] );
+		}
+		if ( ! empty( $attrs['title'] ) ) {
+			$img_tags->set_attribute( 'title', (string) $attrs['title'] );
+		}
+
+		$image_html = $img_tags->get_updated_html();
+		if ( ! empty( $attrs['href'] ) ) {
+			$link_tags = new WP_HTML_Tag_Processor( '<a></a>' );
+			$link_tags->next_tag();
+			$link_tags->set_attribute( 'href', (string) $attrs['href'] );
+			if ( ! empty( $attrs['linkTarget'] ) ) {
+				$link_tags->set_attribute( 'target', (string) $attrs['linkTarget'] );
+			}
+			if ( ! empty( $attrs['rel'] ) ) {
+				$link_tags->set_attribute( 'rel', (string) $attrs['rel'] );
+			}
+			$link_open  = str_replace( '</a>', '', $link_tags->get_updated_html() );
+			$image_html = $link_open . $image_html . '</a>';
+		}
+
+		$caption_html = '';
+		if ( ! empty( $attrs['caption'] ) ) {
+			$caption_html = sprintf(
+				'<figcaption class="wp-element-caption">%s</figcaption>',
+				wp_kses_post( (string) $attrs['caption'] )
+			);
+		}
+
+		$figure_html = sprintf(
+			'<figure class="wp-block-image">%s%s</figure>',
+			$image_html,
+			$caption_html
+		);
+
+		return array(
+			'blockName'    => 'core/image',
+			'attrs'        => $image_attrs,
+			'innerBlocks'  => array(),
+			'innerHTML'    => $figure_html,
+			'innerContent' => array( $figure_html ),
+		);
+	}
+
+	/**
+	 * Build a core/group wrapper with correctly matched innerContent placeholders.
+	 *
+	 * @param array $inner_blocks Inner block list.
+	 * @return array
+	 */
+	private function build_core_group_block( array $inner_blocks ): array {
+		$inner_content = array_merge(
+			array( '<div class="wp-block-group">' ),
+			array_fill( 0, count( $inner_blocks ), null ),
+			array( '</div>' )
+		);
+
 		return array(
 			'blockName'    => 'core/group',
 			'attrs'        => array(
@@ -287,9 +513,9 @@ final class Photo_Collage_Block_Converter {
 					'orientation' => 'vertical',
 				),
 			),
-			'innerBlocks'  => $new_inner_blocks,
+			'innerBlocks'  => $inner_blocks,
 			'innerHTML'    => '<div class="wp-block-group"></div>',
-			'innerContent' => array( '<div class="wp-block-group">', null, '</div>' ),
+			'innerContent' => $inner_content,
 		);
 	}
 }

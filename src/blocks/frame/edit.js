@@ -9,12 +9,13 @@ import {
 	PanelBody,
 	RangeControl,
 	ToggleControl,
+	// WordPress core currently exposes UnitControl only via this export.
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalUnitControl as UnitControl,
 	Button,
 } from '@wordpress/components';
 import BackgroundControls from '../components/BackgroundControls';
 import AbsolutePositionControls from '../components/AbsolutePositionControls';
-import BoxControl from '../components/BoxControl';
 import { getBackgroundStyle } from '../utils/background-styles';
 import { getBlockStyles } from '../utils/positioning-styles';
 import './editor.scss';
@@ -26,10 +27,6 @@ export default function Edit( { attributes, setAttributes } ) {
 		right,
 		bottom,
 		left,
-		marginTop,
-		marginRight,
-		marginBottom,
-		marginLeft,
 		zIndex,
 		width,
 		height,
@@ -50,6 +47,45 @@ export default function Edit( { attributes, setAttributes } ) {
 	return (
 		<>
 			<InspectorControls>
+				<PanelBody
+					title={ __( 'Effects', 'photo-collage' ) }
+					initialOpen={ true }
+				>
+					<RangeControl
+						label={ __( 'Rotation', 'photo-collage' ) }
+						value={ rotation }
+						onChange={ ( value ) =>
+							setAttributes( { rotation: value } )
+						}
+						min={ -180 }
+						max={ 180 }
+						__next40pxDefaultSize={ true }
+					/>
+					<RangeControl
+						label={ __( 'Opacity', 'photo-collage' ) }
+						value={ opacity }
+						onChange={ ( value ) =>
+							setAttributes( { opacity: value } )
+						}
+						min={ 0 }
+						max={ 1 }
+						step={ 0.1 }
+						__next40pxDefaultSize={ true }
+					/>
+				</PanelBody>
+
+				<PanelBody
+					title={ __( 'Background Image', 'photo-collage' ) }
+					initialOpen={ false }
+				>
+					<BackgroundControls
+						attributes={ attributes }
+						setAttributes={ setAttributes }
+					/>
+				</PanelBody>
+			</InspectorControls>
+
+			<InspectorControls group="styles">
 				<PanelBody
 					title={ __( 'Dimensions', 'photo-collage' ) }
 					initialOpen={ true }
@@ -75,7 +111,7 @@ export default function Edit( { attributes, setAttributes } ) {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Positioning', 'photo-collage' ) }
+					title={ __( 'Layout', 'photo-collage' ) }
 					initialOpen={ true }
 				>
 					<ToggleControl
@@ -103,25 +139,6 @@ export default function Edit( { attributes, setAttributes } ) {
 							setAttributes={ setAttributes }
 							instanceId={ instanceId }
 							idPrefix="inspector-frame"
-						/>
-					) }
-					{ ! useAbsolutePosition && (
-						<BoxControl
-							values={ {
-								top: marginTop,
-								right: marginRight,
-								bottom: marginBottom,
-								left: marginLeft,
-							} }
-							onChange={ ( side, value ) => {
-								const key = `margin${
-									side.charAt( 0 ).toUpperCase() +
-									side.slice( 1 )
-								}`;
-								setAttributes( { [ key ]: value } );
-							} }
-							centerLabel="M"
-							isDashed={ true }
 						/>
 					) }
 					<div className="photo-collage-z-index-control">
@@ -165,43 +182,6 @@ export default function Edit( { attributes, setAttributes } ) {
 							/>
 						</div>
 					</div>
-				</PanelBody>
-
-				<PanelBody
-					title={ __( 'Effects', 'photo-collage' ) }
-					initialOpen={ true }
-				>
-					<RangeControl
-						label={ __( 'Rotation', 'photo-collage' ) }
-						value={ rotation }
-						onChange={ ( value ) =>
-							setAttributes( { rotation: value } )
-						}
-						min={ -360 }
-						max={ 360 }
-						__next40pxDefaultSize={ true }
-					/>
-					<RangeControl
-						label={ __( 'Opacity', 'photo-collage' ) }
-						value={ opacity }
-						onChange={ ( value ) =>
-							setAttributes( { opacity: value } )
-						}
-						min={ 0 }
-						max={ 1 }
-						step={ 0.1 }
-						__next40pxDefaultSize={ true }
-					/>
-				</PanelBody>
-
-				<PanelBody
-					title={ __( 'Background', 'photo-collage' ) }
-					initialOpen={ false }
-				>
-					<BackgroundControls
-						attributes={ attributes }
-						setAttributes={ setAttributes }
-					/>
 				</PanelBody>
 			</InspectorControls>
 			<div { ...innerBlocksProps } />

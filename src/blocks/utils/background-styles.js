@@ -1,7 +1,5 @@
 /**
  * Shared utility for generating background styles from block attributes.
- *
- * @package PhotoCollage
  */
 
 /**

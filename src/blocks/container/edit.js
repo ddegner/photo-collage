@@ -6,6 +6,8 @@ import {
 import {
 	PanelBody,
 	ToggleControl,
+	// WordPress core currently exposes UnitControl only via this export.
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalUnitControl as UnitControl,
 	Button,
 } from '@wordpress/components';
@@ -124,92 +126,92 @@ const PRESET_BUTTONS = [
 	{
 		id: 'side-by-side',
 		icon: SideBySideIcon,
-		label: __('Side by Side', 'photo-collage'),
+		label: __( 'Side by Side', 'photo-collage' ),
 	},
 	{
 		id: 'three-columns',
 		icon: ThreeColumnsIcon,
-		label: __('Three Columns', 'photo-collage'),
+		label: __( 'Three Columns', 'photo-collage' ),
 	},
 	{
 		id: 'overlap-left',
 		icon: OverlapLeftIcon,
-		label: __('Overlap Left', 'photo-collage'),
+		label: __( 'Overlap Left', 'photo-collage' ),
 	},
 	{
 		id: 'overlap-right',
 		icon: OverlapRightIcon,
-		label: __('Overlap Right', 'photo-collage'),
+		label: __( 'Overlap Right', 'photo-collage' ),
 	},
 	{
 		id: 'three-grid',
 		icon: ThreeGridIcon,
-		label: __('Three Grid', 'photo-collage'),
+		label: __( 'Three Grid', 'photo-collage' ),
 	},
 	{
 		id: 'offset-grid',
 		icon: OffsetGridIcon,
-		label: __('Offset Grid', 'photo-collage'),
+		label: __( 'Offset Grid', 'photo-collage' ),
 	},
 	{
 		id: 'scatter',
 		icon: ScatterIcon,
-		label: __('Scatter', 'photo-collage'),
+		label: __( 'Scatter', 'photo-collage' ),
 	},
 	{
 		id: 'hero-layered',
 		icon: HeroLayeredIcon,
-		label: __('Hero Layered', 'photo-collage'),
+		label: __( 'Hero Layered', 'photo-collage' ),
 	},
 	{
 		id: 'vertical-wave',
 		icon: VerticalWaveIcon,
-		label: __('Vertical Wave', 'photo-collage'),
+		label: __( 'Vertical Wave', 'photo-collage' ),
 	},
 	{
 		id: 'staggered-story',
 		icon: StaggeredStoryIcon,
-		label: __('Staggered Story', 'photo-collage'),
+		label: __( 'Staggered Story', 'photo-collage' ),
 	},
 	{
 		id: 'offset-gallery',
 		icon: OffsetGalleryIcon,
-		label: __('Offset Gallery', 'photo-collage'),
+		label: __( 'Offset Gallery', 'photo-collage' ),
 	},
 	{
 		id: 'center-overlay',
 		icon: CenterOverlayIcon,
-		label: __('Center Overlay', 'photo-collage'),
+		label: __( 'Center Overlay', 'photo-collage' ),
 	},
 ];
 
-export default function Edit({ attributes, setAttributes, clientId }) {
+export default function Edit( { attributes, setAttributes, clientId } ) {
 	const { stackOnMobile, containerHeight } = attributes;
-	
-	const backgroundStyle = getBackgroundStyle(attributes);
-	
-	const blockProps = useBlockProps({
+
+	const backgroundStyle = getBackgroundStyle( attributes );
+
+	const blockProps = useBlockProps( {
 		className: stackOnMobile ? 'is-stack-on-mobile' : '',
 		style: {
 			height: containerHeight,
 			minHeight: '200px', // Ensure container is visible
 			...backgroundStyle,
 		},
-	});
-	const ALLOWED_BLOCKS = ['photo-collage/image', 'photo-collage/frame'];
+	} );
+	const ALLOWED_BLOCKS = [ 'photo-collage/image', 'photo-collage/frame' ];
 
-	const { replaceInnerBlocks } = useDispatch('core/block-editor');
+	const { replaceInnerBlocks } = useDispatch( 'core/block-editor' );
 	const innerBlocks = useSelect(
-		(select) => {
-			const blocks = select('core/block-editor').getBlocks(clientId);
+		( select ) => {
+			const blocks = select( 'core/block-editor' ).getBlocks( clientId );
 			return blocks || [];
 		},
-		[clientId]
+		[ clientId ]
 	);
 
-	const applyPreset = (preset) => {
-		const config = PRESETS[preset];
-		if (!config) {
+	const applyPreset = ( preset ) => {
+		const config = PRESETS[ preset ];
+		if ( ! config ) {
 			return;
 		}
 
@@ -219,106 +221,106 @@ export default function Edit({ attributes, setAttributes, clientId }) {
 			'staggered-story',
 			'offset-gallery',
 		];
-		setAttributes({
-			containerHeight: tallPresets.includes(preset) ? '1200px' : '',
-		});
+		setAttributes( {
+			containerHeight: tallPresets.includes( preset ) ? '1200px' : '',
+		} );
 
 		// Create new blocks with preset layout, but preserve existing image data
-		const newBlocks = config.map((attrs, index) => {
+		const newBlocks = config.map( ( attrs, index ) => {
 			// If there's an existing block at this index, preserve its image data
-			const existingBlock = innerBlocks[index];
+			const existingBlock = innerBlocks[ index ];
 			const imageData = existingBlock
 				? {
-					url: existingBlock.attributes.url,
-					id: existingBlock.attributes.id,
-					alt: existingBlock.attributes.alt,
-					title: existingBlock.attributes.title,
-					caption: existingBlock.attributes.caption,
-					description: existingBlock.attributes.description,
-					isDecorative: existingBlock.attributes.isDecorative,
-				}
+						url: existingBlock.attributes.url,
+						id: existingBlock.attributes.id,
+						alt: existingBlock.attributes.alt,
+						title: existingBlock.attributes.title,
+						caption: existingBlock.attributes.caption,
+						description: existingBlock.attributes.description,
+						isDecorative: existingBlock.attributes.isDecorative,
+				  }
 				: {};
 
 			// Merge preset layout attributes with preserved image data
-			return createBlock('photo-collage/image', {
+			return createBlock( 'photo-collage/image', {
 				...attrs,
 				...imageData,
-			});
-		});
-		replaceInnerBlocks(clientId, newBlocks);
+			} );
+		} );
+		replaceInnerBlocks( clientId, newBlocks );
 	};
 
-	const innerBlocksProps = useInnerBlocksProps(blockProps, {
+	const innerBlocksProps = useInnerBlocksProps( blockProps, {
 		allowedBlocks: ALLOWED_BLOCKS,
-		template: [['photo-collage/image'], ['photo-collage/image']],
-	});
+		template: [ [ 'photo-collage/image' ], [ 'photo-collage/image' ] ],
+	} );
 
 	return (
 		<>
 			<InspectorControls>
 				<PanelBody
-					title={__('Quick Layouts', 'photo-collage')}
-					initialOpen={true}
+					title={ __( 'Quick Layouts', 'photo-collage' ) }
+					initialOpen={ true }
 				>
 					<div className="photo-collage-quick-layouts">
-						{PRESET_BUTTONS.map((btn) => (
+						{ PRESET_BUTTONS.map( ( btn ) => (
 							<Button
-								key={btn.id}
+								key={ btn.id }
 								variant="secondary"
-								onClick={() => applyPreset(btn.id)}
+								onClick={ () => applyPreset( btn.id ) }
 								className="photo-collage-layout-button"
 							>
-								{btn.icon}
-								<span>{btn.label}</span>
+								{ btn.icon }
+								<span>{ btn.label }</span>
 							</Button>
-						))}
+						) ) }
 					</div>
 				</PanelBody>
 				<PanelBody
-					title={__('Container Settings', 'photo-collage')}
+					title={ __( 'Container Settings', 'photo-collage' ) }
 				>
 					<UnitControl
-						label={__('Container Height', 'photo-collage')}
-						value={containerHeight}
-						onChange={(value) =>
-							setAttributes({ containerHeight: value })
+						label={ __( 'Container Height', 'photo-collage' ) }
+						value={ containerHeight }
+						onChange={ ( value ) =>
+							setAttributes( { containerHeight: value } )
 						}
-						__next40pxDefaultSize={true}
-						help={__(
+						__next40pxDefaultSize={ true }
+						help={ __(
 							'Fixed height is required for absolute positioning and overlapping effects.',
 							'photo-collage'
-						)}
+						) }
 					/>
 				</PanelBody>
 				<PanelBody
-					title={__('Responsive Settings', 'photo-collage')}
+					title={ __( 'Responsive Settings', 'photo-collage' ) }
 				>
 					<ToggleControl
-						label={__('Stack on Mobile', 'photo-collage')}
-						help={__(
+						label={ __( 'Stack on Mobile', 'photo-collage' ) }
+						help={ __(
 							'Automatically stack images vertically on mobile devices.',
 							'photo-collage'
-						)}
-						checked={stackOnMobile}
-						onChange={(value) =>
-							setAttributes({ stackOnMobile: value })
+						) }
+						checked={ stackOnMobile }
+						onChange={ ( value ) =>
+							setAttributes( { stackOnMobile: value } )
 						}
-						__nextHasNoMarginBottom={true}
+						__nextHasNoMarginBottom={ true }
 					/>
 				</PanelBody>
 			</InspectorControls>
 			<InspectorControls group="styles">
 				<PanelBody
-					title={__('Background', 'photo-collage')}
-					initialOpen={true}
+					title={ __( 'Background Image', 'photo-collage' ) }
+					initialOpen={ true }
 				>
 					<BackgroundControls
-						attributes={attributes}
-						setAttributes={setAttributes}
+						attributes={ attributes }
+						setAttributes={ setAttributes }
 					/>
 				</PanelBody>
 			</InspectorControls>
-			<div {...innerBlocksProps} />
+			<div { ...innerBlocksProps } />
 		</>
 	);
 }

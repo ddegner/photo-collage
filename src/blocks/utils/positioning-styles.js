@@ -1,7 +1,5 @@
 /**
  * Shared utility for generating positioning styles from block attributes.
- *
- * @package PhotoCollage
  */
 
 /**
@@ -34,13 +32,26 @@ export const getPositioningStyles = ( attributes ) => {
 		};
 	}
 
+	const hasCustomMargins =
+		( marginTop && marginTop !== '0%' ) ||
+		( marginRight && marginRight !== '0%' ) ||
+		( marginBottom && marginBottom !== '0%' ) ||
+		( marginLeft && marginLeft !== '0%' );
+
+	if ( align && ! hasCustomMargins ) {
+		return {
+			position: 'relative',
+		};
+	}
+
 	return {
 		position: 'relative',
-		marginTop: ! align || marginTop !== '0%' ? marginTop : undefined,
-		marginRight: ! align || marginRight !== '0%' ? marginRight : undefined,
+		marginTop: marginTop && marginTop !== '0%' ? marginTop : undefined,
+		marginRight:
+			marginRight && marginRight !== '0%' ? marginRight : undefined,
 		marginBottom:
-			! align || marginBottom !== '0%' ? marginBottom : undefined,
-		marginLeft: ! align || marginLeft !== '0%' ? marginLeft : undefined,
+			marginBottom && marginBottom !== '0%' ? marginBottom : undefined,
+		marginLeft: marginLeft && marginLeft !== '0%' ? marginLeft : undefined,
 	};
 };
 
@@ -51,8 +62,14 @@ export const getPositioningStyles = ( attributes ) => {
  * @return {Object} Style object for dimensions and effects.
  */
 export const getDimensionStyles = ( attributes ) => {
-	const { width, height, zIndex, rotation = 0, opacity = 1, align } =
-		attributes;
+	const {
+		width,
+		height,
+		zIndex,
+		rotation = 0,
+		opacity = 1,
+		align,
+	} = attributes;
 
 	const styles = {
 		width: ! align || width !== '50%' ? width : undefined,

@@ -314,22 +314,13 @@ final class Photo_Collage_Admin_Settings {
 	 * Export collage data as JSON
 	 */
 	private function export_collage_data(): void {
-		global $wpdb;
-
 		$export_data = array(
 			'exported_at' => current_time( 'mysql' ),
 			'site_url'    => get_site_url(),
 			'collages'    => array(),
 		);
 
-		// Only fetch posts that actually have the block.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$posts = $wpdb->get_results(
-			"SELECT ID, post_title, post_content, post_type FROM {$wpdb->posts}
-            WHERE post_content LIKE '%wp:photo-collage/container%'
-            AND post_status IN ('publish', 'draft', 'pending', 'future', 'private')
-            AND post_type IN ('post', 'page')"
-		) ?? array();
+		$posts = Photo_Collage_Block_Converter::get_posts_with_collage_blocks_details();
 
 		foreach ( $posts as $post ) {
 			if ( has_blocks( $post->post_content ) ) {
@@ -375,4 +366,3 @@ final class Photo_Collage_Admin_Settings {
 		return $collage_blocks;
 	}
 }
-

@@ -2,8 +2,6 @@
  * Block Deprecations for Photo Collage Frame Block
  *
  * Handles migration from legacy padding attributes to WordPress native spacing.
- *
- * @package PhotoCollage
  */
 
 import { useBlockProps, InnerBlocks } from '@wordpress/block-editor';
@@ -108,7 +106,8 @@ const v1 = {
 	/**
 	 * Legacy save function for the frame block.
 	 *
-	 * @param {Object} props Block props.
+	 * @param {Object} props            Block props.
+	 * @param {Object} props.attributes Block attributes.
 	 * @return {JSX.Element} Block save output.
 	 */
 	save( { attributes } ) {

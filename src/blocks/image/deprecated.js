@@ -2,8 +2,6 @@
  * Block Deprecations for Photo Collage Image Block
  *
  * Handles migration from legacy padding attributes to WordPress native spacing.
- *
- * @package PhotoCollage
  */
 
 /**

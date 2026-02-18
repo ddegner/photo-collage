@@ -2,29 +2,16 @@
  * Absolute Position Controls Component
  *
  * Provides anchor grid and position input controls for absolute positioning.
- *
- * @package PhotoCollage
  */
 
 import { __ } from '@wordpress/i18n';
 import {
 	Button,
+	// WordPress core currently exposes UnitControl only via this export.
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalUnitControl as UnitControl,
 } from '@wordpress/components';
 
-/**
- * AbsolutePositionControls component.
- *
- * @param {Object}   props              Component props.
- * @param {string}   props.top          Top position value.
- * @param {string}   props.right        Right position value.
- * @param {string}   props.bottom       Bottom position value.
- * @param {string}   props.left         Left position value.
- * @param {Function} props.setAttributes Function to update block attributes.
- * @param {string}   props.instanceId   Unique instance ID for form elements.
- * @param {string}   props.idPrefix     ID prefix for form elements (default: 'inspector').
- * @return {JSX.Element} The position controls component.
- */
 export default function AbsolutePositionControls( {
 	top,
 	right,

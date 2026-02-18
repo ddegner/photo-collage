@@ -98,7 +98,28 @@ return array(
 			'html' => false,
 			'reusable' => false,
 			'spacing' => array(
-				'padding' => true
+				'margin' => true,
+				'padding' => true,
+				'blockGap' => true,
+				'units' => array(
+					'px',
+					'em',
+					'rem',
+					'vh',
+					'vw',
+					'%'
+				)
+			),
+			'border' => array(
+				'color' => true,
+				'radius' => true,
+				'style' => true,
+				'width' => true
+			),
+			'shadow' => true,
+			'color' => array(
+				'background' => true,
+				'gradients' => true
 			)
 		),
 		'textdomain' => 'photo-collage',
@@ -214,15 +235,48 @@ return array(
 		'category' => 'design',
 		'icon' => 'format-image',
 		'description' => 'An image block with advanced positioning controls.',
+		'selectors' => array(
+			'root' => '.wp-block-photo-collage-image',
+			'typography' => '.wp-block-photo-collage-image .photo-collage-image-caption'
+		),
 		'supports' => array(
 			'align' => true,
 			'html' => false,
+			'customClassName' => false,
 			'interactivity' => true,
 			'lightbox' => array(
 				'allowEditing' => true
 			),
 			'spacing' => array(
-				'padding' => true
+				'margin' => true,
+				'padding' => true,
+				'blockGap' => true,
+				'units' => array(
+					'px',
+					'em',
+					'rem',
+					'vh',
+					'vw',
+					'%'
+				)
+			),
+			'border' => array(
+				'color' => true,
+				'radius' => true,
+				'style' => true,
+				'width' => true
+			),
+			'shadow' => true,
+			'typography' => array(
+				'fontSize' => true,
+				'lineHeight' => true,
+				'fontFamily' => true,
+				'fontAppearance' => true,
+				'textDecoration' => true
+			),
+			'color' => array(
+				'background' => true,
+				'gradients' => true
 			)
 		),
 		'textdomain' => 'photo-collage',
@@ -244,6 +298,18 @@ return array(
 			),
 			'id' => array(
 				'type' => 'number'
+			),
+			'aspectRatio' => array(
+				'type' => 'string',
+				'default' => ''
+			),
+			'sizeSlug' => array(
+				'type' => 'string',
+				'default' => 'large'
+			),
+			'anchor' => array(
+				'type' => 'string',
+				'default' => ''
 			),
 			'marginTop' => array(
 				'type' => 'string',
@@ -339,6 +405,14 @@ return array(
 					'bottom-right'
 				)
 			),
+			'divClass' => array(
+				'type' => 'string',
+				'default' => ''
+			),
+			'divStyle' => array(
+				'type' => 'string',
+				'default' => ''
+			),
 			'imgClass' => array(
 				'type' => 'string',
 				'default' => ''
@@ -356,10 +430,6 @@ return array(
 				'default' => ''
 			),
 			'title' => array(
-				'type' => 'string',
-				'default' => ''
-			),
-			'description' => array(
 				'type' => 'string',
 				'default' => ''
 			),
