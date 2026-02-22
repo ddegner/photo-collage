@@ -99,6 +99,42 @@ const safeStringValue = ( value ) => {
 	return '';
 };
 
+/**
+ * Parse a CSS declaration string into a React style object.
+ *
+ * @param {string} inlineStyle CSS declarations (e.g. "color:red; font-size:14px").
+ * @return {Object} React style object.
+ */
+const parseInlineStyle = ( inlineStyle ) => {
+	if ( ! inlineStyle || typeof inlineStyle !== 'string' ) {
+		return {};
+	}
+
+	return inlineStyle.split( ';' ).reduce( ( style, declaration ) => {
+		const separatorIndex = declaration.indexOf( ':' );
+		if ( separatorIndex === -1 ) {
+			return style;
+		}
+
+		const rawProperty = declaration.slice( 0, separatorIndex );
+		const rawValue = declaration.slice( separatorIndex + 1 );
+		if ( ! rawProperty || ! rawValue ) {
+			return style;
+		}
+
+		const property = rawProperty
+			.trim()
+			.replace( /-([a-z])/g, ( _, char ) => char.toUpperCase() );
+		const value = rawValue.trim();
+		if ( ! property || ! value ) {
+			return style;
+		}
+
+		style[ property ] = value;
+		return style;
+	}, {} );
+};
+
 export default function Edit( { attributes, setAttributes, isSelected } ) {
 	const {
 		url,
@@ -279,6 +315,57 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 			alt: ! isDecorative ? '' : alt,
 		} );
 	};
+
+	const typographyClassesAndStyles =
+		getTypographyClassesAndStyles( attributes ) || {};
+	const typographyStyle = attributes.style?.typography || {};
+	const captionClassName = [
+		'photo-collage-image-caption',
+		'wp-element-caption',
+		attributes.fontSize ? `has-${ attributes.fontSize }-font-size` : '',
+		attributes.fontFamily
+			? `has-${ attributes.fontFamily }-font-family`
+			: '',
+		typographyClassesAndStyles.className || '',
+		captionClass || '',
+	]
+		.filter( Boolean )
+		.join( ' ' );
+	const captionInlineStyle = {
+		textAlign: captionAlign,
+		width: captionWidth,
+		flex: `0 0 ${ captionWidth }`,
+		fontSize: typographyStyle.fontSize,
+		fontWeight: typographyStyle.fontWeight,
+		fontStyle: typographyStyle.fontStyle,
+		lineHeight: typographyStyle.lineHeight,
+		fontFamily: typographyStyle.fontFamily,
+		textDecoration: typographyStyle.textDecoration,
+		textTransform: typographyStyle.textTransform,
+		letterSpacing: typographyStyle.letterSpacing,
+		...( typographyClassesAndStyles.style || {} ),
+		...parseInlineStyle( captionStyle ),
+	};
+
+	const isSideCaption =
+		showCaption &&
+		( captionPlacement.startsWith( 'left-' ) ||
+			captionPlacement.startsWith( 'right-' ) );
+	const isVerticalCaption =
+		showCaption &&
+		( captionPlacement.startsWith( 'top-' ) ||
+			captionPlacement.startsWith( 'bottom-' ) );
+	const normalizedHeight = height && height !== '' ? height : 'auto';
+	let imageSizeStyle = { width: '100%', height: '100%' };
+
+	if ( isSideCaption ) {
+		imageSizeStyle =
+			normalizedHeight === 'auto'
+				? { width: '100%', height: 'auto' }
+				: { width: 'auto', height: '100%' };
+	} else if ( isVerticalCaption ) {
+		imageSizeStyle = { width: '100%', height: 'auto' };
+	}
 
 	const blockProps = useBlockProps( {
 		id: anchor,
@@ -908,7 +995,7 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 								</BlockControls>
 								<RichText
 									tagName="figcaption"
-									className="photo-collage-image-caption wp-element-caption"
+									className={ captionClassName }
 									placeholder={ __(
 										'Write caption…',
 										'photo-collage'
@@ -927,11 +1014,7 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 										'core/subscript',
 										'core/superscript',
 									] }
-									style={ {
-										textAlign: captionAlign,
-										width: captionWidth,
-										flex: '0 0 ' + captionWidth,
-									} }
+									style={ captionInlineStyle }
 								/>
 							</>
 						) }
@@ -947,18 +1030,7 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 								aspectRatio && aspectRatio !== 'auto'
 									? aspectRatio
 									: undefined,
-							width:
-								showCaption &&
-								( captionPlacement.startsWith( 'left-' ) ||
-									captionPlacement.startsWith( 'right-' ) )
-									? 'auto'
-									: '100%',
-							height:
-								showCaption &&
-								( captionPlacement.startsWith( 'top-' ) ||
-									captionPlacement.startsWith( 'bottom-' ) )
-									? 'auto'
-									: '100%',
+							...imageSizeStyle,
 							flex: showCaption ? '1' : undefined,
 							minWidth: showCaption ? '0' : undefined,
 							minHeight: showCaption ? '0' : undefined,
@@ -982,23 +1054,7 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 								</BlockControls>
 								<RichText
 									tagName="figcaption"
-									className={ `photo-collage-image-caption wp-element-caption ${
-										attributes.fontSize
-											? 'has-' +
-											  attributes.fontSize +
-											  '-font-size'
-											: ''
-									} ${
-										attributes.fontFamily
-											? 'has-' +
-											  attributes.fontFamily +
-											  '-font-family'
-											: ''
-									} ${
-										getTypographyClassesAndStyles(
-											attributes
-										)?.className || ''
-									}` }
+									className={ captionClassName }
 									placeholder={ __(
 										'Write caption…',
 										'photo-collage'
@@ -1017,32 +1073,7 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 										'core/subscript',
 										'core/superscript',
 									] }
-									style={ {
-										textAlign: captionAlign,
-										width: captionWidth,
-										flex: '0 0 ' + captionWidth,
-										fontSize:
-											attributes.style?.typography
-												?.fontSize,
-										fontWeight:
-											attributes.style?.typography
-												?.fontWeight,
-										fontStyle:
-											attributes.style?.typography
-												?.fontStyle,
-										lineHeight:
-											attributes.style?.typography
-												?.lineHeight,
-										fontFamily:
-											attributes.style?.typography
-												?.fontFamily,
-										textDecoration:
-											attributes.style?.typography
-												?.textDecoration,
-										...( getTypographyClassesAndStyles(
-											attributes
-										)?.style || {} ),
-									} }
+									style={ captionInlineStyle }
 								/>
 							</>
 						) }

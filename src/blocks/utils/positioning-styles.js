@@ -44,14 +44,23 @@ export const getPositioningStyles = ( attributes ) => {
 		};
 	}
 
+	const resolvedMarginTop =
+		marginTop !== undefined && marginTop !== '' ? marginTop : '0%';
+	const resolvedMarginRight =
+		marginRight !== undefined && marginRight !== '' ? marginRight : '0%';
+	const resolvedMarginBottom =
+		marginBottom !== undefined && marginBottom !== '' ? marginBottom : '0%';
+	const resolvedMarginLeft =
+		marginLeft !== undefined && marginLeft !== '' ? marginLeft : '0%';
+
 	return {
 		position: 'relative',
-		marginTop: marginTop && marginTop !== '0%' ? marginTop : undefined,
-		marginRight:
-			marginRight && marginRight !== '0%' ? marginRight : undefined,
-		marginBottom:
-			marginBottom && marginBottom !== '0%' ? marginBottom : undefined,
-		marginLeft: marginLeft && marginLeft !== '0%' ? marginLeft : undefined,
+		// Keep explicit 0% margins in editor so Gutenberg flow gap does not
+		// introduce phantom top offsets between collage items.
+		marginTop: resolvedMarginTop,
+		marginRight: resolvedMarginRight,
+		marginBottom: resolvedMarginBottom,
+		marginLeft: resolvedMarginLeft,
 	};
 };
 

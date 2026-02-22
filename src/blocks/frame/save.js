@@ -1,14 +1,5 @@
-import { useBlockProps, InnerBlocks } from '@wordpress/block-editor';
-import { getBlockStyles } from '../utils/positioning-styles';
+import { InnerBlocks } from '@wordpress/block-editor';
 
-export default function save( { attributes } ) {
-	const blockProps = useBlockProps.save( {
-		style: getBlockStyles( attributes ),
-	} );
-
-	return (
-		<div { ...blockProps }>
-			<InnerBlocks.Content />
-		</div>
-	);
+export default function save() {
+	return <InnerBlocks.Content />;
 }

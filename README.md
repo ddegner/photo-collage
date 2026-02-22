@@ -3,7 +3,7 @@
 **Contributors:** ddegner  
 **Tags:** block, photo collage, image gallery, overlapping images, visual design  
 **Tested up to:** 6.9  
-**Stable tag:** 0.5.11  
+**Stable tag:** 0.5.12  
 **Requires at least:** 6.8  
 **Requires PHP:** 8.3  
 **License:** GPL-2.0-or-later  
@@ -106,6 +106,14 @@ Photo Collage is optimized for performance. It uses modern CSS for positioning a
 4.  Mobile-responsive stacking in action
 
 ## Changelog
+
+### 0.5.12
+*   FIX: Corrected dynamic frame rendering to avoid nested wrappers that could collapse content width
+*   FIX: Aligned editor item top positioning with frontend by preserving default zero margins
+*   FIX: Applied "Stack on Mobile" behavior to both Collage Image and Collage Frame blocks
+*   IMPROVEMENT: Unified caption class and inline style handling in editor preview for better frontend parity
+*   IMPROVEMENT: Matched editor side-caption image sizing logic with frontend auto/fixed-height behavior
+*   IMPROVEMENT: Preserved container/image/frame background styles during static HTML conversion (plugin and native block-support backgrounds)
 
 ### 0.5.11
 *   FIX: Removed readonly class keyword for WordPress.org compatibility

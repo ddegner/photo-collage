@@ -14,6 +14,20 @@ if (!defined('ABSPATH')) {
 $attributes = $attributes ?? [];
 $content = $content ?? '';
 
+// Backward compatibility: older saves included a wrapper div in save.js.
+// Since this block is dynamic and render.php already outputs a wrapper,
+// strip that legacy wrapper to avoid nested 50% widths on the frontend.
+if (
+	is_string( $content ) &&
+	preg_match(
+		'/^\s*<div\b[^>]*class=(["\'])[^"\']*\bwp-block-photo-collage-frame\b[^"\']*\1[^>]*>(.*)<\/div>\s*$/is',
+		$content,
+		$matches
+	)
+) {
+	$content = (string) $matches[2];
+}
+
 // Use shared renderer logic for styles
 $normalized_attrs = Photo_Collage_Renderer::normalize_attributes($attributes);
 $styles = Photo_Collage_Renderer::get_container_styles($normalized_attrs);

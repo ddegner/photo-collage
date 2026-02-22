@@ -249,8 +249,10 @@ final class Photo_Collage_Block_Converter {
 		$attributes   = $block['attrs'] ?? array();
 		$inner_blocks = $block['innerBlocks'] ?? array();
 
-		$height          = $attributes['containerHeight'] ?? '500px';
-		$stack_on_mobile = $attributes['stackOnMobile'] ?? true;
+		$height            = $attributes['containerHeight'] ?? '';
+		$stack_on_mobile   = $attributes['stackOnMobile'] ?? true;
+		$normalized_attrs  = Photo_Collage_Renderer::normalize_attributes( $attributes );
+		$background_styles = $this->get_static_background_styles( $attributes, $normalized_attrs );
 
 		$classes = 'wp-block-photo-collage-container';
 		if ( $stack_on_mobile ) {
@@ -262,6 +264,7 @@ final class Photo_Collage_Block_Converter {
 			$style .= 'height: ' . esc_attr( $height ) . '; ';
 		}
 		$style .= 'min-height: 200px; position: relative; display: flex; flex-wrap: wrap; width: 100%; box-sizing: border-box;';
+		$style .= ' ' . Photo_Collage_Renderer::build_style_string( $background_styles );
 
 		$html = sprintf( '<div class="%s" style="%s">', esc_attr( $classes ), esc_attr( $style ) );
 
@@ -298,8 +301,9 @@ final class Photo_Collage_Block_Converter {
 		$normalized_attrs = Photo_Collage_Renderer::normalize_attributes( $attrs );
 
 		// get_container_styles accepts object.
-		$styles       = Photo_Collage_Renderer::get_container_styles( $normalized_attrs );
-		$style_string = Photo_Collage_Renderer::build_style_string( $styles );
+		$styles            = Photo_Collage_Renderer::get_container_styles( $normalized_attrs );
+		$background_styles = $this->get_static_background_styles( $attrs, $normalized_attrs );
+		$style_string      = Photo_Collage_Renderer::build_style_string( array_merge( $styles, $background_styles ) );
 		if ( ! empty( $attrs['divStyle'] ) ) {
 			$style_string .= ' ' . $attrs['divStyle'];
 		}
@@ -349,7 +353,7 @@ final class Photo_Collage_Block_Converter {
 
 		$normalized_attrs = Photo_Collage_Renderer::normalize_attributes( $attrs );
 		$styles           = Photo_Collage_Renderer::get_container_styles( $normalized_attrs );
-		$background       = Photo_Collage_Renderer::get_background_styles( $normalized_attrs );
+		$background       = $this->get_static_background_styles( $attrs, $normalized_attrs );
 		$style_string     = Photo_Collage_Renderer::build_style_string( array_merge( $styles, $background ) );
 		$wrapper_class    = trim( 'photo-collage-frame-static ' . (string) ( $attrs['className'] ?? '' ) );
 
@@ -366,6 +370,32 @@ final class Photo_Collage_Block_Converter {
 		$html .= '</div>';
 
 		return $html;
+	}
+
+	/**
+	 * Get background styles for static conversion.
+	 *
+	 * Dynamic rendering gets native style support values via wrapper attributes.
+	 * For static HTML conversion we must merge those values ourselves.
+	 *
+	 * @param array                          $attrs            Raw block attributes.
+	 * @param Photo_Collage_Block_Attributes $normalized_attrs Normalized attributes.
+	 * @return array<string, string>
+	 */
+	private function get_static_background_styles( array $attrs, Photo_Collage_Block_Attributes $normalized_attrs ): array {
+		$styles = Photo_Collage_Renderer::get_background_styles( $normalized_attrs );
+
+		$native_background = $attrs['style']['color']['background'] ?? '';
+		if ( is_string( $native_background ) && '' !== $native_background ) {
+			$styles['background-color'] = $native_background;
+		}
+
+		$native_gradient = $attrs['style']['color']['gradient'] ?? '';
+		if ( is_string( $native_gradient ) && '' !== $native_gradient ) {
+			$styles['background-image'] = $native_gradient;
+		}
+
+		return $styles;
 	}
 
 	/**

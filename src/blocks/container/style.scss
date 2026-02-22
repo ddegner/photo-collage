@@ -28,7 +28,8 @@
 
 			// We must use !important to override inline styles applied by the
 			// editor/render
-			> .wp-block-photo-collage-image {
+			> .wp-block-photo-collage-image,
+			> .wp-block-photo-collage-frame {
 				position: static !important;
 				margin: 0 0 20px 0 !important;
 				padding: 0 !important;
