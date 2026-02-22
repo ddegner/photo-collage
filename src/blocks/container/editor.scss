@@ -1,6 +1,4 @@
 .wp-block-photo-collage-container {
-
-	/* Editor-only styles - keep minimal to match front-end */
 	position: relative;
 	display: flex;
 	flex-wrap: wrap;
@@ -33,17 +31,29 @@
 
 .photo-collage-quick-layouts {
 	display: grid;
-	grid-template-columns: 1fr 1fr;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
 	gap: 8px;
 }
 
 .photo-collage-layout-button {
+	width: 100%;
+	min-width: 0 !important;
 	height: auto !important;
-	padding: 12px !important;
+	padding: 10px 8px !important;
 	flex-direction: column;
 	gap: 8px;
 	justify-content: center;
+	white-space: normal !important;
+	text-wrap: balance;
 	transition: all 0.2s ease;
+
+	span {
+		display: block;
+		max-width: 100%;
+		overflow-wrap: anywhere;
+		line-height: 1.25;
+		text-align: center;
+	}
 
 	&:hover {
 		transform: translateY(-2px);
@@ -56,4 +66,11 @@
 		font-size: 24px;
 		margin-right: 0 !important;
 	}
+}
+
+.photo-collage-height-mode-help {
+	margin-top: 8px;
+	margin-bottom: 0;
+	font-size: 12px;
+	color: #50575e;
 }

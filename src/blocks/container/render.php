@@ -16,6 +16,11 @@ $content = $content ?? '';
 
 $stack_on_mobile = $attributes['stackOnMobile'] ?? true;
 $height = $attributes['containerHeight'] ?? '';
+$height_mode = $attributes['heightMode'] ?? 'fixed';
+
+if (!in_array($height_mode, array('fixed', 'auto'), true)) {
+    $height_mode = 'fixed';
+}
 
 // Normalize attributes and get background styles
 $normalized_attrs = Photo_Collage_Renderer::normalize_attributes($attributes);
@@ -26,9 +31,12 @@ $classes = 'wp-block-photo-collage-container';
 if ($stack_on_mobile) {
     $classes .= ' is-stack-on-mobile';
 }
+if ('auto' === $height_mode) {
+    $classes .= ' is-height-auto';
+}
 
 $style = '';
-if (!empty($height)) {
+if ('fixed' === $height_mode && !empty($height)) {
     $style .= "height: " . esc_attr($height) . "; ";
 }
 $style .= "min-height: 200px; ";
@@ -40,6 +48,7 @@ $wrapper_attributes = get_block_wrapper_attributes(
     [
         'class' => $classes,
         'style' => $style,
+        'data-height-mode' => $height_mode,
     ]
 );
 

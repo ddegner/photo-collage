@@ -8,7 +8,7 @@ return array(
 		'version' => '0.5.3',
 		'title' => 'Collage Container',
 		'category' => 'design',
-		'icon' => 'grid-view',
+		'icon' => 'layout',
 		'description' => 'A container for creating freeform photo layouts.',
 		'supports' => array(
 			'align' => array(
@@ -20,6 +20,10 @@ return array(
 				'margin' => true,
 				'padding' => true
 			),
+			'color' => array(
+				'background' => true,
+				'gradients' => true
+			),
 			'layout' => array(
 				'allowEditing' => false
 			)
@@ -27,10 +31,11 @@ return array(
 		'textdomain' => 'photo-collage',
 		'editorScript' => 'file:./index.js',
 		'editorStyle' => 'file:./index.css',
+		'viewScript' => 'file:./view.js',
 		'attributes' => array(
 			'align' => array(
 				'type' => 'string',
-				'default' => 'wide'
+				'default' => 'full'
 			),
 			'stackOnMobile' => array(
 				'type' => 'boolean',
@@ -39,6 +44,14 @@ return array(
 			'containerHeight' => array(
 				'type' => 'string',
 				'default' => ''
+			),
+			'heightMode' => array(
+				'type' => 'string',
+				'default' => 'fixed',
+				'enum' => array(
+					'fixed',
+					'auto'
+				)
 			),
 			'backgroundType' => array(
 				'type' => 'string',
@@ -50,12 +63,6 @@ return array(
 					'tiling-image',
 					'full-image'
 				)
-			),
-			'backgroundColor' => array(
-				'type' => 'string'
-			),
-			'gradient' => array(
-				'type' => 'string'
 			),
 			'backgroundImageId' => array(
 				'type' => 'number'
@@ -91,7 +98,7 @@ return array(
 		'version' => '0.1.0',
 		'title' => 'Collage Frame',
 		'category' => 'design',
-		'icon' => 'layout',
+		'icon' => 'square',
 		'description' => 'A wrapper block for positioning any content within a Collage Container.',
 		'supports' => array(
 			'align' => true,
@@ -128,22 +135,6 @@ return array(
 		'style' => 'file:./style-index.css',
 		'render' => 'file:./render.php',
 		'attributes' => array(
-			'marginTop' => array(
-				'type' => 'string',
-				'default' => '0%'
-			),
-			'marginRight' => array(
-				'type' => 'string',
-				'default' => '0%'
-			),
-			'marginBottom' => array(
-				'type' => 'string',
-				'default' => '0%'
-			),
-			'marginLeft' => array(
-				'type' => 'string',
-				'default' => '0%'
-			),
 			'zIndex' => array(
 				'type' => 'number',
 				'default' => 1
@@ -194,12 +185,6 @@ return array(
 					'tiling-image',
 					'full-image'
 				)
-			),
-			'backgroundColor' => array(
-				'type' => 'string'
-			),
-			'gradient' => array(
-				'type' => 'string'
 			),
 			'backgroundImageId' => array(
 				'type' => 'number'
@@ -310,22 +295,6 @@ return array(
 			'anchor' => array(
 				'type' => 'string',
 				'default' => ''
-			),
-			'marginTop' => array(
-				'type' => 'string',
-				'default' => '0%'
-			),
-			'marginRight' => array(
-				'type' => 'string',
-				'default' => '0%'
-			),
-			'marginBottom' => array(
-				'type' => 'string',
-				'default' => '0%'
-			),
-			'marginLeft' => array(
-				'type' => 'string',
-				'default' => '0%'
 			),
 			'zIndex' => array(
 				'type' => 'number',
@@ -459,12 +428,6 @@ return array(
 					'tiling-image',
 					'full-image'
 				)
-			),
-			'backgroundColor' => array(
-				'type' => 'string'
-			),
-			'gradient' => array(
-				'type' => 'string'
 			),
 			'backgroundImageId' => array(
 				'type' => 'number'

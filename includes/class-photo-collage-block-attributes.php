@@ -170,39 +170,113 @@ final class Photo_Collage_Block_Attributes {
 			caption_class: (string) ( $attributes['captionClass'] ?? '' ),
 			caption_style: (string) ( $attributes['captionStyle'] ?? '' ),
 			background_type: (string) ( $attributes['backgroundType'] ?? 'none' ),
-			background_color: (string) ( $attributes['backgroundColor'] ?? '' ),
-			gradient: (string) ( $attributes['gradient'] ?? '' ),
+			background_color: self::get_background_color( $attributes ),
+			gradient: self::get_gradient_value( $attributes ),
 			background_image_id: (int) ( $attributes['backgroundImageId'] ?? 0 ),
 			background_image_url: (string) ( $attributes['backgroundImageUrl'] ?? '' ),
 			background_size: (string) ( $attributes['backgroundSize'] ?? 'cover' ),
 			background_position: (string) ( $attributes['backgroundPosition'] ?? 'center center' ),
 			background_repeat: (bool) ( $attributes['backgroundRepeat'] ?? false ),
-			has_native_background: ! empty( $attributes['style']['color']['background'] ) || ! empty( $attributes['style']['color']['gradient'] ) || ( ! empty( $attributes['backgroundColor'] ) && is_string( $attributes['backgroundColor'] ) && ! str_starts_with( $attributes['backgroundColor'], '#' ) ),
+			has_native_background: self::has_native_background( $attributes ),
 		);
 	}
 
 	/**
-	 * Read margin values from legacy custom attributes or native spacing support.
+	 * Read margin values from native spacing support with legacy fallback.
 	 *
 	 * @param array  $attributes Block attributes.
 	 * @param string $side       Margin side (top|right|bottom|left).
 	 * @return string
 	 */
 	private static function get_margin_value( array $attributes, string $side ): string {
-		$legacy_key = 'margin' . ucfirst( $side );
-		if ( isset( $attributes[ $legacy_key ] ) && is_string( $attributes[ $legacy_key ] ) ) {
-			return $attributes[ $legacy_key ];
-		}
-
 		$native_margin = $attributes['style']['spacing']['margin'] ?? null;
 		if ( is_array( $native_margin ) && isset( $native_margin[ $side ] ) && is_string( $native_margin[ $side ] ) ) {
-			return $native_margin[ $side ];
+			return self::normalize_preset_value( $native_margin[ $side ], 'spacing' );
 		}
 
 		if ( is_string( $native_margin ) ) {
-			return $native_margin;
+			return self::normalize_preset_value( $native_margin, 'spacing' );
+		}
+
+		$legacy_key = 'margin' . ucfirst( $side );
+		if ( isset( $attributes[ $legacy_key ] ) && is_string( $attributes[ $legacy_key ] ) ) {
+			return self::normalize_preset_value( $attributes[ $legacy_key ], 'spacing' );
 		}
 
 		return '0%';
+	}
+
+	/**
+	 * Detect whether native background support values are present.
+	 *
+	 * @param array $attributes Block attributes.
+	 * @return bool
+	 */
+	private static function has_native_background( array $attributes ): bool {
+		$background = $attributes['style']['color']['background'] ?? '';
+		$gradient   = $attributes['style']['color']['gradient'] ?? '';
+
+		return ( is_string( $background ) && '' !== $background ) || ( is_string( $gradient ) && '' !== $gradient );
+	}
+
+	/**
+	 * Resolve background color from native style first, then legacy fallback.
+	 *
+	 * @param array $attributes Block attributes.
+	 * @return string
+	 */
+	private static function get_background_color( array $attributes ): string {
+		$native_background = $attributes['style']['color']['background'] ?? '';
+		if ( is_string( $native_background ) && '' !== $native_background ) {
+			return self::normalize_preset_value( $native_background, 'color' );
+		}
+
+		$legacy_background = $attributes['backgroundColor'] ?? '';
+		if ( is_string( $legacy_background ) && '' !== $legacy_background ) {
+			return self::normalize_preset_value( $legacy_background, 'color' );
+		}
+
+		return '';
+	}
+
+	/**
+	 * Resolve gradient from native style first, then legacy fallback.
+	 *
+	 * @param array $attributes Block attributes.
+	 * @return string
+	 */
+	private static function get_gradient_value( array $attributes ): string {
+		$native_gradient = $attributes['style']['color']['gradient'] ?? '';
+		if ( is_string( $native_gradient ) && '' !== $native_gradient ) {
+			return self::normalize_preset_value( $native_gradient, 'gradient' );
+		}
+
+		$legacy_gradient = $attributes['gradient'] ?? '';
+		if ( is_string( $legacy_gradient ) && '' !== $legacy_gradient ) {
+			return self::normalize_preset_value( $legacy_gradient, 'gradient' );
+		}
+
+		return '';
+	}
+
+	/**
+	 * Convert preset token values to valid CSS variables.
+	 *
+	 * @param string $value       Raw value.
+	 * @param string $preset_type Preset type (spacing|color|gradient).
+	 * @return string
+	 */
+	private static function normalize_preset_value( string $value, string $preset_type ): string {
+		$prefix = "var:preset|{$preset_type}|";
+		if ( ! str_starts_with( $value, $prefix ) ) {
+			return $value;
+		}
+
+		$slug = str_replace( '|', '--', substr( $value, strlen( $prefix ) ) );
+		if ( '' === $slug ) {
+			return $value;
+		}
+
+		return "var(--wp--preset--{$preset_type}--{$slug})";
 	}
 }

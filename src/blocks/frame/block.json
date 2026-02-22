@@ -5,7 +5,7 @@
 	"version": "0.1.0",
 	"title": "Collage Frame",
 	"category": "design",
-	"icon": "layout",
+	"icon": "square",
 	"description": "A wrapper block for positioning any content within a Collage Container.",
 	"supports": {
 		"align": true,
@@ -42,22 +42,6 @@
 	"style": "file:./style-index.css",
 	"render": "file:./render.php",
 	"attributes": {
-		"marginTop": {
-			"type": "string",
-			"default": "0%"
-		},
-		"marginRight": {
-			"type": "string",
-			"default": "0%"
-		},
-		"marginBottom": {
-			"type": "string",
-			"default": "0%"
-		},
-		"marginLeft": {
-			"type": "string",
-			"default": "0%"
-		},
 		"zIndex": {
 			"type": "number",
 			"default": 1
@@ -108,12 +92,6 @@
 				"tiling-image",
 				"full-image"
 			]
-		},
-		"backgroundColor": {
-			"type": "string"
-		},
-		"gradient": {
-			"type": "string"
 		},
 		"backgroundImageId": {
 			"type": "number"

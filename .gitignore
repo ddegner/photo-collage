@@ -48,3 +48,11 @@ Thumbs.db
 *.sln
 *.sw?
 .editorconfig
+
+# Local research and QA output artifacts
+research/qa-artifacts/
+research/tony_pdf_pages/
+research/tony_pdf_crops/
+research/*_sites_raw_*.csv
+research/*_sites_classified_*.csv
+research/*_research_report_*.md

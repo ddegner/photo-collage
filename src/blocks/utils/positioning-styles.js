@@ -2,6 +2,102 @@
  * Shared utility for generating positioning styles from block attributes.
  */
 
+const SPACING_PRESET_PREFIX = 'var:preset|spacing|';
+const LEGACY_MARGIN_KEYS = {
+	top: 'marginTop',
+	right: 'marginRight',
+	bottom: 'marginBottom',
+	left: 'marginLeft',
+};
+
+/**
+ * Convert WordPress preset token values into valid CSS vars.
+ *
+ * @param {string} value Raw margin value.
+ * @return {string} CSS-ready value.
+ */
+const normalizeSpacingValue = ( value ) => {
+	if (
+		typeof value !== 'string' ||
+		! value.startsWith( SPACING_PRESET_PREFIX )
+	) {
+		return value;
+	}
+
+	const slug = value
+		.slice( SPACING_PRESET_PREFIX.length )
+		.split( '|' )
+		.join( '--' );
+	return `var(--wp--preset--spacing--${ slug })`;
+};
+
+/**
+ * Resolve native margin value for one side.
+ *
+ * @param {Object} attributes Block attributes.
+ * @param {string} side       Margin side: top|right|bottom|left.
+ * @return {string|undefined} Native margin value if present.
+ */
+const getNativeMarginValue = ( attributes, side ) => {
+	const nativeMargin = attributes?.style?.spacing?.margin;
+
+	if ( typeof nativeMargin === 'string' && nativeMargin !== '' ) {
+		return normalizeSpacingValue( nativeMargin );
+	}
+
+	if (
+		nativeMargin &&
+		typeof nativeMargin === 'object' &&
+		typeof nativeMargin[ side ] === 'string' &&
+		nativeMargin[ side ] !== ''
+	) {
+		return normalizeSpacingValue( nativeMargin[ side ] );
+	}
+
+	return undefined;
+};
+
+/**
+ * Resolve legacy custom margin value for one side.
+ *
+ * @param {Object} attributes Block attributes.
+ * @param {string} side       Margin side: top|right|bottom|left.
+ * @return {string|undefined} Legacy margin value if present.
+ */
+const getLegacyMarginValue = ( attributes, side ) => {
+	const key = LEGACY_MARGIN_KEYS[ side ];
+	const value = attributes?.[ key ];
+	return typeof value === 'string' && value !== '' ? value : undefined;
+};
+
+/**
+ * Resolve margin by preferring native spacing values with legacy fallback.
+ *
+ * @param {Object} attributes Block attributes.
+ * @param {string} side       Margin side.
+ * @return {string|undefined} Resolved margin value.
+ */
+const getResolvedMarginValue = ( attributes, side ) => {
+	return (
+		getNativeMarginValue( attributes, side ) ??
+		getLegacyMarginValue( attributes, side )
+	);
+};
+
+/**
+ * Determine if a margin value is effectively CSS zero.
+ *
+ * @param {string|undefined} value Margin value.
+ * @return {boolean} True when value is zero-like.
+ */
+const isZeroMarginValue = ( value ) => {
+	if ( typeof value !== 'string' ) {
+		return false;
+	}
+
+	return /^0(?:\.0+)?(?:[a-z%]+)?$/i.test( value.trim() );
+};
+
 /**
  * Get positioning styles based on absolute or relative positioning mode.
  *
@@ -9,18 +105,7 @@
  * @return {Object} Style object for CSS positioning.
  */
 export const getPositioningStyles = ( attributes ) => {
-	const {
-		useAbsolutePosition,
-		top,
-		right,
-		bottom,
-		left,
-		marginTop,
-		marginRight,
-		marginBottom,
-		marginLeft,
-		align,
-	} = attributes;
+	const { useAbsolutePosition, top, right, bottom, left, align } = attributes;
 
 	if ( useAbsolutePosition ) {
 		return {
@@ -32,11 +117,16 @@ export const getPositioningStyles = ( attributes ) => {
 		};
 	}
 
+	const marginTop = getResolvedMarginValue( attributes, 'top' );
+	const marginRight = getResolvedMarginValue( attributes, 'right' );
+	const marginBottom = getResolvedMarginValue( attributes, 'bottom' );
+	const marginLeft = getResolvedMarginValue( attributes, 'left' );
+
 	const hasCustomMargins =
-		( marginTop && marginTop !== '0%' ) ||
-		( marginRight && marginRight !== '0%' ) ||
-		( marginBottom && marginBottom !== '0%' ) ||
-		( marginLeft && marginLeft !== '0%' );
+		( marginTop && ! isZeroMarginValue( marginTop ) ) ||
+		( marginRight && ! isZeroMarginValue( marginRight ) ) ||
+		( marginBottom && ! isZeroMarginValue( marginBottom ) ) ||
+		( marginLeft && ! isZeroMarginValue( marginLeft ) );
 
 	if ( align && ! hasCustomMargins ) {
 		return {

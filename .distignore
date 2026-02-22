@@ -4,6 +4,10 @@
 .editorconfig
 .vscode
 .DS_Store
+.agent
+.kiro
+Sites
+research
 node_modules
 src
 vendor
@@ -13,3 +17,7 @@ phpcs.xml
 README.md
 DEPLOY.md
 .distignore
+.eslintignore
+package.json
+package-lock.json
+photo-collage.zip

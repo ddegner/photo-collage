@@ -1,8 +1,6 @@
 <?php
 /**
- * Admin Settings Page for Photo Collage Plugin
- *
- * Provides settings interface for configuring uninstall behavior
+ * Admin Settings Page Controller for Photo Collage Plugin
  *
  * @package PhotoCollage
  */
@@ -14,34 +12,54 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 require_once __DIR__ . '/enums.php';
-require_once __DIR__ . '/class-photo-collage-block-converter.php';
+require_once __DIR__ . '/class-photo-collage-collage-scanner.php';
+require_once __DIR__ . '/class-photo-collage-collage-exporter.php';
 
 /**
- * Class Photo_Collage_Admin_Settings
- *
- * Handles the admin settings page for the Photo Collage plugin
+ * Handles the admin settings page for the Photo Collage plugin.
  */
 final class Photo_Collage_Admin_Settings {
 
-
-
-
 	/**
-	 * Option name for storing uninstall preference
+	 * Option name for storing uninstall preference.
 	 */
 	public const OPTION_NAME = 'photo_collage_uninstall_preference';
 
 	/**
-	 * Initialize the admin settings
+	 * Scanner dependency.
+	 *
+	 * @var Photo_Collage_Collage_Scanner
 	 */
-	public function __construct() {
+	private Photo_Collage_Collage_Scanner $scanner;
+
+	/**
+	 * Exporter dependency.
+	 *
+	 * @var Photo_Collage_Collage_Exporter
+	 */
+	private Photo_Collage_Collage_Exporter $exporter;
+
+	/**
+	 * Initialize the admin settings.
+	 *
+	 * @param Photo_Collage_Collage_Scanner|null  $scanner Scanner dependency.
+	 * @param Photo_Collage_Collage_Exporter|null $exporter Exporter dependency.
+	 */
+	public function __construct(
+		?Photo_Collage_Collage_Scanner $scanner = null,
+		?Photo_Collage_Collage_Exporter $exporter = null
+	) {
+		$this->scanner  = $scanner ?? new Photo_Collage_Collage_Scanner();
+		$this->exporter = $exporter ?? new Photo_Collage_Collage_Exporter( $this->scanner );
+
 		add_action( 'admin_menu', $this->add_settings_page( ... ) );
 		add_action( 'admin_init', $this->register_settings( ... ) );
+		add_action( 'admin_post_photo_collage_export', $this->handle_export_request( ... ) );
 		add_filter( 'plugin_action_links_photo-collage/photo-collage.php', $this->add_settings_link( ... ) );
 	}
 
 	/**
-	 * Add settings page to WordPress admin
+	 * Add settings page to WordPress admin.
 	 */
 	public function add_settings_page(): void {
 		add_options_page(
@@ -54,7 +72,7 @@ final class Photo_Collage_Admin_Settings {
 	}
 
 	/**
-	 * Register plugin settings
+	 * Register plugin settings.
 	 */
 	public function register_settings(): void {
 		register_setting(
@@ -69,7 +87,7 @@ final class Photo_Collage_Admin_Settings {
 	}
 
 	/**
-	 * Sanitize the preference value
+	 * Sanitize the preference value.
 	 *
 	 * @param string $value The value to sanitize.
 	 * @return string Sanitized value.
@@ -79,7 +97,7 @@ final class Photo_Collage_Admin_Settings {
 	}
 
 	/**
-	 * Add settings link to plugin row
+	 * Add settings link to plugin row.
 	 *
 	 * @param array<string> $links Existing plugin action links.
 	 * @return array<string> Modified links.
@@ -91,278 +109,86 @@ final class Photo_Collage_Admin_Settings {
 	}
 
 	/**
-	 * Scan all posts for photo collage blocks
+	 * Render the settings page.
+	 */
+	public function render_settings_page(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		$settings_updated   = $this->handle_settings_submission();
+		$current_preference = Photo_Collage_Uninstall_Preference::from_string(
+			(string) get_option( self::OPTION_NAME, Photo_Collage_Uninstall_Preference::STATIC_HTML->value )
+		);
+		$block_count        = $this->scan_collage_blocks();
+		$export_url         = wp_nonce_url(
+			admin_url( 'admin-post.php?action=photo_collage_export' ),
+			'photo_collage_export',
+			'nonce'
+		);
+
+		require __DIR__ . '/admin/views/settings-page.php';
+	}
+
+	/**
+	 * Handle settings form submission.
+	 *
+	 * @return bool True when settings were updated.
+	 */
+	private function handle_settings_submission(): bool {
+		if ( ! isset( $_POST['photo_collage_settings_nonce'] ) ) {
+			return false;
+		}
+
+		check_admin_referer( 'photo_collage_uninstall_options', 'photo_collage_settings_nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'photo-collage' ) );
+		}
+
+		if ( ! isset( $_POST[ self::OPTION_NAME ] ) ) {
+			return false;
+		}
+
+		$value = sanitize_text_field( wp_unslash( $_POST[ self::OPTION_NAME ] ) );
+		update_option( self::OPTION_NAME, $this->sanitize_preference( $value ) );
+
+		return true;
+	}
+
+	/**
+	 * Handle JSON export action routed through admin-post.php.
+	 */
+	public function handle_export_request(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'photo-collage' ) );
+		}
+
+		check_admin_referer( 'photo_collage_export', 'nonce' );
+		$this->exporter->send_json_export();
+		exit;
+	}
+
+	/**
+	 * Scan all posts for photo collage blocks.
 	 *
 	 * @return int Number of collage blocks found.
 	 */
 	private function scan_collage_blocks(): int {
-		// Check transient first.
 		$cached_count = get_transient( 'photo_collage_block_count' );
 		if ( false !== $cached_count ) {
 			return (int) $cached_count;
 		}
 
-		// Use shared method from converter class.
-		$posts_with_blocks = Photo_Collage_Block_Converter::get_collage_post_content();
+		$posts_with_blocks = $this->scanner->get_collage_post_content();
 
 		$count = 0;
 		foreach ( $posts_with_blocks as $content ) {
-			// Quick string count instead of full parse.
 			$count += substr_count( $content, '<!-- wp:photo-collage/container' );
 		}
 
-		// Cache for 1 hour.
 		set_transient( 'photo_collage_block_count', $count, HOUR_IN_SECONDS );
 
 		return $count;
-	}
-
-	/**
-	 * Render the settings page
-	 */
-	public function render_settings_page(): void {
-		// Check user capabilities first.
-		if ( ! current_user_can( 'manage_options' ) ) {
-			return;
-		}
-
-		// Handle form submission - verify nonce BEFORE accessing any POST data.
-		if ( isset( $_POST['photo_collage_settings_nonce'] ) ) {
-			// Verify nonce - this will die with error message if verification fails.
-			check_admin_referer( 'photo_collage_uninstall_options', 'photo_collage_settings_nonce' );
-
-			// Double-check capabilities (defense in depth).
-			if ( ! current_user_can( 'manage_options' ) ) {
-				wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'photo-collage' ) );
-			}
-
-			// Now it's safe to process POST data.
-			if ( isset( $_POST[ self::OPTION_NAME ] ) ) {
-				$value = sanitize_text_field( wp_unslash( $_POST[ self::OPTION_NAME ] ) );
-				update_option( self::OPTION_NAME, $this->sanitize_preference( $value ) );
-				echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Settings saved successfully.', 'photo-collage' ) . '</p></div>';
-			}
-		}
-
-		// Handle export - verify nonce BEFORE processing.
-		if ( isset( $_GET['action'] ) && 'export' === $_GET['action'] ) {
-			// Verify nonce - this will die with error message if verification fails.
-			check_admin_referer( 'photo_collage_export', 'nonce' );
-
-			// Double-check capabilities (defense in depth).
-			if ( ! current_user_can( 'manage_options' ) ) {
-				wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'photo-collage' ) );
-			}
-
-			$this->export_collage_data();
-			exit;
-		}
-
-		// Get current settings after potential update.
-		$current_preference = Photo_Collage_Uninstall_Preference::from_string(
-			(string) get_option( self::OPTION_NAME, Photo_Collage_Uninstall_Preference::STATIC_HTML->value )
-		);
-		$block_count        = $this->scan_collage_blocks();
-
-		?>
-		<div class="wrap">
-			<h1><?php esc_html_e( 'Photo Collage Uninstall Settings', 'photo-collage' ); ?></h1>
-
-			<div class="notice notice-warning">
-				<p>
-					<strong><?php esc_html_e( '⚠️ Important:', 'photo-collage' ); ?></strong>
-					<?php esc_html_e( 'When you uninstall this plugin, your collage blocks will be converted based on the option you choose below. This conversion is irreversible.', 'photo-collage' ); ?>
-				</p>
-			</div>
-
-			<div class="notice notice-info">
-				<p>
-					<strong><?php esc_html_e( 'Collage Blocks Found:', 'photo-collage' ); ?></strong>
-					<?php
-					if ( 0 === $block_count ) {
-						esc_html_e( 'No collage blocks found in your content.', 'photo-collage' );
-					} else {
-						/* translators: %d: number of collage blocks */
-						printf( esc_html( _n( '%d collage block found', '%d collage blocks found', $block_count, 'photo-collage' ) ), absint( $block_count ) );
-					}
-					?>
-				</p>
-			</div>
-
-			<form method="post" action="">
-				<?php wp_nonce_field( 'photo_collage_uninstall_options', 'photo_collage_settings_nonce' ); ?>
-
-				<table class="form-table">
-					<tr>
-						<th scope="row">
-							<?php esc_html_e( 'Conversion Method', 'photo-collage' ); ?>
-						</th>
-						<td>
-							<fieldset>
-								<legend class="screen-reader-text">
-									<span><?php esc_html_e( 'Choose conversion method', 'photo-collage' ); ?></span>
-								</legend>
-
-								<label>
-									<input type="radio" name="<?php echo esc_attr( self::OPTION_NAME ); ?>"
-										value="<?php echo esc_attr( Photo_Collage_Uninstall_Preference::STATIC_HTML->value ); ?>"
-										<?php checked( $current_preference->value, Photo_Collage_Uninstall_Preference::STATIC_HTML->value ); ?>>
-									<strong><?php esc_html_e( 'Convert to Static HTML (Recommended)', 'photo-collage' ); ?></strong>
-									<p class="description">
-										<?php esc_html_e( 'Preserves the exact visual appearance of your collages including layout, positioning, rotation, and opacity. Blocks will become HTML blocks that cannot be edited visually, but will look exactly the same.', 'photo-collage' ); ?>
-									</p>
-								</label>
-
-								<br>
-
-								<label>
-									<input type="radio" name="<?php echo esc_attr( self::OPTION_NAME ); ?>"
-										value="<?php echo esc_attr( Photo_Collage_Uninstall_Preference::CORE_BLOCKS->value ); ?>"
-										<?php checked( $current_preference->value, Photo_Collage_Uninstall_Preference::CORE_BLOCKS->value ); ?>>
-									<strong><?php esc_html_e( 'Convert to Core Image Blocks', 'photo-collage' ); ?></strong>
-									<p class="description">
-										<?php esc_html_e( 'Converts collages to standard WordPress image blocks inside a group block. Images will be editable but will lose advanced positioning, rotation, z-index, and layout features. Images will stack vertically.', 'photo-collage' ); ?>
-									</p>
-								</label>
-
-								<br>
-
-								<label>
-									<input type="radio" name="<?php echo esc_attr( self::OPTION_NAME ); ?>"
-										value="<?php echo esc_attr( Photo_Collage_Uninstall_Preference::KEEP_AS_IS->value ); ?>"
-										<?php checked( $current_preference->value, Photo_Collage_Uninstall_Preference::KEEP_AS_IS->value ); ?>>
-									<strong><?php esc_html_e( 'Keep As-Is (Reversible)', 'photo-collage' ); ?></strong>
-									<p class="description">
-										<?php esc_html_e( 'Leaves block data intact. Content will not display while the plugin is uninstalled, but will be fully restored if you reinstall the plugin.', 'photo-collage' ); ?>
-									</p>
-								</label>
-							</fieldset>
-						</td>
-					</tr>
-				</table>
-
-				<h2><?php esc_html_e( 'Feature Comparison', 'photo-collage' ); ?></h2>
-				<table class="widefat">
-					<thead>
-						<tr>
-							<th><?php esc_html_e( 'Feature', 'photo-collage' ); ?></th>
-							<th><?php esc_html_e( 'Static HTML', 'photo-collage' ); ?></th>
-							<th><?php esc_html_e( 'Core Image Blocks', 'photo-collage' ); ?></th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr>
-							<td><?php esc_html_e( 'Preserves layout', 'photo-collage' ); ?></td>
-							<td>✅</td>
-							<td>❌</td>
-						</tr>
-						<tr class="alternate">
-							<td><?php esc_html_e( 'Preserves positioning', 'photo-collage' ); ?></td>
-							<td>✅</td>
-							<td>❌</td>
-						</tr>
-						<tr>
-							<td><?php esc_html_e( 'Preserves rotation', 'photo-collage' ); ?></td>
-							<td>✅</td>
-							<td>❌</td>
-						</tr>
-						<tr class="alternate">
-							<td><?php esc_html_e( 'Preserves z-index (layering)', 'photo-collage' ); ?></td>
-							<td>✅</td>
-							<td>❌</td>
-						</tr>
-						<tr>
-							<td><?php esc_html_e( 'Editable after uninstall', 'photo-collage' ); ?></td>
-							<td>❌</td>
-							<td>✅</td>
-						</tr>
-						<tr class="alternate">
-							<td><?php esc_html_e( 'Image URL preserved', 'photo-collage' ); ?></td>
-							<td>✅</td>
-							<td>✅</td>
-						</tr>
-						<tr>
-							<td><?php esc_html_e( 'Alt text preserved', 'photo-collage' ); ?></td>
-							<td>✅</td>
-							<td>✅</td>
-						</tr>
-						<tr class="alternate">
-							<td><?php esc_html_e( 'Caption preserved', 'photo-collage' ); ?></td>
-							<td>✅</td>
-							<td>✅</td>
-						</tr>
-					</tbody>
-				</table>
-
-				<?php submit_button(); ?>
-			</form>
-
-			<?php if ( $block_count > 0 ) : ?>
-				<h2><?php esc_html_e( 'Backup Your Data', 'photo-collage' ); ?></h2>
-				<p><?php esc_html_e( 'Before uninstalling, we recommend exporting your collage data as a backup.', 'photo-collage' ); ?>
-				</p>
-				<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'options-general.php?page=photo-collage-settings&action=export' ), 'photo_collage_export', 'nonce' ) ); ?>"
-					class="button button-secondary">
-					<?php esc_html_e( 'Export Collage Data (JSON)', 'photo-collage' ); ?>
-				</a>
-			<?php endif; ?>
-		</div>
-		<?php
-	}
-
-	/**
-	 * Export collage data as JSON
-	 */
-	private function export_collage_data(): void {
-		$export_data = array(
-			'exported_at' => current_time( 'mysql' ),
-			'site_url'    => get_site_url(),
-			'collages'    => array(),
-		);
-
-		$posts = Photo_Collage_Block_Converter::get_posts_with_collage_blocks_details();
-
-		foreach ( $posts as $post ) {
-			if ( has_blocks( $post->post_content ) ) {
-				$blocks         = parse_blocks( $post->post_content );
-				$collage_blocks = $this->extract_collage_blocks( $blocks );
-
-				if ( ! empty( $collage_blocks ) ) {
-					$export_data['collages'][] = array(
-						'post_id'    => $post->ID,
-						'post_title' => $post->post_title,
-						'post_type'  => $post->post_type,
-						'permalink'  => get_permalink( $post->ID ),
-						'blocks'     => $collage_blocks,
-					);
-				}
-			}
-		}
-
-		header( 'Content-Type: application/json' );
-		header( 'Content-Disposition: attachment; filename="photo-collage-backup-' . gmdate( 'Y-m-d' ) . '.json"' );
-		echo wp_json_encode( $export_data, JSON_PRETTY_PRINT );
-	}
-
-	/**
-	 * Extract collage blocks from blocks array
-	 *
-	 * @param array $blocks Array of blocks to search.
-	 * @return array Array of collage blocks.
-	 */
-	private function extract_collage_blocks( array $blocks ): array {
-		$collage_blocks = array();
-
-		foreach ( $blocks as $block ) {
-			if ( ( $block['blockName'] ?? '' ) === 'photo-collage/container' ) {
-				$collage_blocks[] = $block;
-			}
-
-			if ( ! empty( $block['innerBlocks'] ) ) {
-				$collage_blocks = array_merge( $collage_blocks, $this->extract_collage_blocks( $block['innerBlocks'] ) );
-			}
-		}
-
-		return $collage_blocks;
 	}
 }

@@ -2,6 +2,32 @@
  * Shared utility for generating background styles from block attributes.
  */
 
+const PRESET_PREFIXES = {
+	color: 'var:preset|color|',
+	gradient: 'var:preset|gradient|',
+};
+
+/**
+ * Convert WordPress preset token values into valid CSS vars.
+ *
+ * @param {string} value      Raw style value.
+ * @param {string} presetType Preset type: color|gradient.
+ * @return {string} CSS-ready value.
+ */
+const normalizePresetValue = ( value, presetType ) => {
+	const prefix = PRESET_PREFIXES[ presetType ];
+	if (
+		typeof value !== 'string' ||
+		! prefix ||
+		! value.startsWith( prefix )
+	) {
+		return value;
+	}
+
+	const slug = value.slice( prefix.length ).split( '|' ).join( '--' );
+	return `var(--wp--preset--${ presetType }--${ slug })`;
+};
+
 /**
  * Get background styles from attributes.
  *
@@ -20,17 +46,39 @@ export const getBackgroundStyle = ( attributes ) => {
 	} = attributes;
 
 	const style = {};
+	const nativeBackground = attributes?.style?.color?.background;
+	const nativeGradient = attributes?.style?.color?.gradient;
+
+	if ( typeof nativeBackground === 'string' && nativeBackground !== '' ) {
+		style.backgroundColor = normalizePresetValue(
+			nativeBackground,
+			'color'
+		);
+	}
+
+	if ( typeof nativeGradient === 'string' && nativeGradient !== '' ) {
+		style.backgroundImage = normalizePresetValue(
+			nativeGradient,
+			'gradient'
+		);
+	}
 
 	switch ( backgroundType ) {
 		case 'color':
-			if ( backgroundColor ) {
-				style.backgroundColor = backgroundColor;
+			if ( ! nativeBackground && backgroundColor ) {
+				style.backgroundColor = normalizePresetValue(
+					backgroundColor,
+					'color'
+				);
 			}
 			break;
 
 		case 'gradient':
-			if ( gradient ) {
-				style.backgroundImage = gradient;
+			if ( ! nativeGradient && gradient ) {
+				style.backgroundImage = normalizePresetValue(
+					gradient,
+					'gradient'
+				);
 			}
 			break;
 

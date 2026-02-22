@@ -7,9 +7,7 @@ import {
 	MediaPlaceholder,
 	BlockControls,
 	MediaReplaceFlow,
-	RichText,
 	LinkControl as LinkControlBase,
-	AlignmentToolbar,
 	getTypographyClassesAndStyles,
 } from '@wordpress/block-editor';
 import { useInstanceId } from '@wordpress/compose';
@@ -33,6 +31,7 @@ import {
 import { link as linkIcon } from '@wordpress/icons';
 import './editor.scss';
 import CaptionPositionControl from './components/caption-position-control';
+import CaptionEditor from './components/caption-editor';
 import BackgroundControls from '../components/BackgroundControls';
 import AbsolutePositionControls from '../components/AbsolutePositionControls';
 import { getBackgroundStyle } from '../utils/background-styles';
@@ -980,43 +979,20 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 					{ /* Caption before image for left-* and top-* placements */ }
 					{ showCaption &&
 						( captionPlacement.startsWith( 'left-' ) ||
-							captionPlacement.startsWith( 'top-' ) ) &&
-						( ! RichText.isEmpty( caption ) || isSelected ) && (
-							<>
-								<BlockControls>
-									<AlignmentToolbar
-										value={ captionAlign }
-										onChange={ ( value ) =>
-											setAttributes( {
-												captionAlign: value,
-											} )
-										}
-									/>
-								</BlockControls>
-								<RichText
-									tagName="figcaption"
-									className={ captionClassName }
-									placeholder={ __(
-										'Write caption…',
-										'photo-collage'
-									) }
-									value={ caption }
-									onChange={ ( value ) =>
-										setAttributes( { caption: value } )
-									}
-									inlineToolbar
-									allowedFormats={ [
-										'core/bold',
-										'core/italic',
-										'core/link',
-										'core/strikethrough',
-										'core/text-color',
-										'core/subscript',
-										'core/superscript',
-									] }
-									style={ captionInlineStyle }
-								/>
-							</>
+							captionPlacement.startsWith( 'top-' ) ) && (
+							<CaptionEditor
+								caption={ caption }
+								isSelected={ isSelected }
+								captionAlign={ captionAlign }
+								onChangeCaption={ ( value ) =>
+									setAttributes( { caption: value } )
+								}
+								onChangeCaptionAlign={ ( value ) =>
+									setAttributes( { captionAlign: value } )
+								}
+								captionClassName={ captionClassName }
+								captionInlineStyle={ captionInlineStyle }
+							/>
 						) }
 					<img
 						src={ url }
@@ -1039,43 +1015,20 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 					{ /* Caption after image for right-* and bottom-* placements */ }
 					{ showCaption &&
 						( captionPlacement.startsWith( 'right-' ) ||
-							captionPlacement.startsWith( 'bottom-' ) ) &&
-						( ! RichText.isEmpty( caption ) || isSelected ) && (
-							<>
-								<BlockControls>
-									<AlignmentToolbar
-										value={ captionAlign }
-										onChange={ ( value ) =>
-											setAttributes( {
-												captionAlign: value,
-											} )
-										}
-									/>
-								</BlockControls>
-								<RichText
-									tagName="figcaption"
-									className={ captionClassName }
-									placeholder={ __(
-										'Write caption…',
-										'photo-collage'
-									) }
-									value={ caption }
-									onChange={ ( value ) =>
-										setAttributes( { caption: value } )
-									}
-									inlineToolbar
-									allowedFormats={ [
-										'core/bold',
-										'core/italic',
-										'core/link',
-										'core/strikethrough',
-										'core/text-color',
-										'core/subscript',
-										'core/superscript',
-									] }
-									style={ captionInlineStyle }
-								/>
-							</>
+							captionPlacement.startsWith( 'bottom-' ) ) && (
+							<CaptionEditor
+								caption={ caption }
+								isSelected={ isSelected }
+								captionAlign={ captionAlign }
+								onChangeCaption={ ( value ) =>
+									setAttributes( { caption: value } )
+								}
+								onChangeCaptionAlign={ ( value ) =>
+									setAttributes( { captionAlign: value } )
+								}
+								captionClassName={ captionClassName }
+								captionInlineStyle={ captionInlineStyle }
+							/>
 						) }
 				</figure>
 			</div>

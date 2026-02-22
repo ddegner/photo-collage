@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 ?>
-<!-- wp:photo-collage/container -->
+<!-- wp:photo-collage/container {"heightMode":"auto"} -->
 <div class="wp-block-photo-collage-container" style="min-height: 200px;">
 	<!-- wp:photo-collage/image {"width":"70%","zIndex":1} /-->
 	<!-- wp:photo-collage/image {"width":"40%","useAbsolutePosition":true,"top":"60%","left":"55%","zIndex":2} /-->

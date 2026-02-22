@@ -14,6 +14,11 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
 
+// Load enum definition in uninstall context.
+if ( ! enum_exists( 'Photo_Collage_Uninstall_Preference', false ) ) {
+	require_once plugin_dir_path( __FILE__ ) . 'includes/enums.php';
+}
+
 /**
  * Main uninstall process
  */
@@ -24,15 +29,15 @@ function photo_collage_uninstall(): void {
 
 	// Only convert if preference is not 'keep_as_is'.
 	if ( Photo_Collage_Uninstall_Preference::KEEP_AS_IS !== $preference ) {
-		// Load the converter class.
-		require_once plugin_dir_path( __FILE__ ) . 'includes/class-photo-collage-block-converter.php';
-		// Enums are required by the converter, and might be required here if we use them.
-		require_once plugin_dir_path( __FILE__ ) . 'includes/enums.php';
+		// Load conversion services.
+		require_once plugin_dir_path( __FILE__ ) . 'includes/class-photo-collage-collage-scanner.php';
+		require_once plugin_dir_path( __FILE__ ) . 'includes/class-photo-collage-collage-converter.php';
 
-		$converter = new Photo_Collage_Block_Converter();
+		$scanner   = new Photo_Collage_Collage_Scanner();
+		$converter = new Photo_Collage_Collage_Converter();
 
 		// Get all posts with collage blocks.
-		$post_ids = $converter->scan_all_posts();
+		$post_ids = $scanner->get_posts_with_collage_blocks();
 
 		if ( ! empty( $post_ids ) ) {
 			foreach ( $post_ids as $post_id ) {
@@ -48,12 +53,8 @@ function photo_collage_uninstall(): void {
 
 	// Clean up plugin options.
 	delete_option( 'photo_collage_uninstall_preference' );
+	delete_option( 'photo_collage_scan_cache_version' );
 	delete_transient( 'photo_collage_block_count' );
-}
-
-// Load Enum definition if not already loaded (uninstall context).
-if ( ! class_exists( 'Photo_Collage_Uninstall_Preference' ) ) {
-	require_once plugin_dir_path( __FILE__ ) . 'includes/enums.php';
 }
 
 // Run the uninstall process.

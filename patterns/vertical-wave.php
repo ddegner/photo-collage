@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 ?>
-<!-- wp:photo-collage/container {"containerHeight":"1200px"} -->
+<!-- wp:photo-collage/container {"heightMode":"auto","containerHeight":"1200px"} -->
 <div class="wp-block-photo-collage-container" style="height: 1200px; min-height: 200px;">
 	<!-- wp:photo-collage/image {"width":"30%","marginLeft":"0%","marginTop":"0%","zIndex":1} /-->
 	<!-- wp:photo-collage/image {"width":"30%","marginLeft":"5%","marginTop":"-10%","zIndex":2} /-->
@@ -24,4 +24,3 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<!-- wp:photo-collage/image {"width":"30%","marginLeft":"5%","marginTop":"-10%","zIndex":2} /-->
 </div>
 <!-- /wp:photo-collage/container -->
-

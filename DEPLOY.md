@@ -34,26 +34,26 @@ Before your first deployment, configure WordPress.org SVN credentials in GitHub:
    - Update changelog/release notes content
    - Test the plugin
 
-2. Commit and push to `main`:
+2. Commit and push to `master`:
 
 ```bash
 git add .
-git commit -m "Release 0.5.3"
-git push origin main
+git commit -m "Release <version>"
+git push origin master
 ```
 
 3. Create and push the release tag:
 
 ```bash
-git tag -a 0.5.3 -m "Release 0.5.3"
-git push origin 0.5.3
+git tag -a <version> -m "Release <version>"
+git push origin <version>
 ```
 
-4. Create and publish a GitHub Release for tag `0.5.3`:
+4. Create and publish a GitHub Release for tag `<version>`:
    - Add your release notes in the GitHub Release UI.
    - Publish the release.
 
-Publishing the release triggers WordPress.org deployment and attaches `photo-collage-0.5.3.zip` to the same release.
+Publishing the release triggers WordPress.org deployment and attaches `photo-collage-<version>.zip` to the same release.
 
 ## Monitoring
 

@@ -5,250 +5,70 @@ import {
 } from '@wordpress/block-editor';
 import {
 	PanelBody,
+	SelectControl,
 	ToggleControl,
 	// WordPress core currently exposes UnitControl only via this export.
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalUnitControl as UnitControl,
 	Button,
 } from '@wordpress/components';
-import { useSelect, useDispatch } from '@wordpress/data';
-import { createBlock } from '@wordpress/blocks';
 import { __ } from '@wordpress/i18n';
-import {
-	SideBySideIcon,
-	ThreeColumnsIcon,
-	OverlapLeftIcon,
-	OverlapRightIcon,
-	ThreeGridIcon,
-	OffsetGridIcon,
-	ScatterIcon,
-	HeroLayeredIcon,
-	VerticalWaveIcon,
-	StaggeredStoryIcon,
-	OffsetGalleryIcon,
-	CenterOverlayIcon,
-} from './icons';
+import { useEffect, useRef } from '@wordpress/element';
 import BackgroundControls from '../components/BackgroundControls';
 import { getBackgroundStyle } from '../utils/background-styles';
+import { attachAutoHeight, clearAutoHeight } from './auto-height';
+import { PRESET_BUTTONS } from './presets';
+import { usePresets } from './use-presets';
 import './editor.scss';
 
-const PRESETS = {
-	'side-by-side': [
-		{ width: '50%', marginLeft: '0%', marginTop: '0%' },
-		{ width: '50%', marginLeft: '0%', marginTop: '0%' },
-	],
-	'three-columns': [
-		{ width: '33.33%', marginLeft: '0%', marginTop: '0%' },
-		{ width: '33.33%', marginLeft: '0%', marginTop: '0%' },
-		{ width: '33.33%', marginLeft: '0%', marginTop: '0%' },
-	],
-	'overlap-left': [
-		{ width: '75%', marginLeft: '0%', marginTop: '0%', zIndex: 2 },
-		{ width: '75%', marginLeft: '25%', marginTop: '-15%', zIndex: 1 },
-	],
-	'overlap-right': [
-		{ width: '75%', marginLeft: '25%', marginTop: '0%', zIndex: 2 },
-		{ width: '75%', marginLeft: '0%', marginTop: '-15%', zIndex: 1 },
-	],
-	'three-grid': [
-		{ width: '50%', marginLeft: '0%', marginTop: '0%' },
-		{ width: '50%', marginLeft: '0%', marginTop: '0%' },
-		{ width: '100%', marginLeft: '0%', marginTop: '0%' },
-	],
-	'offset-grid': [
-		{ width: '45%', marginLeft: '0%', marginTop: '0%' },
-		{ width: '45%', marginLeft: '55%', marginTop: '20%' }, // Shifted down
-	],
-	scatter: [
-		{
-			width: '40%',
-			marginLeft: '10%',
-			marginTop: '0%',
-			rotation: -5,
-			zIndex: 1,
-		},
-		{
-			width: '40%',
-			marginLeft: '10%',
-			marginTop: '-15%',
-			rotation: 5,
-			zIndex: 2,
-		},
-		{
-			width: '35%',
-			marginLeft: '30%',
-			marginTop: '-10%',
-			rotation: 0,
-			zIndex: 3,
-		},
-	],
-	'hero-layered': [
-		{ width: '70%', marginLeft: '0%', marginTop: '0%', zIndex: 1 },
-		{ width: '40%', marginLeft: '55%', marginTop: '-20%', zIndex: 2 },
-	],
-	'vertical-wave': [
-		{ width: '30%', marginLeft: '0%', marginTop: '0%', zIndex: 1 },
-		{ width: '30%', marginLeft: '5%', marginTop: '-10%', zIndex: 2 },
-		{ width: '30%', marginLeft: '5%', marginTop: '-15%', zIndex: 1 },
-		{ width: '30%', marginLeft: '0%', marginTop: '0%', zIndex: 1 },
-		{ width: '30%', marginLeft: '5%', marginTop: '-10%', zIndex: 2 },
-		{ width: '30%', marginLeft: '5%', marginTop: '-15%', zIndex: 1 },
-		{ width: '30%', marginLeft: '0%', marginTop: '0%', zIndex: 1 },
-		{ width: '30%', marginLeft: '5%', marginTop: '-10%', zIndex: 2 },
-	],
-	'staggered-story': [
-		{ width: '28%', marginLeft: '2%', marginTop: '0%', zIndex: 1 },
-		{ width: '28%', marginLeft: '6%', marginTop: '-5%', zIndex: 2 },
-		{ width: '28%', marginLeft: '6%', marginTop: '-10%', zIndex: 1 },
-		{ width: '28%', marginLeft: '2%', marginTop: '0%', zIndex: 1 },
-		{ width: '28%', marginLeft: '6%', marginTop: '-5%', zIndex: 2 },
-		{ width: '28%', marginLeft: '6%', marginTop: '-10%', zIndex: 1 },
-		{ width: '28%', marginLeft: '2%', marginTop: '0%', zIndex: 1 },
-		{ width: '28%', marginLeft: '6%', marginTop: '-5%', zIndex: 2 },
-		{ width: '28%', marginLeft: '6%', marginTop: '-10%', zIndex: 1 },
-	],
-	'offset-gallery': [
-		{ width: '35%', marginLeft: '0%', marginTop: '0%', zIndex: 1 },
-		{ width: '25%', marginLeft: '5%', marginTop: '-8%', zIndex: 2 },
-		{ width: '30%', marginLeft: '5%', marginTop: '-12%', zIndex: 1 },
-		{ width: '40%', marginLeft: '0%', marginTop: '0%', zIndex: 1 },
-		{ width: '30%', marginLeft: '25%', marginTop: '-8%', zIndex: 2 },
-		{ width: '35%', marginLeft: '0%', marginTop: '0%', zIndex: 1 },
-		{ width: '25%', marginLeft: '5%', marginTop: '-8%', zIndex: 2 },
-	],
-	'center-overlay': [
-		{ width: '100%', marginLeft: '0%', marginTop: '0%', zIndex: 1 },
-		{ width: '50%', marginLeft: '25%', marginTop: '-40%', zIndex: 2 },
-	],
-};
-
-const PRESET_BUTTONS = [
-	{
-		id: 'side-by-side',
-		icon: SideBySideIcon,
-		label: __( 'Side by Side', 'photo-collage' ),
-	},
-	{
-		id: 'three-columns',
-		icon: ThreeColumnsIcon,
-		label: __( 'Three Columns', 'photo-collage' ),
-	},
-	{
-		id: 'overlap-left',
-		icon: OverlapLeftIcon,
-		label: __( 'Overlap Left', 'photo-collage' ),
-	},
-	{
-		id: 'overlap-right',
-		icon: OverlapRightIcon,
-		label: __( 'Overlap Right', 'photo-collage' ),
-	},
-	{
-		id: 'three-grid',
-		icon: ThreeGridIcon,
-		label: __( 'Three Grid', 'photo-collage' ),
-	},
-	{
-		id: 'offset-grid',
-		icon: OffsetGridIcon,
-		label: __( 'Offset Grid', 'photo-collage' ),
-	},
-	{
-		id: 'scatter',
-		icon: ScatterIcon,
-		label: __( 'Scatter', 'photo-collage' ),
-	},
-	{
-		id: 'hero-layered',
-		icon: HeroLayeredIcon,
-		label: __( 'Hero Layered', 'photo-collage' ),
-	},
-	{
-		id: 'vertical-wave',
-		icon: VerticalWaveIcon,
-		label: __( 'Vertical Wave', 'photo-collage' ),
-	},
-	{
-		id: 'staggered-story',
-		icon: StaggeredStoryIcon,
-		label: __( 'Staggered Story', 'photo-collage' ),
-	},
-	{
-		id: 'offset-gallery',
-		icon: OffsetGalleryIcon,
-		label: __( 'Offset Gallery', 'photo-collage' ),
-	},
-	{
-		id: 'center-overlay',
-		icon: CenterOverlayIcon,
-		label: __( 'Center Overlay', 'photo-collage' ),
-	},
-];
+const ALLOWED_BLOCKS = [ 'photo-collage/image', 'photo-collage/frame' ];
 
 export default function Edit( { attributes, setAttributes, clientId } ) {
-	const { stackOnMobile, containerHeight } = attributes;
+	const { stackOnMobile, containerHeight, heightMode = 'fixed' } = attributes;
+	const containerRef = useRef( null );
 
 	const backgroundStyle = getBackgroundStyle( attributes );
+	const containerClassName = [
+		stackOnMobile ? 'is-stack-on-mobile' : '',
+		heightMode === 'auto' ? 'is-height-auto' : '',
+	]
+		.filter( Boolean )
+		.join( ' ' );
 
 	const blockProps = useBlockProps( {
-		className: stackOnMobile ? 'is-stack-on-mobile' : '',
+		ref: containerRef,
+		className: containerClassName,
+		'data-height-mode': heightMode,
 		style: {
-			height: containerHeight,
-			minHeight: '200px', // Ensure container is visible
+			height: heightMode === 'fixed' ? containerHeight : undefined,
+			minHeight: '200px',
 			...backgroundStyle,
 		},
 	} );
-	const ALLOWED_BLOCKS = [ 'photo-collage/image', 'photo-collage/frame' ];
 
-	const { replaceInnerBlocks } = useDispatch( 'core/block-editor' );
-	const innerBlocks = useSelect(
-		( select ) => {
-			const blocks = select( 'core/block-editor' ).getBlocks( clientId );
-			return blocks || [];
-		},
-		[ clientId ]
-	);
+	const { applyPreset } = usePresets( {
+		clientId,
+		heightMode,
+		containerHeight,
+		setAttributes,
+	} );
 
-	const applyPreset = ( preset ) => {
-		const config = PRESETS[ preset ];
-		if ( ! config ) {
-			return;
+	useEffect( () => {
+		const containerElement = containerRef.current;
+		if ( ! containerElement ) {
+			return undefined;
 		}
 
-		// Auto-adjust container height: tall presets need explicit height, others use auto
-		const tallPresets = [
-			'vertical-wave',
-			'staggered-story',
-			'offset-gallery',
-		];
-		setAttributes( {
-			containerHeight: tallPresets.includes( preset ) ? '1200px' : '',
-		} );
+		if ( heightMode !== 'auto' ) {
+			clearAutoHeight( containerElement );
+			return undefined;
+		}
 
-		// Create new blocks with preset layout, but preserve existing image data
-		const newBlocks = config.map( ( attrs, index ) => {
-			// If there's an existing block at this index, preserve its image data
-			const existingBlock = innerBlocks[ index ];
-			const imageData = existingBlock
-				? {
-						url: existingBlock.attributes.url,
-						id: existingBlock.attributes.id,
-						alt: existingBlock.attributes.alt,
-						title: existingBlock.attributes.title,
-						caption: existingBlock.attributes.caption,
-						description: existingBlock.attributes.description,
-						isDecorative: existingBlock.attributes.isDecorative,
-				  }
-				: {};
-
-			// Merge preset layout attributes with preserved image data
-			return createBlock( 'photo-collage/image', {
-				...attrs,
-				...imageData,
-			} );
+		return attachAutoHeight( containerElement, {
+			watchMutations: true,
+			watchResize: true,
 		} );
-		replaceInnerBlocks( clientId, newBlocks );
-	};
+	}, [ heightMode, stackOnMobile, clientId ] );
 
 	const innerBlocksProps = useInnerBlocksProps( blockProps, {
 		allowedBlocks: ALLOWED_BLOCKS,
@@ -279,18 +99,46 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 				<PanelBody
 					title={ __( 'Container Settings', 'photo-collage' ) }
 				>
-					<UnitControl
-						label={ __( 'Container Height', 'photo-collage' ) }
-						value={ containerHeight }
+					<SelectControl
+						label={ __( 'Height Mode', 'photo-collage' ) }
+						value={ heightMode }
+						options={ [
+							{
+								label: __( 'Fixed Height', 'photo-collage' ),
+								value: 'fixed',
+							},
+							{
+								label: __( 'Auto Height', 'photo-collage' ),
+								value: 'auto',
+							},
+						] }
 						onChange={ ( value ) =>
-							setAttributes( { containerHeight: value } )
+							setAttributes( { heightMode: value } )
 						}
+						__nextHasNoMarginBottom={ true }
 						__next40pxDefaultSize={ true }
-						help={ __(
-							'Fixed height is required for absolute positioning and overlapping effects.',
-							'photo-collage'
-						) }
 					/>
+					{ heightMode === 'fixed' ? (
+						<UnitControl
+							label={ __( 'Container Height', 'photo-collage' ) }
+							value={ containerHeight }
+							onChange={ ( value ) =>
+								setAttributes( { containerHeight: value } )
+							}
+							__next40pxDefaultSize={ true }
+							help={ __(
+								'Set an explicit canvas height for absolute layouts.',
+								'photo-collage'
+							) }
+						/>
+					) : (
+						<p className="photo-collage-height-mode-help">
+							{ __(
+								'Automatically sizes the container to fit absolute-positioned items.',
+								'photo-collage'
+							) }
+						</p>
+					) }
 				</PanelBody>
 				<PanelBody
 					title={ __( 'Responsive Settings', 'photo-collage' ) }

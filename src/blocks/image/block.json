@@ -83,22 +83,6 @@
 			"type": "string",
 			"default": ""
 		},
-		"marginTop": {
-			"type": "string",
-			"default": "0%"
-		},
-		"marginRight": {
-			"type": "string",
-			"default": "0%"
-		},
-		"marginBottom": {
-			"type": "string",
-			"default": "0%"
-		},
-		"marginLeft": {
-			"type": "string",
-			"default": "0%"
-		},
 		"zIndex": {
 			"type": "number",
 			"default": 1
@@ -231,12 +215,6 @@
 				"tiling-image",
 				"full-image"
 			]
-		},
-		"backgroundColor": {
-			"type": "string"
-		},
-		"gradient": {
-			"type": "string"
 		},
 		"backgroundImageId": {
 			"type": "number"

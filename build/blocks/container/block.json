@@ -5,7 +5,7 @@
   "version": "0.5.3",
   "title": "Collage Container",
   "category": "design",
-  "icon": "grid-view",
+  "icon": "layout",
   "description": "A container for creating freeform photo layouts.",
   "supports": {
     "align": [
@@ -17,6 +17,10 @@
       "margin": true,
       "padding": true
     },
+    "color": {
+      "background": true,
+      "gradients": true
+    },
     "layout": {
       "allowEditing": false
     }
@@ -24,10 +28,11 @@
   "textdomain": "photo-collage",
   "editorScript": "file:./index.js",
   "editorStyle": "file:./index.css",
+  "viewScript": "file:./view.js",
   "attributes": {
     "align": {
       "type": "string",
-      "default": "wide"
+      "default": "full"
     },
     "stackOnMobile": {
       "type": "boolean",
@@ -36,6 +41,14 @@
     "containerHeight": {
       "type": "string",
       "default": ""
+    },
+    "heightMode": {
+      "type": "string",
+      "default": "fixed",
+      "enum": [
+        "fixed",
+        "auto"
+      ]
     },
     "backgroundType": {
       "type": "string",
@@ -47,12 +60,6 @@
         "tiling-image",
         "full-image"
       ]
-    },
-    "backgroundColor": {
-      "type": "string"
-    },
-    "gradient": {
-      "type": "string"
     },
     "backgroundImageId": {
       "type": "number"

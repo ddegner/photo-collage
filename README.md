@@ -3,7 +3,7 @@
 **Contributors:** ddegner  
 **Tags:** block, photo collage, image gallery, overlapping images, visual design  
 **Tested up to:** 6.9  
-**Stable tag:** 0.5.12  
+**Stable tag:** 0.5.13  
 **Requires at least:** 6.8  
 **Requires PHP:** 8.3  
 **License:** GPL-2.0-or-later  
@@ -23,7 +23,7 @@ Perfect for photographers, designers, and content creators who want to showcase 
 
 ### Key Features
 
-*   **12 Professional Layout Presets** - Choose from Side by Side, Three Columns, Overlap Left/Right, Grid, Scatter, Hero Layered, Vertical Wave, Staggered Story, Offset Gallery, and Center Overlay
+*   **19 Professional Layout Presets** - Choose from Floating Mosaic, Split Asymmetric, Hero + Satellites, Modular Grid, Story Stream, Contact Sheet, and more
 *   **Advanced Image Controls** - Fine-tune each image with rotation, opacity, padding, margins, and z-index layering
 *   **Dual Positioning Modes** - Use relative positioning with margins for flexible layouts, or absolute positioning for pixel-perfect control
 *   **No Image Cropping** - Images are never cropped, preserving your entire composition
@@ -106,6 +106,15 @@ Photo Collage is optimized for performance. It uses modern CSS for positioning a
 4.  Mobile-responsive stacking in action
 
 ## Changelog
+
+### 0.5.13
+*   IMPROVEMENT: Refactored collage container architecture for clearer block registration, rendering, and compatibility paths
+*   IMPROVEMENT: Expanded quick layout presets and added randomized Floating Mosaic generation for more natural variations
+*   IMPROVEMENT: Added robust Auto Height behavior with frontend observers for absolute-positioned layouts
+*   IMPROVEMENT: Defaulted preset templates/patterns to Auto Height and defaulted new Collage Containers to Full Width
+*   IMPROVEMENT: Migrated legacy custom spacing/background attributes toward native block supports with deprecations for backward compatibility
+*   IMPROVEMENT: Added uninstall conversion tooling for scan/export/convert workflows in admin settings
+*   UI: Updated block icons so Collage Container and Collage Frame better match their roles in the inserter
 
 ### 0.5.12
 *   FIX: Corrected dynamic frame rendering to avoid nested wrappers that could collapse content width

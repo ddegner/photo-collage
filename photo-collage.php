@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Photo Collage
  * Description:       Blocks for creating freeform photo layouts with more natural and chaotic structures that can overlap.
- * Version:           0.5.12
+ * Version:           0.5.13
  * Requires at least: 6.8
  * Requires PHP:      8.3
  * Author:            David Degner
@@ -23,37 +23,69 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Plugin version constant
  */
-define( 'PHOTO_COLLAGE_VERSION', '0.5.12' );
+define( 'PHOTO_COLLAGE_VERSION', '0.5.13' );
+define( 'PHOTO_COLLAGE_PLUGIN_FILE', __FILE__ );
+define( 'PHOTO_COLLAGE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 
 /**
- * Registers the blocks.
+ * Load runtime classes needed by server-side block rendering.
  */
-function photo_collage_block_init(): void {
-	register_block_type(
-		block_type: plugin_dir_path( __FILE__ ) . 'build/blocks/container/block.json'
-	);
-	register_block_type(
-		block_type: plugin_dir_path( __FILE__ ) . 'build/blocks/image/block.json'
-	);
-	register_block_type(
-		block_type: plugin_dir_path( __FILE__ ) . 'build/blocks/frame/block.json'
-	);
+require_once PHOTO_COLLAGE_PLUGIN_DIR . 'includes/class-photo-collage-block-attributes.php';
+require_once PHOTO_COLLAGE_PLUGIN_DIR . 'includes/class-photo-collage-renderer.php';
+
+/**
+ * Registers plugin blocks.
+ *
+ * Uses the generated metadata manifest when available (WordPress 6.8+),
+ * with a direct registration fallback for resilience.
+ */
+function photo_collage_register_blocks(): void {
+	$blocks_dir    = PHOTO_COLLAGE_PLUGIN_DIR . 'build/blocks';
+	$manifest_path = PHOTO_COLLAGE_PLUGIN_DIR . 'build/blocks-manifest.php';
+
+	if (
+		file_exists( $manifest_path ) &&
+		function_exists( 'wp_register_block_metadata_collection' ) &&
+		function_exists( 'wp_register_block_types_from_metadata_collection' )
+	) {
+		wp_register_block_metadata_collection( $blocks_dir, $manifest_path );
+		wp_register_block_types_from_metadata_collection( $blocks_dir, $manifest_path );
+		return;
+	}
+
+	foreach ( array( 'container', 'image', 'frame' ) as $block_name ) {
+		register_block_type( $blocks_dir . '/' . $block_name );
+	}
 }
-add_action( 'init', photo_collage_block_init( ... ) );
+add_action( 'init', photo_collage_register_blocks( ... ) );
 
 /**
- * Load admin settings page
+ * Load admin settings page.
  */
-function photo_collage_load_admin(): void {
+function photo_collage_load_admin_settings(): void {
 	if ( is_admin() ) {
-		require_once plugin_dir_path( __FILE__ ) . 'includes/class-photo-collage-admin-settings.php';
+		require_once PHOTO_COLLAGE_PLUGIN_DIR . 'includes/class-photo-collage-admin-settings.php';
 		new Photo_Collage_Admin_Settings();
 	}
 }
-add_action( 'plugins_loaded', photo_collage_load_admin( ... ) );
+add_action( 'plugins_loaded', photo_collage_load_admin_settings( ... ) );
 
 /**
- * Load renderer
+ * Invalidate cached collage scan counts when post content changes.
+ *
+ * @param int $post_id Post ID from the action.
  */
-require_once plugin_dir_path( __FILE__ ) . 'includes/class-photo-collage-block-attributes.php';
-require_once plugin_dir_path( __FILE__ ) . 'includes/class-photo-collage-renderer.php';
+function photo_collage_invalidate_scan_cache( int $post_id = 0 ): void {
+	if ( $post_id > 0 && ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) ) {
+		return;
+	}
+
+	delete_transient( 'photo_collage_block_count' );
+
+	$cache_version = max( 1, (int) get_option( 'photo_collage_scan_cache_version', 1 ) );
+	update_option( 'photo_collage_scan_cache_version', $cache_version + 1, false );
+}
+add_action( 'save_post', photo_collage_invalidate_scan_cache( ... ), 10, 1 );
+add_action( 'deleted_post', photo_collage_invalidate_scan_cache( ... ), 10, 1 );
+add_action( 'trashed_post', photo_collage_invalidate_scan_cache( ... ), 10, 1 );
+add_action( 'untrashed_post', photo_collage_invalidate_scan_cache( ... ), 10, 1 );
