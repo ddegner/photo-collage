@@ -34,6 +34,45 @@ jobs:
           beta_tag="${base_version}-beta.${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}"
           echo "BETA_TAG=${beta_tag}" >> "$GITHUB_ENV"
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          tools: composer
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Install composer dependencies
+        run: composer install --prefer-dist --no-progress --no-dev
+
+      - name: Sync prerelease source version to beta tag
+        run: |
+          set -euo pipefail
+          release_version="${BETA_TAG}"
+          sed -i -E "s/^( \* Version:[[:space:]]*).*/\\1${release_version}/" photo-collage.php
+          sed -i -E "s/^define\\( 'PHOTO_COLLAGE_VERSION', '[^']*' \\);/define( 'PHOTO_COLLAGE_VERSION', '${release_version}' );/" photo-collage.php
+
+      - name: Build plugin
+        run: npm run build
+
+      - name: Generate readme.txt from README.md
+        run: bash .github/scripts/generate-readme-txt.sh README.md readme.txt
+
+      - name: Build GitHub beta ZIP
+        run: |
+          set -euo pipefail
+          package="photo-collage-${BETA_TAG}.zip"
+          bash .github/scripts/build-dist-zip.sh .distignore "${package}"
+          bash .github/scripts/assert-dist-split.sh "${package}"
+          echo "PACKAGE=${package}" >> "$GITHUB_ENV"
+
       - name: Create and push beta tag
         run: |
           set -euo pipefail
@@ -42,12 +81,14 @@ jobs:
           git tag -a "${BETA_TAG}" "${GITHUB_SHA}" -m "Beta ${BETA_TAG}"
           git push origin "${BETA_TAG}"
 
-      - name: Create GitHub prerelease
+      - name: Create GitHub prerelease with asset
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ env.BETA_TAG }}
           name: ${{ env.BETA_TAG }}
           prerelease: true
+          files: ${{ env.PACKAGE }}
+          fail_on_unmatched_files: true
           body: |
             Automated beta prerelease from `master`.
             Commit: `${{ github.sha }}`
