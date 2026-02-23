@@ -7,7 +7,7 @@ const MOBILE_STACK_BREAKPOINT = 782;
 const DEFAULT_MIN_HEIGHT = 200;
 const DEFAULT_MAX_ITERATIONS = 8;
 const DEFAULT_INITIAL_REVEAL_STABILITY_MS = 120;
-const DEFAULT_INITIAL_REVEAL_TIMEOUT_MS = 1800;
+const DEFAULT_INITIAL_REVEAL_TIMEOUT_MS = 1200;
 const MAX_PERCENT_ANCHOR = 99.5;
 const NO_TRANSITION_DATASET_KEY = 'photoCollageAutoHeightNoTransition';
 const HIDDEN_UNTIL_LOCK_DATASET_KEY = 'photoCollageAutoHeightHiddenUntilLock';
@@ -461,27 +461,13 @@ export const attachAutoHeight = ( container, options = {} ) => {
 		}
 	};
 
-	const hasIntrinsicImageSize = ( image ) => {
-		const widthAttr = Number.parseFloat(
-			image.getAttribute( 'width' ) || ''
-		);
-		const heightAttr = Number.parseFloat(
-			image.getAttribute( 'height' ) || ''
-		);
-		if (
-			Number.isFinite( widthAttr ) &&
-			widthAttr > 0 &&
-			Number.isFinite( heightAttr ) &&
-			heightAttr > 0
-		) {
-			return true;
-		}
-
+	const hasRenderableImageBox = ( image ) => {
+		const imageRect = image.getBoundingClientRect();
 		return (
-			Number.isFinite( image.naturalWidth ) &&
-			image.naturalWidth > 0 &&
-			Number.isFinite( image.naturalHeight ) &&
-			image.naturalHeight > 0
+			Number.isFinite( imageRect.width ) &&
+			imageRect.width > 0 &&
+			Number.isFinite( imageRect.height ) &&
+			imageRect.height > 0
 		);
 	};
 
@@ -490,8 +476,7 @@ export const attachAutoHeight = ( container, options = {} ) => {
 			Array.from( item.querySelectorAll( 'img' ) ).some(
 				( image ) =>
 					image.loading !== 'lazy' &&
-					! image.complete &&
-					! hasIntrinsicImageSize( image )
+					( ! image.complete || ! hasRenderableImageBox( image ) )
 			)
 		);
 
