@@ -49,6 +49,7 @@ jobs:
           short_sha="${GITHUB_SHA::7}"
           package="photo-collage-preview-${short_sha}"
           bash .github/scripts/build-dist-zip.sh .distignore "${package}.zip"
+          bash .github/scripts/assert-dist-split.sh "${package}.zip"
 
           echo "PACKAGE=${package}" >> "$GITHUB_ENV"
 

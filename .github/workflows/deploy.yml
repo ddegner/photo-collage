@@ -40,9 +40,6 @@ jobs:
       - name: Install composer dependencies
         run: composer install --prefer-dist --no-progress --no-dev
 
-      - name: Build plugin
-        run: npm run build
-
       - name: Validate release tag format
         run: |
           set -euo pipefail
@@ -65,20 +62,49 @@ jobs:
             fi
           fi
 
+      - name: Capture release version
+        run: |
+          set -euo pipefail
+          tag="${{ github.event.release.tag_name }}"
+          echo "RELEASE_VERSION=${tag#v}" >> "$GITHUB_ENV"
+
+      - name: Validate stable source version matches tag
+        if: ${{ !github.event.release.prerelease && !startsWith(github.event.release.tag_name, 'beta-') }}
+        run: |
+          set -euo pipefail
+          expected="${RELEASE_VERSION}"
+          header_version="$(sed -n "s/^ \* Version:[[:space:]]*//p" photo-collage.php | head -n1 | xargs)"
+          constant_version="$(sed -n "s/^define( 'PHOTO_COLLAGE_VERSION', '\([^']*\)' );/\1/p" photo-collage.php | head -n1)"
+
+          if [[ "${header_version}" != "${expected}" ]]; then
+            echo "Stable tag/version mismatch. Header version: ${header_version}, tag: ${expected}"
+            exit 1
+          fi
+
+          if [[ "${constant_version}" != "${expected}" ]]; then
+            echo "Stable tag/version mismatch. Constant version: ${constant_version}, tag: ${expected}"
+            exit 1
+          fi
+
+      - name: Sync prerelease source version to tag
+        if: ${{ github.event.release.prerelease || startsWith(github.event.release.tag_name, 'beta-') }}
+        run: |
+          set -euo pipefail
+          release_version="${RELEASE_VERSION}"
+          sed -i -E "s/^( \* Version:[[:space:]]*).*/\\1${release_version}/" photo-collage.php
+          sed -i -E "s/^define\\( 'PHOTO_COLLAGE_VERSION', '[^']*' \\);/define( 'PHOTO_COLLAGE_VERSION', '${release_version}' );/" photo-collage.php
+
+      - name: Build plugin
+        run: npm run build
+
       - name: Generate readme.txt from README.md
         run: bash .github/scripts/generate-readme-txt.sh README.md readme.txt
 
       - name: Build GitHub distribution ZIP
         run: bash .github/scripts/build-dist-zip.sh .distignore "photo-collage-${{ github.event.release.tag_name }}.zip"
 
-      - name: Attach GitHub distribution ZIP to release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ github.event.release.tag_name }}
-          files: photo-collage-${{ github.event.release.tag_name }}.zip
-          fail_on_unmatched_files: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Assert GitHub ZIP contents
+        run: bash .github/scripts/assert-dist-split.sh "photo-collage-${{ github.event.release.tag_name }}.zip"
 
       - name: Prepare WordPress.org distignore
         if: ${{ !github.event.release.prerelease && !startsWith(github.event.release.tag_name, 'beta-') }}
@@ -98,6 +124,19 @@ jobs:
       - name: Rename WordPress.org ZIP for release asset
         if: ${{ !github.event.release.prerelease && !startsWith(github.event.release.tag_name, 'beta-') }}
         run: cp "${{ steps.wporg.outputs['zip-path'] }}" "photo-collage-wporg-${{ github.event.release.tag_name }}.zip"
+
+      - name: Assert stable GitHub/wp.org ZIP split
+        if: ${{ !github.event.release.prerelease && !startsWith(github.event.release.tag_name, 'beta-') }}
+        run: bash .github/scripts/assert-dist-split.sh "photo-collage-${{ github.event.release.tag_name }}.zip" "photo-collage-wporg-${{ github.event.release.tag_name }}.zip"
+
+      - name: Attach GitHub distribution ZIP to release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.release.tag_name }}
+          files: photo-collage-${{ github.event.release.tag_name }}.zip
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Attach WordPress.org ZIP to stable release
         if: ${{ !github.event.release.prerelease && !startsWith(github.event.release.tag_name, 'beta-') }}

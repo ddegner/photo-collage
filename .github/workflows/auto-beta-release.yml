@@ -1,0 +1,55 @@
+name: Auto Publish Beta Release
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: write
+
+concurrency:
+  group: auto-beta-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish-beta:
+    name: Publish beta prerelease from master
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute beta tag
+        run: |
+          set -euo pipefail
+          base_version="$(sed -n "s/^define( 'PHOTO_COLLAGE_VERSION', '\([0-9]\+\.[0-9]\+\.[0-9]\+\).*'.*/\1/p" photo-collage.php | head -n1)"
+          if [[ -z "${base_version}" ]]; then
+            echo "Unable to parse base version from photo-collage.php"
+            exit 1
+          fi
+
+          beta_tag="${base_version}-beta.${GITHUB_RUN_NUMBER}"
+          echo "BETA_TAG=${beta_tag}" >> "$GITHUB_ENV"
+
+      - name: Create and push beta tag
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${BETA_TAG}" "${GITHUB_SHA}" -m "Beta ${BETA_TAG}"
+          git push origin "${BETA_TAG}"
+
+      - name: Create GitHub prerelease
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.BETA_TAG }}
+          name: ${{ env.BETA_TAG }}
+          prerelease: true
+          body: |
+            Automated beta prerelease from `master`.
+            Commit: `${{ github.sha }}`
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

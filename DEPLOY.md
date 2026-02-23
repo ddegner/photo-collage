@@ -19,6 +19,12 @@ Before your first deployment, configure WordPress.org SVN credentials in GitHub:
 
 ## Workflows
 
+- `auto-beta-release.yml`:
+  - Runs on every push to `master`.
+  - Creates a new prerelease tag automatically in the form `<base-version>-beta.<run-number>`.
+  - Publishes a GitHub prerelease for that tag.
+  - Triggers `deploy.yml`, which builds and attaches the beta ZIP asset.
+
 - `beta-build.yml`:
   - Runs on branch pushes (not tags) and manual dispatch.
   - Builds a preview ZIP and uploads it as a workflow artifact.
@@ -27,6 +33,7 @@ Before your first deployment, configure WordPress.org SVN credentials in GitHub:
 - `deploy.yml`:
   - Runs on `release.published`.
   - Builds a GitHub distribution ZIP (release-channel capable).
+  - Asserts ZIP contents/split rules before attaching release assets.
   - Attaches the GitHub ZIP to that release.
   - For stable tags (`x.y.z`), deploys to WordPress.org and attaches the WordPress.org ZIP.
   - For prerelease tags (for example `x.y.z-beta.1`), skips WordPress.org deployment.
@@ -61,9 +68,26 @@ Publishing the release triggers GitHub ZIP packaging, WordPress.org deployment, 
 
 ## Beta Release Process
 
+Automatic path:
+
+1. Push to `master`.
+2. `auto-beta-release.yml` publishes a new prerelease tag/release automatically.
+3. `deploy.yml` attaches `photo-collage-<tag>.zip` to that prerelease.
+
+Manual path (if needed):
+
 1. Create and push a prerelease tag using semver prerelease format (example: `0.5.15-beta.1`).
 2. Create and publish a GitHub Release marked as prerelease for that tag.
-3. The workflow attaches `photo-collage-<tag>.zip` to the prerelease and skips WordPress.org deployment.
+3. `deploy.yml` attaches `photo-collage-<tag>.zip` and skips WordPress.org deployment.
+
+## Local Release Helper
+
+Use the helper script to avoid GitHub tag propagation races:
+
+```bash
+bash .github/scripts/publish-release.sh --tag 0.5.16
+bash .github/scripts/publish-release.sh --tag 0.5.16-beta.1 --prerelease
+```
 
 ## Monitoring
 
@@ -75,5 +99,7 @@ Publishing the release triggers GitHub ZIP packaging, WordPress.org deployment, 
 
 - `.distignore` controls files excluded from GitHub ZIP packaging.
 - `.distignore-wporg` controls files excluded from WordPress.org deployment ZIP.
+- `.github/scripts/assert-dist-split.sh` verifies package content expectations in CI.
+- `.github/scripts/publish-release.sh` automates local release publishing with tag wait/retry behavior.
 - `.wordpress-org/` contains plugin assets (banners/icons/screenshots).
 - If deployment fails, check Actions logs and verify `SVN_USERNAME`/`SVN_PASSWORD`.
