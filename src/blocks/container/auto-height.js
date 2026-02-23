@@ -6,6 +6,7 @@ const COLLAGE_ITEM_CLASS_NAMES = [
 const MOBILE_STACK_BREAKPOINT = 782;
 const DEFAULT_MIN_HEIGHT = 200;
 const DEFAULT_MAX_ITERATIONS = 8;
+const MAX_PERCENT_ANCHOR = 99.5;
 
 const COLLAGE_ITEM_SELECTOR = COLLAGE_ITEM_CLASS_NAMES.map(
 	( className ) => `.${ className }`
@@ -42,6 +43,67 @@ const isMobileStacked = ( container ) =>
 const hasAutoHeightMode = ( container ) =>
 	! container.dataset.heightMode || container.dataset.heightMode === 'auto';
 
+const parsePercentValue = ( value ) => {
+	if ( typeof value !== 'string' ) {
+		return null;
+	}
+
+	const normalized = value.trim().toLowerCase();
+	if ( ! normalized.endsWith( '%' ) ) {
+		return null;
+	}
+
+	const numericValue = Number.parseFloat(
+		normalized.slice( 0, normalized.length - 1 )
+	);
+	if ( ! Number.isFinite( numericValue ) ) {
+		return null;
+	}
+
+	return numericValue;
+};
+
+const parsePixelValue = ( value ) => {
+	if ( typeof value !== 'string' ) {
+		return null;
+	}
+
+	const normalized = value.trim().toLowerCase();
+	if ( ! normalized.endsWith( 'px' ) ) {
+		return null;
+	}
+
+	const numericValue = Number.parseFloat(
+		normalized.slice( 0, normalized.length - 2 )
+	);
+	if ( ! Number.isFinite( numericValue ) ) {
+		return null;
+	}
+
+	return numericValue;
+};
+
+const disableAutoHeightTransition = ( container ) => {
+	if ( ! container ) {
+		return;
+	}
+
+	container.style.setProperty( 'transition', 'none', 'important' );
+	container.dataset.photoCollageAutoHeightNoTransition = '1';
+};
+
+const restoreAutoHeightTransition = ( container ) => {
+	if (
+		! container ||
+		container.dataset.photoCollageAutoHeightNoTransition !== '1'
+	) {
+		return;
+	}
+
+	container.style.removeProperty( 'transition' );
+	delete container.dataset.photoCollageAutoHeightNoTransition;
+};
+
 const getMeasuredBottom = ( container, items ) => {
 	const containerRect = container.getBoundingClientRect();
 	let maxBottom = 0;
@@ -60,6 +122,62 @@ export const clearAutoHeight = ( container ) => {
 	}
 
 	container.style.removeProperty( 'height' );
+	restoreAutoHeightTransition( container );
+};
+
+const getEstimatedAutoHeight = ( container, items, minHeight ) => {
+	const containerRect = container.getBoundingClientRect();
+	const currentHeight = Math.max(
+		minHeight,
+		containerRect.height || container.offsetHeight || minHeight
+	);
+	let estimatedHeight = currentHeight;
+
+	items.forEach( ( item ) => {
+		const itemRect = item.getBoundingClientRect();
+		const itemHeight = itemRect.height || item.offsetHeight || 0;
+		if ( ! Number.isFinite( itemHeight ) || itemHeight <= 0 ) {
+			return;
+		}
+
+		const topPercent = parsePercentValue( item.style.top );
+		if ( topPercent !== null && topPercent < MAX_PERCENT_ANCHOR ) {
+			const estimatedFromTop = itemHeight / ( 1 - topPercent / 100 );
+			if ( Number.isFinite( estimatedFromTop ) ) {
+				estimatedHeight = Math.max( estimatedHeight, estimatedFromTop );
+				return;
+			}
+		}
+
+		const topPixels = parsePixelValue( item.style.top );
+		if ( topPixels !== null ) {
+			estimatedHeight = Math.max(
+				estimatedHeight,
+				topPixels + itemHeight
+			);
+			return;
+		}
+
+		const bottomPercent = parsePercentValue( item.style.bottom );
+		if ( bottomPercent !== null && bottomPercent < MAX_PERCENT_ANCHOR ) {
+			const estimatedFromBottom =
+				itemHeight / ( 1 - bottomPercent / 100 );
+			if ( Number.isFinite( estimatedFromBottom ) ) {
+				estimatedHeight = Math.max(
+					estimatedHeight,
+					estimatedFromBottom
+				);
+				return;
+			}
+		}
+
+		const measuredBottom = itemRect.bottom - containerRect.top;
+		if ( Number.isFinite( measuredBottom ) ) {
+			estimatedHeight = Math.max( estimatedHeight, measuredBottom );
+		}
+	} );
+
+	return Math.max( minHeight, Math.ceil( estimatedHeight ) );
 };
 
 export const calculateAutoHeight = (
@@ -86,7 +204,7 @@ export const calculateAutoHeight = (
 		return null;
 	}
 
-	let nextHeight = Math.max( minHeight, container.offsetHeight || minHeight );
+	let nextHeight = getEstimatedAutoHeight( container, items, minHeight );
 
 	for ( let index = 0; index < maxIterations; index += 1 ) {
 		const roundedHeight = Math.ceil( nextHeight );
@@ -110,6 +228,7 @@ export const calculateAutoHeight = (
 };
 
 export const applyAutoHeight = ( container, options = {} ) => {
+	disableAutoHeightTransition( container );
 	const resolvedHeight = calculateAutoHeight( container, options );
 
 	if ( ! resolvedHeight ) {
@@ -125,6 +244,8 @@ export const attachAutoHeight = ( container, options = {} ) => {
 	if ( ! container || typeof window === 'undefined' ) {
 		return () => {};
 	}
+
+	disableAutoHeightTransition( container );
 
 	const {
 		watchMutations = true,
@@ -246,6 +367,20 @@ export const attachAutoHeight = ( container, options = {} ) => {
 	window.addEventListener( 'load', onWindowLoad, { once: true } );
 
 	if ( measureOnInit || ! hasIncompleteImages() ) {
+		const initialHeight = applyAutoHeight( container, options );
+		if (
+			typeof onHeightResolved === 'function' &&
+			Number.isFinite( initialHeight ) &&
+			initialHeight > 0
+		) {
+			const containerWidth = container.getBoundingClientRect().width;
+			if ( Number.isFinite( containerWidth ) && containerWidth > 0 ) {
+				onHeightResolved( {
+					height: initialHeight,
+					width: containerWidth,
+				} );
+			}
+		}
 		scheduleMeasure();
 	}
 
@@ -266,5 +401,7 @@ export const attachAutoHeight = ( container, options = {} ) => {
 		if ( mutationObserver ) {
 			mutationObserver.disconnect();
 		}
+
+		restoreAutoHeightTransition( container );
 	};
 };

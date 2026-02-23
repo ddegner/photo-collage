@@ -1,24 +1,9 @@
 import { attachAutoHeight } from './auto-height';
-import { isValidAutoHeightHint } from './auto-height-hint';
 
 const AUTO_HEIGHT_SELECTOR =
 	'.wp-block-photo-collage-container[data-height-mode="auto"]';
 
 const activeAutoHeight = new WeakMap();
-
-const hasSavedAutoHeightHint = ( container ) => {
-	if ( ! container ) {
-		return false;
-	}
-
-	const styleHint = container.style.height || '';
-	if ( isValidAutoHeightHint( styleHint ) ) {
-		return true;
-	}
-
-	const dataHint = container.dataset.autoHeightHint || '';
-	return isValidAutoHeightHint( dataHint );
-};
 
 const registerContainer = ( container ) => {
 	if ( activeAutoHeight.has( container ) ) {
@@ -28,7 +13,6 @@ const registerContainer = ( container ) => {
 	const cleanup = attachAutoHeight( container, {
 		watchMutations: false,
 		watchResize: true,
-		measureOnInit: ! hasSavedAutoHeightHint( container ),
 	} );
 	activeAutoHeight.set( container, cleanup );
 };
