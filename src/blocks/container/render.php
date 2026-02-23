@@ -27,6 +27,7 @@ $sanitize_auto_height_hint = static function ($value) {
 $auto_height_hint = $sanitize_auto_height_hint($attributes['autoHeightHint'] ?? '');
 $height_mode = $attributes['heightMode'] ?? 'fixed';
 $has_saved_auto_height_hint = ('auto' === $height_mode && '' !== $auto_height_hint);
+$should_hide_until_lock = ('auto' === $height_mode);
 
 if (!in_array($height_mode, array('fixed', 'auto'), true)) {
     $height_mode = 'fixed';
@@ -53,6 +54,9 @@ if ($has_saved_auto_height_hint) {
     $style .= "height: " . esc_attr($auto_height_hint) . "; ";
 }
 $style .= "min-height: 200px; ";
+if ($should_hide_until_lock) {
+    $style .= "visibility: hidden; ";
+}
 
 // Append background styles
 $style .= $bg_style_string;
@@ -65,6 +69,9 @@ $wrapper_args = [
 
 if ($has_saved_auto_height_hint) {
     $wrapper_args['data-auto-height-hint'] = $auto_height_hint;
+}
+if ($should_hide_until_lock) {
+    $wrapper_args['data-auto-height-initial-hidden'] = '1';
 }
 
 $wrapper_attributes = get_block_wrapper_attributes($wrapper_args);

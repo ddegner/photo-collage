@@ -13,6 +13,7 @@ const PREV_VISIBILITY_VALUE_DATASET_KEY =
 	'photoCollageAutoHeightPrevVisibilityValue';
 const PREV_VISIBILITY_PRIORITY_DATASET_KEY =
 	'photoCollageAutoHeightPrevVisibilityPriority';
+const INITIAL_HIDDEN_DATASET_KEY = 'autoHeightInitialHidden';
 
 const COLLAGE_ITEM_SELECTOR = COLLAGE_ITEM_CLASS_NAMES.map(
 	( className ) => `.${ className }`
@@ -253,6 +254,11 @@ const hideAutoHeightContainer = ( container ) => {
 		return;
 	}
 
+	if ( container.dataset[ INITIAL_HIDDEN_DATASET_KEY ] === '1' ) {
+		container.dataset[ HIDDEN_UNTIL_LOCK_DATASET_KEY ] = '1';
+		return;
+	}
+
 	container.dataset[ PREV_VISIBILITY_VALUE_DATASET_KEY ] =
 		container.style.getPropertyValue( 'visibility' );
 	container.dataset[ PREV_VISIBILITY_PRIORITY_DATASET_KEY ] =
@@ -266,6 +272,15 @@ const revealAutoHeightContainer = ( container ) => {
 		! container ||
 		container.dataset[ HIDDEN_UNTIL_LOCK_DATASET_KEY ] !== '1'
 	) {
+		return;
+	}
+
+	if ( container.dataset[ INITIAL_HIDDEN_DATASET_KEY ] === '1' ) {
+		container.style.removeProperty( 'visibility' );
+		delete container.dataset[ HIDDEN_UNTIL_LOCK_DATASET_KEY ];
+		delete container.dataset[ INITIAL_HIDDEN_DATASET_KEY ];
+		delete container.dataset[ PREV_VISIBILITY_VALUE_DATASET_KEY ];
+		delete container.dataset[ PREV_VISIBILITY_PRIORITY_DATASET_KEY ];
 		return;
 	}
 
