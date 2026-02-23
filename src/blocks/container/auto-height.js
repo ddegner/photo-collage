@@ -441,7 +441,6 @@ export const attachAutoHeight = ( container, options = {} ) => {
 	let hasLockedInitialHeight = false;
 	let initialRevealTimerId = null;
 	let initialRevealFallbackTimerId = null;
-	let hasWindowLoaded = document.readyState === 'complete';
 	let initialRevealTimedOut = false;
 
 	const emitResolvedHeight = ( resolvedHeight ) => {
@@ -462,6 +461,13 @@ export const attachAutoHeight = ( container, options = {} ) => {
 		}
 	};
 
+	const hasPendingEagerImages = () =>
+		getCollageItems( container ).some( ( item ) =>
+			Array.from( item.querySelectorAll( 'img' ) ).some(
+				( image ) => image.loading !== 'lazy' && ! image.complete
+			)
+		);
+
 	const finalizeInitialLock = () => {
 		if ( hasLockedInitialHeight ) {
 			return;
@@ -469,8 +475,8 @@ export const attachAutoHeight = ( container, options = {} ) => {
 
 		if (
 			hideUntilFirstMeasure &&
-			! hasWindowLoaded &&
-			! initialRevealTimedOut
+			! initialRevealTimedOut &&
+			hasPendingEagerImages()
 		) {
 			return;
 		}
@@ -608,11 +614,7 @@ export const attachAutoHeight = ( container, options = {} ) => {
 	};
 
 	const onWindowLoad = () => {
-		hasWindowLoaded = true;
 		scheduleMeasure();
-		if ( hideUntilFirstMeasure ) {
-			queueInitialReveal();
-		}
 	};
 
 	container.addEventListener( 'load', onCaptureLoad, true );
