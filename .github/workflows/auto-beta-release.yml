@@ -31,7 +31,11 @@ jobs:
             exit 1
           fi
 
-          beta_tag="${base_version}-beta.${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}"
+          IFS='.' read -r major minor patch <<< "${base_version}"
+          next_patch=$((patch + 1))
+          beta_base="${major}.${minor}.${next_patch}"
+
+          beta_tag="${beta_base}-beta.${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}"
           echo "BETA_TAG=${beta_tag}" >> "$GITHUB_ENV"
 
       - name: Setup Node.js

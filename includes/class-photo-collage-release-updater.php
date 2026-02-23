@@ -100,7 +100,7 @@ final class Photo_Collage_Release_Updater {
 			return $transient;
 		}
 
-		if ( ! version_compare( $beta_release['version'], $current_version, '>' ) ) {
+		if ( ! $this->is_newer_beta_version( $beta_release['version'], $current_version ) ) {
 			return $transient;
 		}
 
@@ -510,6 +510,62 @@ final class Photo_Collage_Release_Updater {
 		}
 
 		return (string) ( $release['zipball_url'] ?? '' );
+	}
+
+	/**
+	 * Determine whether candidate beta version should be offered over current version.
+	 *
+	 * WordPress semver treats prereleases (for example 1.2.3-beta.1) as lower than
+	 * stable (1.2.3). For beta channel users we still want to offer same-base betas.
+	 *
+	 * @param string $candidate_version Candidate beta version.
+	 * @param string $current_version   Current installed version.
+	 * @return bool True when candidate should be offered.
+	 */
+	private function is_newer_beta_version( string $candidate_version, string $current_version ): bool {
+		if ( version_compare( $candidate_version, $current_version, '>' ) ) {
+			return true;
+		}
+
+		if ( $candidate_version === $current_version ) {
+			return false;
+		}
+
+		$candidate_base = $this->extract_base_semver( $candidate_version );
+		$current_base   = $this->extract_base_semver( $current_version );
+		if ( '' === $candidate_base || '' === $current_base ) {
+			return false;
+		}
+
+		if ( $candidate_base !== $current_base ) {
+			return false;
+		}
+
+		return $this->is_prerelease_version( $candidate_version ) && ! $this->is_prerelease_version( $current_version );
+	}
+
+	/**
+	 * Extract x.y.z base version from a semantic version string.
+	 *
+	 * @param string $version Version string.
+	 * @return string Base semantic version or empty string.
+	 */
+	private function extract_base_semver( string $version ): string {
+		if ( 1 === preg_match( '/^v?(\d+\.\d+\.\d+)/', trim( $version ), $matches ) ) {
+			return $matches[1];
+		}
+
+		return '';
+	}
+
+	/**
+	 * Determine whether a version string is a prerelease.
+	 *
+	 * @param string $version Version string.
+	 * @return bool True when version contains prerelease suffix.
+	 */
+	private function is_prerelease_version( string $version ): bool {
+		return str_contains( trim( $version ), '-' );
 	}
 
 	/**
