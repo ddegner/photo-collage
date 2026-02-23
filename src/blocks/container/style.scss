@@ -20,7 +20,7 @@
 
 	&[data-height-mode="auto"][data-pc-auto-state="pending"] {
 		visibility: hidden;
-		animation: pc-auto-failsafe-reveal 0s linear 1.4s forwards;
+		animation: pc-auto-failsafe-reveal 0s linear .35s forwards;
 	}
 
 	&.is-stack-on-mobile {
