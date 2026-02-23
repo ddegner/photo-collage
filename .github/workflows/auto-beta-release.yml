@@ -31,7 +31,7 @@ jobs:
             exit 1
           fi
 
-          beta_tag="${base_version}-beta.${GITHUB_RUN_NUMBER}"
+          beta_tag="${base_version}-beta.${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}"
           echo "BETA_TAG=${beta_tag}" >> "$GITHUB_ENV"
 
       - name: Create and push beta tag

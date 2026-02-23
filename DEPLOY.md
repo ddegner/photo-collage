@@ -21,7 +21,7 @@ Before your first deployment, configure WordPress.org SVN credentials in GitHub:
 
 - `auto-beta-release.yml`:
   - Runs on every push to `master`.
-  - Creates a new prerelease tag automatically in the form `<base-version>-beta.<run-number>`.
+  - Creates a new prerelease tag automatically in the form `<base-version>-beta.<run-id>.<attempt>`.
   - Publishes a GitHub prerelease for that tag.
   - Triggers `deploy.yml`, which builds and attaches the beta ZIP asset.
 
