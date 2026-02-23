@@ -25,6 +25,7 @@
 			// Allow container to grow to fit stacked content
 			height: auto !important;
 			min-height: auto !important;
+			aspect-ratio: auto !important;
 
 			// We must use !important to override inline styles applied by the
 			// editor/render

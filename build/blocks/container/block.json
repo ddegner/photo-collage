@@ -42,6 +42,10 @@
       "type": "string",
       "default": ""
     },
+    "autoHeightRatio": {
+      "type": "number",
+      "default": 0
+    },
     "heightMode": {
       "type": "string",
       "default": "fixed",

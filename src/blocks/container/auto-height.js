@@ -126,7 +126,11 @@ export const attachAutoHeight = ( container, options = {} ) => {
 		return () => {};
 	}
 
-	const { watchMutations = true, watchResize = true } = options;
+	const {
+		watchMutations = true,
+		watchResize = true,
+		onHeightResolved,
+	} = options;
 
 	let animationFrameId = null;
 	let resizeObserver;
@@ -139,7 +143,22 @@ export const attachAutoHeight = ( container, options = {} ) => {
 
 		animationFrameId = window.requestAnimationFrame( () => {
 			animationFrameId = null;
-			applyAutoHeight( container, options );
+			const resolvedHeight = applyAutoHeight( container, options );
+
+			if (
+				typeof onHeightResolved === 'function' &&
+				Number.isFinite( resolvedHeight ) &&
+				resolvedHeight > 0
+			) {
+				const containerWidth = container.getBoundingClientRect().width;
+				if ( Number.isFinite( containerWidth ) && containerWidth > 0 ) {
+					onHeightResolved( {
+						height: resolvedHeight,
+						width: containerWidth,
+						ratio: containerWidth / resolvedHeight,
+					} );
+				}
+			}
 		} );
 	};
 

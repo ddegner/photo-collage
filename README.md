@@ -3,7 +3,7 @@
 **Contributors:** ddegner  
 **Tags:** block, photo collage, image gallery, overlapping images, visual design  
 **Tested up to:** 6.9  
-**Stable tag:** 0.5.13  
+**Stable tag:** 0.5.14  
 **Requires at least:** 6.8  
 **Requires PHP:** 8.3  
 **License:** GPL-2.0-or-later  
@@ -106,6 +106,12 @@ Photo Collage is optimized for performance. It uses modern CSS for positioning a
 4.  Mobile-responsive stacking in action
 
 ## Changelog
+
+### 0.5.14
+*   FIX: Reduced frontend layout shift in Auto Height mode by persisting an estimated container `aspect-ratio` from editor measurements
+*   IMPROVEMENT: Applied saved auto-height ratio during server rendering so browsers reserve proportional space before JS recalculation
+*   IMPROVEMENT: Ensured stacked mobile layouts ignore reserved ratio and continue using natural content height
+*   IMPROVEMENT: Preserved auto-height ratio in static HTML uninstall conversion when fixed height is not set
 
 ### 0.5.13
 *   IMPROVEMENT: Refactored collage container architecture for clearer block registration, rendering, and compatibility paths

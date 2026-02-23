@@ -16,6 +16,7 @@ $content = $content ?? '';
 
 $stack_on_mobile = $attributes['stackOnMobile'] ?? true;
 $height = $attributes['containerHeight'] ?? '';
+$auto_height_ratio = isset($attributes['autoHeightRatio']) ? (float) $attributes['autoHeightRatio'] : 0.0;
 $height_mode = $attributes['heightMode'] ?? 'fixed';
 
 if (!in_array($height_mode, array('fixed', 'auto'), true)) {
@@ -38,6 +39,9 @@ if ('auto' === $height_mode) {
 $style = '';
 if ('fixed' === $height_mode && !empty($height)) {
     $style .= "height: " . esc_attr($height) . "; ";
+}
+if ('auto' === $height_mode && is_finite($auto_height_ratio) && $auto_height_ratio > 0) {
+    $style .= "aspect-ratio: " . esc_attr((string) $auto_height_ratio) . "; ";
 }
 $style .= "min-height: 200px; ";
 

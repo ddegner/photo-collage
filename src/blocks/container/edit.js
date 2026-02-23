@@ -13,7 +13,7 @@ import {
 	Button,
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
-import { useEffect, useRef } from '@wordpress/element';
+import { useCallback, useEffect, useRef } from '@wordpress/element';
 import BackgroundControls from '../components/BackgroundControls';
 import { getBackgroundStyle } from '../utils/background-styles';
 import { attachAutoHeight, clearAutoHeight } from './auto-height';
@@ -22,10 +22,18 @@ import { usePresets } from './use-presets';
 import './editor.scss';
 
 const ALLOWED_BLOCKS = [ 'photo-collage/image', 'photo-collage/frame' ];
+const AUTO_RATIO_PRECISION = 1000000;
+const AUTO_RATIO_TOLERANCE = 0.0005;
 
 export default function Edit( { attributes, setAttributes, clientId } ) {
-	const { stackOnMobile, containerHeight, heightMode = 'fixed' } = attributes;
+	const {
+		stackOnMobile,
+		containerHeight,
+		heightMode = 'fixed',
+		autoHeightRatio = 0,
+	} = attributes;
 	const containerRef = useRef( null );
+	const lastSavedAutoRatioRef = useRef( 0 );
 
 	const backgroundStyle = getBackgroundStyle( attributes );
 	const containerClassName = [
@@ -34,6 +42,8 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 	]
 		.filter( Boolean )
 		.join( ' ' );
+	const hasAutoHeightRatio =
+		Number.isFinite( autoHeightRatio ) && autoHeightRatio > 0;
 
 	const blockProps = useBlockProps( {
 		ref: containerRef,
@@ -41,6 +51,10 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		'data-height-mode': heightMode,
 		style: {
 			height: heightMode === 'fixed' ? containerHeight : undefined,
+			aspectRatio:
+				heightMode === 'auto' && hasAutoHeightRatio
+					? String( autoHeightRatio )
+					: undefined,
 			minHeight: '200px',
 			...backgroundStyle,
 		},
@@ -52,6 +66,37 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		containerHeight,
 		setAttributes,
 	} );
+
+	useEffect( () => {
+		lastSavedAutoRatioRef.current = hasAutoHeightRatio
+			? autoHeightRatio
+			: 0;
+	}, [ autoHeightRatio, hasAutoHeightRatio ] );
+
+	const handleAutoHeightResolved = useCallback(
+		( { ratio } ) => {
+			if (
+				heightMode !== 'auto' ||
+				! Number.isFinite( ratio ) ||
+				ratio <= 0
+			) {
+				return;
+			}
+
+			const roundedRatio =
+				Math.round( ratio * AUTO_RATIO_PRECISION ) /
+				AUTO_RATIO_PRECISION;
+			const lastRatio = lastSavedAutoRatioRef.current || 0;
+
+			if ( Math.abs( roundedRatio - lastRatio ) < AUTO_RATIO_TOLERANCE ) {
+				return;
+			}
+
+			lastSavedAutoRatioRef.current = roundedRatio;
+			setAttributes( { autoHeightRatio: roundedRatio } );
+		},
+		[ heightMode, setAttributes ]
+	);
 
 	useEffect( () => {
 		const containerElement = containerRef.current;
@@ -67,8 +112,9 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		return attachAutoHeight( containerElement, {
 			watchMutations: true,
 			watchResize: true,
+			onHeightResolved: handleAutoHeightResolved,
 		} );
-	}, [ heightMode, stackOnMobile, clientId ] );
+	}, [ heightMode, stackOnMobile, clientId, handleAutoHeightResolved ] );
 
 	const innerBlocksProps = useInnerBlocksProps( blockProps, {
 		allowedBlocks: ALLOWED_BLOCKS,

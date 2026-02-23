@@ -100,6 +100,7 @@ final class Photo_Collage_Collage_Converter {
 		$inner_blocks = $block['innerBlocks'] ?? array();
 
 		$height            = $attributes['containerHeight'] ?? '';
+		$auto_height_ratio = isset( $attributes['autoHeightRatio'] ) ? (float) $attributes['autoHeightRatio'] : 0.0;
 		$stack_on_mobile   = $attributes['stackOnMobile'] ?? true;
 		$normalized_attrs  = Photo_Collage_Renderer::normalize_attributes( $attributes );
 		$background_styles = $this->get_static_background_styles( $attributes, $normalized_attrs );
@@ -112,6 +113,8 @@ final class Photo_Collage_Collage_Converter {
 		$style = '';
 		if ( ! empty( $height ) ) {
 			$style .= 'height: ' . esc_attr( $height ) . '; ';
+		} elseif ( is_finite( $auto_height_ratio ) && $auto_height_ratio > 0 ) {
+			$style .= 'aspect-ratio: ' . esc_attr( (string) $auto_height_ratio ) . '; ';
 		}
 		$style .= 'min-height: 200px; position: relative; display: flex; flex-wrap: wrap; width: 100%; box-sizing: border-box;';
 		$style .= ' ' . Photo_Collage_Renderer::build_style_string( $background_styles );
