@@ -13,6 +13,7 @@ const registerContainer = ( container ) => {
 	const cleanup = attachAutoHeight( container, {
 		watchMutations: false,
 		watchResize: true,
+		hideUntilFirstMeasure: true,
 	} );
 	activeAutoHeight.set( container, cleanup );
 };

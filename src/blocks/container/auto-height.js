@@ -7,6 +7,12 @@ const MOBILE_STACK_BREAKPOINT = 782;
 const DEFAULT_MIN_HEIGHT = 200;
 const DEFAULT_MAX_ITERATIONS = 8;
 const MAX_PERCENT_ANCHOR = 99.5;
+const NO_TRANSITION_DATASET_KEY = 'photoCollageAutoHeightNoTransition';
+const HIDDEN_UNTIL_LOCK_DATASET_KEY = 'photoCollageAutoHeightHiddenUntilLock';
+const PREV_VISIBILITY_VALUE_DATASET_KEY =
+	'photoCollageAutoHeightPrevVisibilityValue';
+const PREV_VISIBILITY_PRIORITY_DATASET_KEY =
+	'photoCollageAutoHeightPrevVisibilityPriority';
 
 const COLLAGE_ITEM_SELECTOR = COLLAGE_ITEM_CLASS_NAMES.map(
 	( className ) => `.${ className }`
@@ -83,25 +89,204 @@ const parsePixelValue = ( value ) => {
 	return numericValue;
 };
 
+const getItemIntrinsicRatio = ( item ) => {
+	const image = item.querySelector( 'img' );
+	if ( ! image ) {
+		return null;
+	}
+
+	const width =
+		Number.parseFloat( image.getAttribute( 'width' ) || '' ) ||
+		image.naturalWidth;
+	const height =
+		Number.parseFloat( image.getAttribute( 'height' ) || '' ) ||
+		image.naturalHeight;
+
+	if (
+		! Number.isFinite( width ) ||
+		width <= 0 ||
+		! Number.isFinite( height ) ||
+		height <= 0
+	) {
+		return null;
+	}
+
+	return height / width;
+};
+
+const getItemCaptionHeight = ( item ) => {
+	const captionNodes = Array.from(
+		item.querySelectorAll(
+			'.photo-collage-image-caption, .wp-element-caption'
+		)
+	);
+	if ( captionNodes.length === 0 ) {
+		return 0;
+	}
+
+	const uniqueNodes = captionNodes.filter(
+		( node, index ) => captionNodes.indexOf( node ) === index
+	);
+
+	return uniqueNodes.reduce( ( total, node ) => {
+		const captionRect = node.getBoundingClientRect();
+		if ( Number.isFinite( captionRect.height ) && captionRect.height > 0 ) {
+			return total + captionRect.height;
+		}
+
+		return total;
+	}, 0 );
+};
+
+const getItemWidthInPixels = ( item, containerWidth ) => {
+	const widthPercent = parsePercentValue( item.style.width );
+	if ( widthPercent !== null && Number.isFinite( containerWidth ) ) {
+		return ( containerWidth * widthPercent ) / 100;
+	}
+
+	const widthPixels = parsePixelValue( item.style.width );
+	if ( widthPixels !== null ) {
+		return widthPixels;
+	}
+
+	const measuredWidth =
+		item.getBoundingClientRect().width || item.offsetWidth;
+	if ( Number.isFinite( measuredWidth ) && measuredWidth > 0 ) {
+		return measuredWidth;
+	}
+
+	return null;
+};
+
+const getItemEstimatedHeight = ( item, containerWidth ) => {
+	const styleHeightPixels = parsePixelValue( item.style.height );
+	if ( styleHeightPixels !== null ) {
+		return styleHeightPixels;
+	}
+
+	const itemWidth = getItemWidthInPixels( item, containerWidth );
+	const intrinsicRatio = getItemIntrinsicRatio( item );
+	const captionHeight = getItemCaptionHeight( item );
+	const itemStyles = window.getComputedStyle( item );
+	const itemVerticalInsets =
+		Number.parseFloat( itemStyles.paddingTop || '0' ) +
+		Number.parseFloat( itemStyles.paddingBottom || '0' ) +
+		Number.parseFloat( itemStyles.borderTopWidth || '0' ) +
+		Number.parseFloat( itemStyles.borderBottomWidth || '0' );
+
+	if (
+		Number.isFinite( itemWidth ) &&
+		itemWidth > 0 &&
+		Number.isFinite( intrinsicRatio ) &&
+		intrinsicRatio > 0
+	) {
+		return itemWidth * intrinsicRatio + captionHeight + itemVerticalInsets;
+	}
+
+	const measuredHeight =
+		item.getBoundingClientRect().height || item.offsetHeight || 0;
+	if ( Number.isFinite( measuredHeight ) && measuredHeight > 0 ) {
+		return measuredHeight;
+	}
+
+	return null;
+};
+
+const getItemRequiredContainerHeight = ( item, itemHeight, measuredBottom ) => {
+	if ( ! Number.isFinite( itemHeight ) || itemHeight <= 0 ) {
+		return Number.isFinite( measuredBottom ) && measuredBottom > 0
+			? measuredBottom
+			: null;
+	}
+
+	const topPercent = parsePercentValue( item.style.top );
+	if ( topPercent !== null && topPercent < MAX_PERCENT_ANCHOR ) {
+		return itemHeight / ( 1 - topPercent / 100 );
+	}
+
+	const topPixels = parsePixelValue( item.style.top );
+	if ( topPixels !== null ) {
+		return topPixels + itemHeight;
+	}
+
+	const bottomPercent = parsePercentValue( item.style.bottom );
+	if ( bottomPercent !== null && bottomPercent < MAX_PERCENT_ANCHOR ) {
+		return itemHeight / ( 1 - bottomPercent / 100 );
+	}
+
+	const bottomPixels = parsePixelValue( item.style.bottom );
+	if ( bottomPixels !== null ) {
+		return bottomPixels + itemHeight;
+	}
+
+	return Number.isFinite( measuredBottom ) && measuredBottom > 0
+		? measuredBottom
+		: null;
+};
+
 const disableAutoHeightTransition = ( container ) => {
 	if ( ! container ) {
 		return;
 	}
 
 	container.style.setProperty( 'transition', 'none', 'important' );
-	container.dataset.photoCollageAutoHeightNoTransition = '1';
+	container.dataset[ NO_TRANSITION_DATASET_KEY ] = '1';
 };
 
 const restoreAutoHeightTransition = ( container ) => {
 	if (
 		! container ||
-		container.dataset.photoCollageAutoHeightNoTransition !== '1'
+		container.dataset[ NO_TRANSITION_DATASET_KEY ] !== '1'
 	) {
 		return;
 	}
 
 	container.style.removeProperty( 'transition' );
-	delete container.dataset.photoCollageAutoHeightNoTransition;
+	delete container.dataset[ NO_TRANSITION_DATASET_KEY ];
+};
+
+const hideAutoHeightContainer = ( container ) => {
+	if (
+		! container ||
+		container.dataset[ HIDDEN_UNTIL_LOCK_DATASET_KEY ] === '1'
+	) {
+		return;
+	}
+
+	container.dataset[ PREV_VISIBILITY_VALUE_DATASET_KEY ] =
+		container.style.getPropertyValue( 'visibility' );
+	container.dataset[ PREV_VISIBILITY_PRIORITY_DATASET_KEY ] =
+		container.style.getPropertyPriority( 'visibility' );
+	container.style.setProperty( 'visibility', 'hidden' );
+	container.dataset[ HIDDEN_UNTIL_LOCK_DATASET_KEY ] = '1';
+};
+
+const revealAutoHeightContainer = ( container ) => {
+	if (
+		! container ||
+		container.dataset[ HIDDEN_UNTIL_LOCK_DATASET_KEY ] !== '1'
+	) {
+		return;
+	}
+
+	const previousValue =
+		container.dataset[ PREV_VISIBILITY_VALUE_DATASET_KEY ] || '';
+	const previousPriority =
+		container.dataset[ PREV_VISIBILITY_PRIORITY_DATASET_KEY ] || '';
+
+	if ( previousValue ) {
+		container.style.setProperty(
+			'visibility',
+			previousValue,
+			previousPriority
+		);
+	} else {
+		container.style.removeProperty( 'visibility' );
+	}
+
+	delete container.dataset[ HIDDEN_UNTIL_LOCK_DATASET_KEY ];
+	delete container.dataset[ PREV_VISIBILITY_VALUE_DATASET_KEY ];
+	delete container.dataset[ PREV_VISIBILITY_PRIORITY_DATASET_KEY ];
 };
 
 const getMeasuredBottom = ( container, items ) => {
@@ -127,6 +312,11 @@ export const clearAutoHeight = ( container ) => {
 
 const getEstimatedAutoHeight = ( container, items, minHeight ) => {
 	const containerRect = container.getBoundingClientRect();
+	const containerWidth =
+		containerRect.width ||
+		container.offsetWidth ||
+		container.clientWidth ||
+		0;
 	const currentHeight = Math.max(
 		minHeight,
 		containerRect.height || container.offsetHeight || minHeight
@@ -135,45 +325,16 @@ const getEstimatedAutoHeight = ( container, items, minHeight ) => {
 
 	items.forEach( ( item ) => {
 		const itemRect = item.getBoundingClientRect();
-		const itemHeight = itemRect.height || item.offsetHeight || 0;
-		if ( ! Number.isFinite( itemHeight ) || itemHeight <= 0 ) {
-			return;
-		}
-
-		const topPercent = parsePercentValue( item.style.top );
-		if ( topPercent !== null && topPercent < MAX_PERCENT_ANCHOR ) {
-			const estimatedFromTop = itemHeight / ( 1 - topPercent / 100 );
-			if ( Number.isFinite( estimatedFromTop ) ) {
-				estimatedHeight = Math.max( estimatedHeight, estimatedFromTop );
-				return;
-			}
-		}
-
-		const topPixels = parsePixelValue( item.style.top );
-		if ( topPixels !== null ) {
-			estimatedHeight = Math.max(
-				estimatedHeight,
-				topPixels + itemHeight
-			);
-			return;
-		}
-
-		const bottomPercent = parsePercentValue( item.style.bottom );
-		if ( bottomPercent !== null && bottomPercent < MAX_PERCENT_ANCHOR ) {
-			const estimatedFromBottom =
-				itemHeight / ( 1 - bottomPercent / 100 );
-			if ( Number.isFinite( estimatedFromBottom ) ) {
-				estimatedHeight = Math.max(
-					estimatedHeight,
-					estimatedFromBottom
-				);
-				return;
-			}
-		}
-
 		const measuredBottom = itemRect.bottom - containerRect.top;
-		if ( Number.isFinite( measuredBottom ) ) {
-			estimatedHeight = Math.max( estimatedHeight, measuredBottom );
+		const itemHeight = getItemEstimatedHeight( item, containerWidth );
+		const requiredHeight = getItemRequiredContainerHeight(
+			item,
+			itemHeight,
+			measuredBottom
+		);
+
+		if ( Number.isFinite( requiredHeight ) && requiredHeight > 0 ) {
+			estimatedHeight = Math.max( estimatedHeight, requiredHeight );
 		}
 	} );
 
@@ -252,11 +413,40 @@ export const attachAutoHeight = ( container, options = {} ) => {
 		watchResize = true,
 		onHeightResolved,
 		measureOnInit = true,
+		hideUntilFirstMeasure = false,
 	} = options;
 
 	let animationFrameId = null;
 	let resizeObserver;
 	let mutationObserver;
+	let hasLockedInitialHeight = false;
+
+	const emitResolvedHeight = ( resolvedHeight ) => {
+		if (
+			typeof onHeightResolved !== 'function' ||
+			! Number.isFinite( resolvedHeight ) ||
+			resolvedHeight <= 0
+		) {
+			return;
+		}
+
+		const containerWidth = container.getBoundingClientRect().width;
+		if ( Number.isFinite( containerWidth ) && containerWidth > 0 ) {
+			onHeightResolved( {
+				height: resolvedHeight,
+				width: containerWidth,
+			} );
+		}
+	};
+
+	const finalizeInitialLock = () => {
+		if ( hasLockedInitialHeight ) {
+			return;
+		}
+
+		hasLockedInitialHeight = true;
+		revealAutoHeightContainer( container );
+	};
 
 	const hasIncompleteImages = () =>
 		getCollageItems( container ).some( ( item ) =>
@@ -264,6 +454,10 @@ export const attachAutoHeight = ( container, options = {} ) => {
 				( image ) => ! image.complete
 			)
 		);
+
+	if ( hideUntilFirstMeasure ) {
+		hideAutoHeightContainer( container );
+	}
 
 	const scheduleMeasure = () => {
 		if ( animationFrameId !== null ) {
@@ -273,20 +467,8 @@ export const attachAutoHeight = ( container, options = {} ) => {
 		animationFrameId = window.requestAnimationFrame( () => {
 			animationFrameId = null;
 			const resolvedHeight = applyAutoHeight( container, options );
-
-			if (
-				typeof onHeightResolved === 'function' &&
-				Number.isFinite( resolvedHeight ) &&
-				resolvedHeight > 0
-			) {
-				const containerWidth = container.getBoundingClientRect().width;
-				if ( Number.isFinite( containerWidth ) && containerWidth > 0 ) {
-					onHeightResolved( {
-						height: resolvedHeight,
-						width: containerWidth,
-					} );
-				}
-			}
+			finalizeInitialLock();
+			emitResolvedHeight( resolvedHeight );
 		} );
 	};
 
@@ -368,19 +550,8 @@ export const attachAutoHeight = ( container, options = {} ) => {
 
 	if ( measureOnInit || ! hasIncompleteImages() ) {
 		const initialHeight = applyAutoHeight( container, options );
-		if (
-			typeof onHeightResolved === 'function' &&
-			Number.isFinite( initialHeight ) &&
-			initialHeight > 0
-		) {
-			const containerWidth = container.getBoundingClientRect().width;
-			if ( Number.isFinite( containerWidth ) && containerWidth > 0 ) {
-				onHeightResolved( {
-					height: initialHeight,
-					width: containerWidth,
-				} );
-			}
-		}
+		finalizeInitialLock();
+		emitResolvedHeight( initialHeight );
 		scheduleMeasure();
 	}
 
@@ -402,6 +573,7 @@ export const attachAutoHeight = ( container, options = {} ) => {
 			mutationObserver.disconnect();
 		}
 
+		revealAutoHeightContainer( container );
 		restoreAutoHeightTransition( container );
 	};
 };
