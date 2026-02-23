@@ -6,6 +6,8 @@ const COLLAGE_ITEM_CLASS_NAMES = [
 const MOBILE_STACK_BREAKPOINT = 782;
 const DEFAULT_MIN_HEIGHT = 200;
 const DEFAULT_MAX_ITERATIONS = 8;
+const DEFAULT_INITIAL_REVEAL_STABILITY_MS = 220;
+const DEFAULT_INITIAL_REVEAL_TIMEOUT_MS = 1800;
 const MAX_PERCENT_ANCHOR = 99.5;
 const NO_TRANSITION_DATASET_KEY = 'photoCollageAutoHeightNoTransition';
 const HIDDEN_UNTIL_LOCK_DATASET_KEY = 'photoCollageAutoHeightHiddenUntilLock';
@@ -429,12 +431,16 @@ export const attachAutoHeight = ( container, options = {} ) => {
 		onHeightResolved,
 		measureOnInit = true,
 		hideUntilFirstMeasure = false,
+		initialRevealStabilityMs = DEFAULT_INITIAL_REVEAL_STABILITY_MS,
+		initialRevealTimeoutMs = DEFAULT_INITIAL_REVEAL_TIMEOUT_MS,
 	} = options;
 
 	let animationFrameId = null;
 	let resizeObserver;
 	let mutationObserver;
 	let hasLockedInitialHeight = false;
+	let initialRevealTimerId = null;
+	let initialRevealFallbackTimerId = null;
 
 	const emitResolvedHeight = ( resolvedHeight ) => {
 		if (
@@ -460,7 +466,33 @@ export const attachAutoHeight = ( container, options = {} ) => {
 		}
 
 		hasLockedInitialHeight = true;
+		if ( initialRevealTimerId !== null ) {
+			window.clearTimeout( initialRevealTimerId );
+			initialRevealTimerId = null;
+		}
+		if ( initialRevealFallbackTimerId !== null ) {
+			window.clearTimeout( initialRevealFallbackTimerId );
+			initialRevealFallbackTimerId = null;
+		}
 		revealAutoHeightContainer( container );
+	};
+
+	const queueInitialReveal = () => {
+		if ( hasLockedInitialHeight ) {
+			return;
+		}
+
+		if ( initialRevealTimerId !== null ) {
+			window.clearTimeout( initialRevealTimerId );
+		}
+
+		initialRevealTimerId = window.setTimeout(
+			() => {
+				initialRevealTimerId = null;
+				finalizeInitialLock();
+			},
+			Math.max( 0, initialRevealStabilityMs )
+		);
 	};
 
 	const hasIncompleteImages = () =>
@@ -472,6 +504,13 @@ export const attachAutoHeight = ( container, options = {} ) => {
 
 	if ( hideUntilFirstMeasure ) {
 		hideAutoHeightContainer( container );
+		initialRevealFallbackTimerId = window.setTimeout(
+			() => {
+				initialRevealFallbackTimerId = null;
+				finalizeInitialLock();
+			},
+			Math.max( 0, initialRevealTimeoutMs )
+		);
 	}
 
 	const scheduleMeasure = () => {
@@ -482,7 +521,11 @@ export const attachAutoHeight = ( container, options = {} ) => {
 		animationFrameId = window.requestAnimationFrame( () => {
 			animationFrameId = null;
 			const resolvedHeight = applyAutoHeight( container, options );
-			finalizeInitialLock();
+			if ( hideUntilFirstMeasure ) {
+				queueInitialReveal();
+			} else {
+				finalizeInitialLock();
+			}
 			emitResolvedHeight( resolvedHeight );
 		} );
 	};
@@ -565,7 +608,11 @@ export const attachAutoHeight = ( container, options = {} ) => {
 
 	if ( measureOnInit || ! hasIncompleteImages() ) {
 		const initialHeight = applyAutoHeight( container, options );
-		finalizeInitialLock();
+		if ( hideUntilFirstMeasure ) {
+			queueInitialReveal();
+		} else {
+			finalizeInitialLock();
+		}
 		emitResolvedHeight( initialHeight );
 		scheduleMeasure();
 	}
@@ -573,6 +620,12 @@ export const attachAutoHeight = ( container, options = {} ) => {
 	return () => {
 		if ( animationFrameId !== null ) {
 			window.cancelAnimationFrame( animationFrameId );
+		}
+		if ( initialRevealTimerId !== null ) {
+			window.clearTimeout( initialRevealTimerId );
+		}
+		if ( initialRevealFallbackTimerId !== null ) {
+			window.clearTimeout( initialRevealFallbackTimerId );
 		}
 		container.removeEventListener( 'load', onCaptureLoad, true );
 		window.removeEventListener( 'load', onWindowLoad );
