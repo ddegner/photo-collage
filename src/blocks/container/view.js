@@ -13,7 +13,6 @@ const registerContainer = ( container ) => {
 	const cleanup = attachAutoHeight( container, {
 		watchMutations: false,
 		watchResize: true,
-		hideUntilFirstMeasure: true,
 	} );
 	activeAutoHeight.set( container, cleanup );
 };
@@ -26,25 +25,32 @@ const unregisterContainer = ( container ) => {
 	}
 };
 
-const forEachMatchingContainer = ( node, callback ) => {
+const registerWithinNode = ( node ) => {
 	if ( ! ( node instanceof window.Element ) ) {
 		return;
 	}
 
 	if ( node.matches( AUTO_HEIGHT_SELECTOR ) ) {
-		callback( node );
+		registerContainer( node );
 	}
 
 	node.querySelectorAll( AUTO_HEIGHT_SELECTOR ).forEach( ( container ) => {
-		callback( container );
+		registerContainer( container );
 	} );
 };
 
-const registerWithinNode = ( node ) =>
-	forEachMatchingContainer( node, registerContainer );
-
 const unregisterWithinNode = ( node ) => {
-	forEachMatchingContainer( node, unregisterContainer );
+	if ( ! ( node instanceof window.Element ) ) {
+		return;
+	}
+
+	if ( node.matches( AUTO_HEIGHT_SELECTOR ) ) {
+		unregisterContainer( node );
+	}
+
+	node.querySelectorAll( AUTO_HEIGHT_SELECTOR ).forEach( ( container ) => {
+		unregisterContainer( container );
+	} );
 };
 
 const initAutoHeight = () => {

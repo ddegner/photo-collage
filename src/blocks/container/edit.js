@@ -12,16 +12,11 @@ import {
 	__experimentalUnitControl as UnitControl,
 	Button,
 } from '@wordpress/components';
-import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
-import { useCallback, useEffect, useRef } from '@wordpress/element';
+import { useEffect, useRef } from '@wordpress/element';
 import BackgroundControls from '../components/BackgroundControls';
 import { getBackgroundStyle } from '../utils/background-styles';
 import { attachAutoHeight, clearAutoHeight } from './auto-height';
-import {
-	normalizeAutoHeightHint,
-	toPixelAutoHeightHint,
-} from './auto-height-hint';
 import { PRESET_BUTTONS } from './presets';
 import { usePresets } from './use-presets';
 import './editor.scss';
@@ -29,24 +24,8 @@ import './editor.scss';
 const ALLOWED_BLOCKS = [ 'photo-collage/image', 'photo-collage/frame' ];
 
 export default function Edit( { attributes, setAttributes, clientId } ) {
-	const {
-		stackOnMobile,
-		containerHeight,
-		heightMode = 'fixed',
-		autoHeightHint = '',
-	} = attributes;
+	const { stackOnMobile, containerHeight, heightMode = 'fixed' } = attributes;
 	const containerRef = useRef( null );
-	const pendingAutoHeightHintRef = useRef( '' );
-	const hasPersistedForCurrentSaveRef = useRef( false );
-	const normalizedAutoHeightHint = normalizeAutoHeightHint( autoHeightHint );
-
-	const { isSavingPost, isAutosavingPost } = useSelect( ( select ) => {
-		const editorStore = select( 'core/editor' );
-		return {
-			isSavingPost: editorStore?.isSavingPost?.() ?? false,
-			isAutosavingPost: editorStore?.isAutosavingPost?.() ?? false,
-		};
-	}, [] );
 
 	const backgroundStyle = getBackgroundStyle( attributes );
 	const containerClassName = [
@@ -61,10 +40,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		className: containerClassName,
 		'data-height-mode': heightMode,
 		style: {
-			height:
-				heightMode === 'fixed'
-					? containerHeight
-					: normalizedAutoHeightHint || undefined,
+			height: heightMode === 'fixed' ? containerHeight : undefined,
 			minHeight: '200px',
 			...backgroundStyle,
 		},
@@ -76,53 +52,6 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		containerHeight,
 		setAttributes,
 	} );
-
-	useEffect( () => {
-		pendingAutoHeightHintRef.current = normalizedAutoHeightHint;
-	}, [ normalizedAutoHeightHint ] );
-
-	const handleAutoHeightResolved = useCallback(
-		( { height } ) => {
-			if ( heightMode !== 'auto' ) {
-				return;
-			}
-
-			pendingAutoHeightHintRef.current = toPixelAutoHeightHint( height );
-		},
-		[ heightMode ]
-	);
-
-	useEffect( () => {
-		if ( ! isSavingPost ) {
-			hasPersistedForCurrentSaveRef.current = false;
-			return;
-		}
-
-		if ( hasPersistedForCurrentSaveRef.current ) {
-			return;
-		}
-		hasPersistedForCurrentSaveRef.current = true;
-
-		if ( isAutosavingPost || heightMode !== 'auto' ) {
-			return;
-		}
-
-		const pendingHint = normalizeAutoHeightHint(
-			pendingAutoHeightHintRef.current
-		);
-
-		if ( ! pendingHint || pendingHint === normalizedAutoHeightHint ) {
-			return;
-		}
-
-		setAttributes( { autoHeightHint: pendingHint } );
-	}, [
-		heightMode,
-		isAutosavingPost,
-		isSavingPost,
-		normalizedAutoHeightHint,
-		setAttributes,
-	] );
 
 	useEffect( () => {
 		const containerElement = containerRef.current;
@@ -138,9 +67,8 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		return attachAutoHeight( containerElement, {
 			watchMutations: true,
 			watchResize: true,
-			onHeightResolved: handleAutoHeightResolved,
 		} );
-	}, [ heightMode, stackOnMobile, clientId, handleAutoHeightResolved ] );
+	}, [ heightMode, stackOnMobile, clientId ] );
 
 	const innerBlocksProps = useInnerBlocksProps( blockProps, {
 		allowedBlocks: ALLOWED_BLOCKS,

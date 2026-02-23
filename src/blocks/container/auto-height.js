@@ -6,16 +6,6 @@ const COLLAGE_ITEM_CLASS_NAMES = [
 const MOBILE_STACK_BREAKPOINT = 782;
 const DEFAULT_MIN_HEIGHT = 200;
 const DEFAULT_MAX_ITERATIONS = 8;
-const DEFAULT_INITIAL_REVEAL_STABILITY_MS = 120;
-const DEFAULT_INITIAL_REVEAL_TIMEOUT_MS = 1200;
-const MAX_PERCENT_ANCHOR = 99.5;
-const NO_TRANSITION_DATASET_KEY = 'photoCollageAutoHeightNoTransition';
-const HIDDEN_UNTIL_LOCK_DATASET_KEY = 'photoCollageAutoHeightHiddenUntilLock';
-const PREV_VISIBILITY_VALUE_DATASET_KEY =
-	'photoCollageAutoHeightPrevVisibilityValue';
-const PREV_VISIBILITY_PRIORITY_DATASET_KEY =
-	'photoCollageAutoHeightPrevVisibilityPriority';
-const INITIAL_HIDDEN_DATASET_KEY = 'autoHeightInitialHidden';
 
 const COLLAGE_ITEM_SELECTOR = COLLAGE_ITEM_CLASS_NAMES.map(
 	( className ) => `.${ className }`
@@ -52,260 +42,6 @@ const isMobileStacked = ( container ) =>
 const hasAutoHeightMode = ( container ) =>
 	! container.dataset.heightMode || container.dataset.heightMode === 'auto';
 
-const parsePercentValue = ( value ) => {
-	if ( typeof value !== 'string' ) {
-		return null;
-	}
-
-	const normalized = value.trim().toLowerCase();
-	if ( ! normalized.endsWith( '%' ) ) {
-		return null;
-	}
-
-	const numericValue = Number.parseFloat(
-		normalized.slice( 0, normalized.length - 1 )
-	);
-	if ( ! Number.isFinite( numericValue ) ) {
-		return null;
-	}
-
-	return numericValue;
-};
-
-const parsePixelValue = ( value ) => {
-	if ( typeof value !== 'string' ) {
-		return null;
-	}
-
-	const normalized = value.trim().toLowerCase();
-	if ( ! normalized.endsWith( 'px' ) ) {
-		return null;
-	}
-
-	const numericValue = Number.parseFloat(
-		normalized.slice( 0, normalized.length - 2 )
-	);
-	if ( ! Number.isFinite( numericValue ) ) {
-		return null;
-	}
-
-	return numericValue;
-};
-
-const getItemIntrinsicRatio = ( item ) => {
-	const image = item.querySelector( 'img' );
-	if ( ! image ) {
-		return null;
-	}
-
-	const width =
-		Number.parseFloat( image.getAttribute( 'width' ) || '' ) ||
-		image.naturalWidth;
-	const height =
-		Number.parseFloat( image.getAttribute( 'height' ) || '' ) ||
-		image.naturalHeight;
-
-	if (
-		! Number.isFinite( width ) ||
-		width <= 0 ||
-		! Number.isFinite( height ) ||
-		height <= 0
-	) {
-		return null;
-	}
-
-	return height / width;
-};
-
-const getItemCaptionHeight = ( item ) => {
-	const captionNodes = Array.from(
-		item.querySelectorAll(
-			'.photo-collage-image-caption, .wp-element-caption'
-		)
-	);
-	if ( captionNodes.length === 0 ) {
-		return 0;
-	}
-
-	const uniqueNodes = captionNodes.filter(
-		( node, index ) => captionNodes.indexOf( node ) === index
-	);
-
-	return uniqueNodes.reduce( ( total, node ) => {
-		const captionRect = node.getBoundingClientRect();
-		if ( Number.isFinite( captionRect.height ) && captionRect.height > 0 ) {
-			return total + captionRect.height;
-		}
-
-		return total;
-	}, 0 );
-};
-
-const getItemWidthInPixels = ( item, containerWidth ) => {
-	const widthPercent = parsePercentValue( item.style.width );
-	if ( widthPercent !== null && Number.isFinite( containerWidth ) ) {
-		return ( containerWidth * widthPercent ) / 100;
-	}
-
-	const widthPixels = parsePixelValue( item.style.width );
-	if ( widthPixels !== null ) {
-		return widthPixels;
-	}
-
-	const measuredWidth =
-		item.getBoundingClientRect().width || item.offsetWidth;
-	if ( Number.isFinite( measuredWidth ) && measuredWidth > 0 ) {
-		return measuredWidth;
-	}
-
-	return null;
-};
-
-const getItemEstimatedHeight = ( item, containerWidth ) => {
-	const styleHeightPixels = parsePixelValue( item.style.height );
-	if ( styleHeightPixels !== null ) {
-		return styleHeightPixels;
-	}
-
-	const itemWidth = getItemWidthInPixels( item, containerWidth );
-	const intrinsicRatio = getItemIntrinsicRatio( item );
-	const captionHeight = getItemCaptionHeight( item );
-	const itemStyles = window.getComputedStyle( item );
-	const itemVerticalInsets =
-		Number.parseFloat( itemStyles.paddingTop || '0' ) +
-		Number.parseFloat( itemStyles.paddingBottom || '0' ) +
-		Number.parseFloat( itemStyles.borderTopWidth || '0' ) +
-		Number.parseFloat( itemStyles.borderBottomWidth || '0' );
-
-	if (
-		Number.isFinite( itemWidth ) &&
-		itemWidth > 0 &&
-		Number.isFinite( intrinsicRatio ) &&
-		intrinsicRatio > 0
-	) {
-		return itemWidth * intrinsicRatio + captionHeight + itemVerticalInsets;
-	}
-
-	const measuredHeight =
-		item.getBoundingClientRect().height || item.offsetHeight || 0;
-	if ( Number.isFinite( measuredHeight ) && measuredHeight > 0 ) {
-		return measuredHeight;
-	}
-
-	return null;
-};
-
-const getItemRequiredContainerHeight = ( item, itemHeight, measuredBottom ) => {
-	if ( ! Number.isFinite( itemHeight ) || itemHeight <= 0 ) {
-		return Number.isFinite( measuredBottom ) && measuredBottom > 0
-			? measuredBottom
-			: null;
-	}
-
-	const topPercent = parsePercentValue( item.style.top );
-	if ( topPercent !== null && topPercent < MAX_PERCENT_ANCHOR ) {
-		return itemHeight / ( 1 - topPercent / 100 );
-	}
-
-	const topPixels = parsePixelValue( item.style.top );
-	if ( topPixels !== null ) {
-		return topPixels + itemHeight;
-	}
-
-	const bottomPercent = parsePercentValue( item.style.bottom );
-	if ( bottomPercent !== null && bottomPercent < MAX_PERCENT_ANCHOR ) {
-		return itemHeight / ( 1 - bottomPercent / 100 );
-	}
-
-	const bottomPixels = parsePixelValue( item.style.bottom );
-	if ( bottomPixels !== null ) {
-		return bottomPixels + itemHeight;
-	}
-
-	return Number.isFinite( measuredBottom ) && measuredBottom > 0
-		? measuredBottom
-		: null;
-};
-
-const disableAutoHeightTransition = ( container ) => {
-	if ( ! container ) {
-		return;
-	}
-
-	container.style.setProperty( 'transition', 'none', 'important' );
-	container.dataset[ NO_TRANSITION_DATASET_KEY ] = '1';
-};
-
-const restoreAutoHeightTransition = ( container ) => {
-	if (
-		! container ||
-		container.dataset[ NO_TRANSITION_DATASET_KEY ] !== '1'
-	) {
-		return;
-	}
-
-	container.style.removeProperty( 'transition' );
-	delete container.dataset[ NO_TRANSITION_DATASET_KEY ];
-};
-
-const hideAutoHeightContainer = ( container ) => {
-	if (
-		! container ||
-		container.dataset[ HIDDEN_UNTIL_LOCK_DATASET_KEY ] === '1'
-	) {
-		return;
-	}
-
-	if ( container.dataset[ INITIAL_HIDDEN_DATASET_KEY ] === '1' ) {
-		container.dataset[ HIDDEN_UNTIL_LOCK_DATASET_KEY ] = '1';
-		return;
-	}
-
-	container.dataset[ PREV_VISIBILITY_VALUE_DATASET_KEY ] =
-		container.style.getPropertyValue( 'visibility' );
-	container.dataset[ PREV_VISIBILITY_PRIORITY_DATASET_KEY ] =
-		container.style.getPropertyPriority( 'visibility' );
-	container.style.setProperty( 'visibility', 'hidden' );
-	container.dataset[ HIDDEN_UNTIL_LOCK_DATASET_KEY ] = '1';
-};
-
-const revealAutoHeightContainer = ( container ) => {
-	if (
-		! container ||
-		container.dataset[ HIDDEN_UNTIL_LOCK_DATASET_KEY ] !== '1'
-	) {
-		return;
-	}
-
-	if ( container.dataset[ INITIAL_HIDDEN_DATASET_KEY ] === '1' ) {
-		container.style.removeProperty( 'visibility' );
-		delete container.dataset[ HIDDEN_UNTIL_LOCK_DATASET_KEY ];
-		delete container.dataset[ INITIAL_HIDDEN_DATASET_KEY ];
-		delete container.dataset[ PREV_VISIBILITY_VALUE_DATASET_KEY ];
-		delete container.dataset[ PREV_VISIBILITY_PRIORITY_DATASET_KEY ];
-		return;
-	}
-
-	const previousValue =
-		container.dataset[ PREV_VISIBILITY_VALUE_DATASET_KEY ] || '';
-	const previousPriority =
-		container.dataset[ PREV_VISIBILITY_PRIORITY_DATASET_KEY ] || '';
-
-	if ( previousValue ) {
-		container.style.setProperty(
-			'visibility',
-			previousValue,
-			previousPriority
-		);
-	} else {
-		container.style.removeProperty( 'visibility' );
-	}
-
-	delete container.dataset[ HIDDEN_UNTIL_LOCK_DATASET_KEY ];
-	delete container.dataset[ PREV_VISIBILITY_VALUE_DATASET_KEY ];
-	delete container.dataset[ PREV_VISIBILITY_PRIORITY_DATASET_KEY ];
-};
-
 const getMeasuredBottom = ( container, items ) => {
 	const containerRect = container.getBoundingClientRect();
 	let maxBottom = 0;
@@ -324,38 +60,6 @@ export const clearAutoHeight = ( container ) => {
 	}
 
 	container.style.removeProperty( 'height' );
-	restoreAutoHeightTransition( container );
-};
-
-const getEstimatedAutoHeight = ( container, items, minHeight ) => {
-	const containerRect = container.getBoundingClientRect();
-	const containerWidth =
-		containerRect.width ||
-		container.offsetWidth ||
-		container.clientWidth ||
-		0;
-	const currentHeight = Math.max(
-		minHeight,
-		containerRect.height || container.offsetHeight || minHeight
-	);
-	let estimatedHeight = currentHeight;
-
-	items.forEach( ( item ) => {
-		const itemRect = item.getBoundingClientRect();
-		const measuredBottom = itemRect.bottom - containerRect.top;
-		const itemHeight = getItemEstimatedHeight( item, containerWidth );
-		const requiredHeight = getItemRequiredContainerHeight(
-			item,
-			itemHeight,
-			measuredBottom
-		);
-
-		if ( Number.isFinite( requiredHeight ) && requiredHeight > 0 ) {
-			estimatedHeight = Math.max( estimatedHeight, requiredHeight );
-		}
-	} );
-
-	return Math.max( minHeight, Math.ceil( estimatedHeight ) );
 };
 
 export const calculateAutoHeight = (
@@ -382,7 +86,7 @@ export const calculateAutoHeight = (
 		return null;
 	}
 
-	let nextHeight = getEstimatedAutoHeight( container, items, minHeight );
+	let nextHeight = Math.max( minHeight, container.offsetHeight || minHeight );
 
 	for ( let index = 0; index < maxIterations; index += 1 ) {
 		const roundedHeight = Math.ceil( nextHeight );
@@ -406,7 +110,6 @@ export const calculateAutoHeight = (
 };
 
 export const applyAutoHeight = ( container, options = {} ) => {
-	disableAutoHeightTransition( container );
 	const resolvedHeight = calculateAutoHeight( container, options );
 
 	if ( ! resolvedHeight ) {
@@ -423,124 +126,11 @@ export const attachAutoHeight = ( container, options = {} ) => {
 		return () => {};
 	}
 
-	disableAutoHeightTransition( container );
-
-	const {
-		watchMutations = true,
-		watchResize = true,
-		onHeightResolved,
-		measureOnInit = true,
-		hideUntilFirstMeasure = false,
-		initialRevealStabilityMs = DEFAULT_INITIAL_REVEAL_STABILITY_MS,
-		initialRevealTimeoutMs = DEFAULT_INITIAL_REVEAL_TIMEOUT_MS,
-	} = options;
+	const { watchMutations = true, watchResize = true } = options;
 
 	let animationFrameId = null;
 	let resizeObserver;
 	let mutationObserver;
-	let hasLockedInitialHeight = false;
-	let initialRevealTimerId = null;
-	let initialRevealFallbackTimerId = null;
-	let initialRevealTimedOut = false;
-
-	const emitResolvedHeight = ( resolvedHeight ) => {
-		if (
-			typeof onHeightResolved !== 'function' ||
-			! Number.isFinite( resolvedHeight ) ||
-			resolvedHeight <= 0
-		) {
-			return;
-		}
-
-		const containerWidth = container.getBoundingClientRect().width;
-		if ( Number.isFinite( containerWidth ) && containerWidth > 0 ) {
-			onHeightResolved( {
-				height: resolvedHeight,
-				width: containerWidth,
-			} );
-		}
-	};
-
-	const hasRenderableImageBox = ( image ) => {
-		const imageRect = image.getBoundingClientRect();
-		return (
-			Number.isFinite( imageRect.width ) &&
-			imageRect.width > 0 &&
-			Number.isFinite( imageRect.height ) &&
-			imageRect.height > 0
-		);
-	};
-
-	const hasBlockingEagerImages = () =>
-		getCollageItems( container ).some( ( item ) =>
-			Array.from( item.querySelectorAll( 'img' ) ).some(
-				( image ) =>
-					image.loading !== 'lazy' &&
-					( ! image.complete || ! hasRenderableImageBox( image ) )
-			)
-		);
-
-	const finalizeInitialLock = () => {
-		if ( hasLockedInitialHeight ) {
-			return;
-		}
-
-		if (
-			hideUntilFirstMeasure &&
-			! initialRevealTimedOut &&
-			hasBlockingEagerImages()
-		) {
-			return;
-		}
-
-		hasLockedInitialHeight = true;
-		if ( initialRevealTimerId !== null ) {
-			window.clearTimeout( initialRevealTimerId );
-			initialRevealTimerId = null;
-		}
-		if ( initialRevealFallbackTimerId !== null ) {
-			window.clearTimeout( initialRevealFallbackTimerId );
-			initialRevealFallbackTimerId = null;
-		}
-		revealAutoHeightContainer( container );
-	};
-
-	const queueInitialReveal = () => {
-		if ( hasLockedInitialHeight ) {
-			return;
-		}
-
-		if ( initialRevealTimerId !== null ) {
-			window.clearTimeout( initialRevealTimerId );
-		}
-
-		initialRevealTimerId = window.setTimeout(
-			() => {
-				initialRevealTimerId = null;
-				finalizeInitialLock();
-			},
-			Math.max( 0, initialRevealStabilityMs )
-		);
-	};
-
-	const hasIncompleteImages = () =>
-		getCollageItems( container ).some( ( item ) =>
-			Array.from( item.querySelectorAll( 'img' ) ).some(
-				( image ) => ! image.complete
-			)
-		);
-
-	if ( hideUntilFirstMeasure ) {
-		hideAutoHeightContainer( container );
-		initialRevealFallbackTimerId = window.setTimeout(
-			() => {
-				initialRevealFallbackTimerId = null;
-				initialRevealTimedOut = true;
-				finalizeInitialLock();
-			},
-			Math.max( 0, initialRevealTimeoutMs )
-		);
-	}
 
 	const scheduleMeasure = () => {
 		if ( animationFrameId !== null ) {
@@ -549,13 +139,7 @@ export const attachAutoHeight = ( container, options = {} ) => {
 
 		animationFrameId = window.requestAnimationFrame( () => {
 			animationFrameId = null;
-			const resolvedHeight = applyAutoHeight( container, options );
-			if ( hideUntilFirstMeasure ) {
-				queueInitialReveal();
-			} else {
-				finalizeInitialLock();
-			}
-			emitResolvedHeight( resolvedHeight );
+			applyAutoHeight( container, options );
 		} );
 	};
 
@@ -625,39 +209,18 @@ export const attachAutoHeight = ( container, options = {} ) => {
 		scheduleMeasure();
 	};
 
-	const onWindowLoad = () => {
-		scheduleMeasure();
-	};
-
 	container.addEventListener( 'load', onCaptureLoad, true );
 	if ( watchResize ) {
 		window.addEventListener( 'resize', onWindowResize );
 	}
-	window.addEventListener( 'load', onWindowLoad, { once: true } );
 
-	if ( measureOnInit || ! hasIncompleteImages() ) {
-		const initialHeight = applyAutoHeight( container, options );
-		if ( hideUntilFirstMeasure ) {
-			queueInitialReveal();
-		} else {
-			finalizeInitialLock();
-		}
-		emitResolvedHeight( initialHeight );
-		scheduleMeasure();
-	}
+	scheduleMeasure();
 
 	return () => {
 		if ( animationFrameId !== null ) {
 			window.cancelAnimationFrame( animationFrameId );
 		}
-		if ( initialRevealTimerId !== null ) {
-			window.clearTimeout( initialRevealTimerId );
-		}
-		if ( initialRevealFallbackTimerId !== null ) {
-			window.clearTimeout( initialRevealFallbackTimerId );
-		}
 		container.removeEventListener( 'load', onCaptureLoad, true );
-		window.removeEventListener( 'load', onWindowLoad );
 		if ( watchResize ) {
 			window.removeEventListener( 'resize', onWindowResize );
 		}
@@ -669,8 +232,5 @@ export const attachAutoHeight = ( container, options = {} ) => {
 		if ( mutationObserver ) {
 			mutationObserver.disconnect();
 		}
-
-		revealAutoHeightContainer( container );
-		restoreAutoHeightTransition( container );
 	};
 };

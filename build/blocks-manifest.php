@@ -45,10 +45,6 @@ return array(
 				'type' => 'string',
 				'default' => ''
 			),
-			'autoHeightHint' => array(
-				'type' => 'string',
-				'default' => ''
-			),
 			'heightMode' => array(
 				'type' => 'string',
 				'default' => 'fixed',

@@ -100,29 +100,18 @@ final class Photo_Collage_Collage_Converter {
 		$inner_blocks = $block['innerBlocks'] ?? array();
 
 		$height            = $attributes['containerHeight'] ?? '';
-		$height_mode       = $attributes['heightMode'] ?? 'fixed';
-		$auto_height_hint  = $this->sanitize_auto_height_hint( $attributes['autoHeightHint'] ?? '' );
 		$stack_on_mobile   = $attributes['stackOnMobile'] ?? true;
 		$normalized_attrs  = Photo_Collage_Renderer::normalize_attributes( $attributes );
 		$background_styles = $this->get_static_background_styles( $attributes, $normalized_attrs );
-
-		if ( ! in_array( $height_mode, array( 'fixed', 'auto' ), true ) ) {
-			$height_mode = 'fixed';
-		}
 
 		$classes = 'wp-block-photo-collage-container';
 		if ( $stack_on_mobile ) {
 			$classes .= ' is-stack-on-mobile';
 		}
-		if ( 'auto' === $height_mode ) {
-			$classes .= ' is-height-auto';
-		}
 
 		$style = '';
-		if ( 'fixed' === $height_mode && ! empty( $height ) ) {
+		if ( ! empty( $height ) ) {
 			$style .= 'height: ' . esc_attr( $height ) . '; ';
-		} elseif ( 'auto' === $height_mode && '' !== $auto_height_hint ) {
-			$style .= 'height: ' . esc_attr( $auto_height_hint ) . '; ';
 		}
 		$style .= 'min-height: 200px; position: relative; display: flex; flex-wrap: wrap; width: 100%; box-sizing: border-box;';
 		$style .= ' ' . Photo_Collage_Renderer::build_style_string( $background_styles );
@@ -257,25 +246,6 @@ final class Photo_Collage_Collage_Converter {
 		}
 
 		return $styles;
-	}
-
-	/**
-	 * Sanitize a saved auto-height hint value.
-	 *
-	 * @param mixed $value Raw hint value.
-	 * @return string
-	 */
-	private function sanitize_auto_height_hint( mixed $value ): string {
-		if ( ! is_scalar( $value ) ) {
-			return '';
-		}
-
-		$hint = strtolower( trim( (string) $value ) );
-		if ( 1 === preg_match( '/^\d+(?:\.\d+)?(?:px|%)$/', $hint ) ) {
-			return $hint;
-		}
-
-		return '';
 	}
 
 	/**
