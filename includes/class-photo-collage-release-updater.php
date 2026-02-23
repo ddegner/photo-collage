@@ -211,7 +211,8 @@ final class Photo_Collage_Release_Updater {
 
 		$source_directory = untrailingslashit( $source );
 		if ( self::PLUGIN_SLUG === basename( $source_directory ) ) {
-			return $source_directory;
+			// Preserve trailing slash for Plugin_Upgrader::check_package() glob checks.
+			return trailingslashit( $source_directory );
 		}
 
 		$target_directory = trailingslashit( $remote_source ) . self::PLUGIN_SLUG;
@@ -226,7 +227,8 @@ final class Photo_Collage_Release_Updater {
 		}
 
 		if ( $wp_filesystem->move( $source_directory, $target_directory, true ) ) {
-			return $target_directory;
+			// Preserve trailing slash for Plugin_Upgrader::check_package() glob checks.
+			return trailingslashit( $target_directory );
 		}
 
 		return $source;
