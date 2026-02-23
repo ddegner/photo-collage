@@ -2,23 +2,25 @@ import { attachAutoHeight } from './auto-height';
 
 const AUTO_HEIGHT_SELECTOR =
 	'.wp-block-photo-collage-container[data-height-mode="auto"]';
+const AUTO_HEIGHT_HINT_PATTERN = /^\d+(?:\.\d+)?(?:px|%)$/i;
 
 const activeAutoHeight = new WeakMap();
+
+const isValidAutoHeightHint = ( value ) =>
+	typeof value === 'string' && AUTO_HEIGHT_HINT_PATTERN.test( value.trim() );
 
 const hasSavedAutoHeightHint = ( container ) => {
 	if ( ! container ) {
 		return false;
 	}
 
-	const styleHint = container.style.aspectRatio;
-	if ( styleHint && styleHint !== 'auto' ) {
+	const styleHint = container.style.height || '';
+	if ( isValidAutoHeightHint( styleHint ) ) {
 		return true;
 	}
 
-	const dataHint = Number.parseFloat(
-		container.dataset.autoHeightRatio || ''
-	);
-	return Number.isFinite( dataHint ) && dataHint > 0;
+	const dataHint = container.dataset.autoHeightHint || '';
+	return isValidAutoHeightHint( dataHint );
 };
 
 const registerContainer = ( container ) => {

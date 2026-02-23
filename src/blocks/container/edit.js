@@ -23,20 +23,33 @@ import { usePresets } from './use-presets';
 import './editor.scss';
 
 const ALLOWED_BLOCKS = [ 'photo-collage/image', 'photo-collage/frame' ];
-const AUTO_RATIO_PRECISION = 1000000;
-const AUTO_RATIO_TOLERANCE = 0.0005;
+const AUTO_HEIGHT_HINT_PATTERN = /^\d+(?:\.\d+)?(?:px|%)$/i;
+
+const normalizeAutoHeightHint = ( value ) => {
+	if ( typeof value !== 'string' ) {
+		return '';
+	}
+
+	const normalizedValue = value.trim().toLowerCase();
+	if ( ! AUTO_HEIGHT_HINT_PATTERN.test( normalizedValue ) ) {
+		return '';
+	}
+
+	return normalizedValue;
+};
 
 export default function Edit( { attributes, setAttributes, clientId } ) {
 	const {
 		stackOnMobile,
 		containerHeight,
 		heightMode = 'fixed',
-		autoHeightRatio = 0,
+		autoHeightHint = '',
 	} = attributes;
 	const containerRef = useRef( null );
-	const pendingAutoRatioRef = useRef( 0 );
-	const lastPersistedAutoRatioRef = useRef( 0 );
+	const pendingAutoHeightHintRef = useRef( '' );
+	const lastPersistedAutoHeightHintRef = useRef( '' );
 	const hasPersistedForCurrentSaveRef = useRef( false );
+	const normalizedAutoHeightHint = normalizeAutoHeightHint( autoHeightHint );
 
 	const { isSavingPost, isAutosavingPost } = useSelect( ( select ) => {
 		const editorStore = select( 'core/editor' );
@@ -53,19 +66,16 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 	]
 		.filter( Boolean )
 		.join( ' ' );
-	const hasAutoHeightRatio =
-		Number.isFinite( autoHeightRatio ) && autoHeightRatio > 0;
 
 	const blockProps = useBlockProps( {
 		ref: containerRef,
 		className: containerClassName,
 		'data-height-mode': heightMode,
 		style: {
-			height: heightMode === 'fixed' ? containerHeight : undefined,
-			aspectRatio:
-				heightMode === 'auto' && hasAutoHeightRatio
-					? String( autoHeightRatio )
-					: undefined,
+			height:
+				heightMode === 'fixed'
+					? containerHeight
+					: normalizedAutoHeightHint || undefined,
 			minHeight: '200px',
 			...backgroundStyle,
 		},
@@ -79,27 +89,23 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 	} );
 
 	useEffect( () => {
-		const persistedRatio = hasAutoHeightRatio ? autoHeightRatio : 0;
-		lastPersistedAutoRatioRef.current = persistedRatio;
-		if ( pendingAutoRatioRef.current <= 0 ) {
-			pendingAutoRatioRef.current = persistedRatio;
+		lastPersistedAutoHeightHintRef.current = normalizedAutoHeightHint;
+		if ( ! pendingAutoHeightHintRef.current ) {
+			pendingAutoHeightHintRef.current = normalizedAutoHeightHint;
 		}
-	}, [ autoHeightRatio, hasAutoHeightRatio ] );
+	}, [ normalizedAutoHeightHint ] );
 
 	const handleAutoHeightResolved = useCallback(
-		( { ratio } ) => {
+		( { height } ) => {
 			if (
 				heightMode !== 'auto' ||
-				! Number.isFinite( ratio ) ||
-				ratio <= 0
+				! Number.isFinite( height ) ||
+				height <= 0
 			) {
 				return;
 			}
 
-			const roundedRatio =
-				Math.round( ratio * AUTO_RATIO_PRECISION ) /
-				AUTO_RATIO_PRECISION;
-			pendingAutoRatioRef.current = roundedRatio;
+			pendingAutoHeightHintRef.current = `${ Math.ceil( height ) }px`;
 		},
 		[ heightMode ]
 	);
@@ -119,19 +125,19 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 			return;
 		}
 
-		const pendingRatio = pendingAutoRatioRef.current || 0;
-		const lastPersistedRatio = lastPersistedAutoRatioRef.current || 0;
+		const pendingHint = normalizeAutoHeightHint(
+			pendingAutoHeightHintRef.current
+		);
+		const lastPersistedHint = normalizeAutoHeightHint(
+			lastPersistedAutoHeightHintRef.current
+		);
 
-		if (
-			! Number.isFinite( pendingRatio ) ||
-			pendingRatio <= 0 ||
-			Math.abs( pendingRatio - lastPersistedRatio ) < AUTO_RATIO_TOLERANCE
-		) {
+		if ( ! pendingHint || pendingHint === lastPersistedHint ) {
 			return;
 		}
 
-		lastPersistedAutoRatioRef.current = pendingRatio;
-		setAttributes( { autoHeightRatio: pendingRatio } );
+		lastPersistedAutoHeightHintRef.current = pendingHint;
+		setAttributes( { autoHeightHint: pendingHint } );
 	}, [ heightMode, isAutosavingPost, isSavingPost, setAttributes ] );
 
 	useEffect( () => {

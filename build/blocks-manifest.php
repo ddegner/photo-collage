@@ -45,9 +45,9 @@ return array(
 				'type' => 'string',
 				'default' => ''
 			),
-			'autoHeightRatio' => array(
-				'type' => 'number',
-				'default' => 0
+			'autoHeightHint' => array(
+				'type' => 'string',
+				'default' => ''
 			),
 			'heightMode' => array(
 				'type' => 'string',

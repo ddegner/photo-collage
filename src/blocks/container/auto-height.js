@@ -163,7 +163,6 @@ export const attachAutoHeight = ( container, options = {} ) => {
 					onHeightResolved( {
 						height: resolvedHeight,
 						width: containerWidth,
-						ratio: containerWidth / resolvedHeight,
 					} );
 				}
 			}

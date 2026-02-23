@@ -39,9 +39,9 @@
 			"type": "string",
 			"default": ""
 		},
-		"autoHeightRatio": {
-			"type": "number",
-			"default": 0
+		"autoHeightHint": {
+			"type": "string",
+			"default": ""
 		},
 		"heightMode": {
 			"type": "string",
