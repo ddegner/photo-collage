@@ -106,7 +106,7 @@ final class Photo_Collage_Legacy_Auto_Height_Migrator {
 			$save_result = wp_update_post(
 				array(
 					'ID'           => $post_id,
-					'post_content' => $updated,
+					'post_content' => wp_slash( $updated ),
 				),
 				true
 			);
@@ -135,8 +135,15 @@ final class Photo_Collage_Legacy_Auto_Height_Migrator {
 		$count = 0;
 
 		foreach ( $blocks as $block ) {
-			$block_name = $block['blockName'] ?? '';
+			$block_name      = $block['blockName'] ?? '';
+			$requires_update = false;
 			if ( 'photo-collage/container' === $block_name && $this->container_requires_recompute( $block ) ) {
+				$requires_update = true;
+			}
+			if ( $this->block_has_broken_unicode_escapes( $block ) ) {
+				$requires_update = true;
+			}
+			if ( $requires_update ) {
 				++$count;
 			}
 
@@ -178,18 +185,29 @@ final class Photo_Collage_Legacy_Auto_Height_Migrator {
 		$recomputed = array();
 
 		foreach ( $blocks as $block ) {
-			$block_name = $block['blockName'] ?? '';
+			$block_name    = $block['blockName'] ?? '';
+			$block_updated = false;
 
 			if ( 'photo-collage/container' === $block_name ) {
 				$updated_block = $this->recompute_container_block( $block );
 				if ( null !== $updated_block ) {
-					$block = $updated_block;
-					++$updated_blocks;
+					$block         = $updated_block;
+					$block_updated = true;
 				}
+			}
+
+			$repaired_block = $this->repair_block_unicode_escapes( $block );
+			if ( null !== $repaired_block ) {
+				$block         = $repaired_block;
+				$block_updated = true;
 			}
 
 			if ( ! empty( $block['innerBlocks'] ) && is_array( $block['innerBlocks'] ) ) {
 				$block['innerBlocks'] = $this->recompute_blocks_recursive( $block['innerBlocks'], $updated_blocks );
+			}
+
+			if ( $block_updated ) {
+				++$updated_blocks;
 			}
 
 			$recomputed[] = $block;
@@ -280,5 +298,108 @@ final class Photo_Collage_Legacy_Auto_Height_Migrator {
 	 */
 	private function is_empty_height( mixed $height ): bool {
 		return ! is_string( $height ) || '' === trim( $height );
+	}
+
+	/**
+	 * Determine whether a block has malformed unicode escapes in string attributes.
+	 *
+	 * @param array $block Parsed block.
+	 * @return bool
+	 */
+	private function block_has_broken_unicode_escapes( array $block ): bool {
+		$block_name = (string) ( $block['blockName'] ?? '' );
+		if ( ! str_starts_with( $block_name, 'photo-collage/' ) ) {
+			return false;
+		}
+
+		$attrs = $block['attrs'] ?? array();
+		if ( ! is_array( $attrs ) ) {
+			return false;
+		}
+
+		foreach ( $attrs as $value ) {
+			if ( ! is_string( $value ) ) {
+				continue;
+			}
+
+			if ( $this->string_has_broken_unicode_escapes( $value ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Repair malformed unicode escapes in photo-collage block string attributes.
+	 *
+	 * @param array $block Parsed block.
+	 * @return array|null Repaired block or null when unchanged.
+	 */
+	private function repair_block_unicode_escapes( array $block ): ?array {
+		$block_name = (string) ( $block['blockName'] ?? '' );
+		if ( ! str_starts_with( $block_name, 'photo-collage/' ) ) {
+			return null;
+		}
+
+		$attrs = $block['attrs'] ?? array();
+		if ( ! is_array( $attrs ) || empty( $attrs ) ) {
+			return null;
+		}
+
+		$updated = false;
+		foreach ( $attrs as $key => $value ) {
+			if ( ! is_string( $value ) ) {
+				continue;
+			}
+
+			$decoded = $this->decode_broken_unicode_escapes( $value );
+			if ( $decoded === $value ) {
+				continue;
+			}
+
+			$attrs[ $key ] = $decoded;
+			$updated       = true;
+		}
+
+		if ( ! $updated ) {
+			return null;
+		}
+
+		$block['attrs'] = $attrs;
+		return $block;
+	}
+
+	/**
+	 * Check whether a string has unslashed unicode escape tokens (e.g. u003c).
+	 *
+	 * @param string $value Attribute value.
+	 * @return bool
+	 */
+	private function string_has_broken_unicode_escapes( string $value ): bool {
+		return 1 === preg_match( '/(?<!\\\\)u[0-9a-fA-F]{4}/', $value );
+	}
+
+	/**
+	 * Decode unslashed unicode escape tokens back to UTF-8 characters.
+	 *
+	 * @param string $value Attribute value.
+	 * @return string
+	 */
+	private function decode_broken_unicode_escapes( string $value ): string {
+		if ( ! $this->string_has_broken_unicode_escapes( $value ) ) {
+			return $value;
+		}
+
+		$decoded = preg_replace_callback(
+			'/(?<!\\\\)u([0-9a-fA-F]{4})/',
+			static function ( array $matches ): string {
+				$char = html_entity_decode( '&#x' . strtolower( $matches[1] ) . ';', ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+				return '' === $char ? $matches[0] : $char;
+			},
+			$value
+		);
+
+		return is_string( $decoded ) ? $decoded : $value;
 	}
 }

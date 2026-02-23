@@ -50,7 +50,7 @@ final class Photo_Collage_Collage_Converter {
 			$updated = wp_update_post(
 				array(
 					'ID'           => $post_id,
-					'post_content' => $new_content,
+					'post_content' => wp_slash( $new_content ),
 				)
 			);
 			return ! is_wp_error( $updated );
@@ -96,7 +96,7 @@ final class Photo_Collage_Collage_Converter {
 	 * @return array New block data (HTML block).
 	 */
 	private function convert_to_static_html( array $block ): array {
-		$attributes   = $block['attrs'] ?? array();
+		$attributes   = $this->repair_string_attributes( $block['attrs'] ?? array() );
 		$inner_blocks = $block['innerBlocks'] ?? array();
 
 		$height            = $attributes['containerHeight'] ?? '';
@@ -140,7 +140,7 @@ final class Photo_Collage_Collage_Converter {
 	 * @return string Generated HTML.
 	 */
 	private function generate_image_html( array $image_block ): string {
-		$attrs = $image_block['attrs'] ?? array();
+		$attrs = $this->repair_string_attributes( $image_block['attrs'] ?? array() );
 
 		if ( empty( $attrs['url'] ) ) {
 			return '';
@@ -198,7 +198,7 @@ final class Photo_Collage_Collage_Converter {
 	 * @return string
 	 */
 	private function generate_frame_html( array $frame_block ): string {
-		$attrs        = $frame_block['attrs'] ?? array();
+		$attrs        = $this->repair_string_attributes( $frame_block['attrs'] ?? array() );
 		$inner_blocks = $frame_block['innerBlocks'] ?? array();
 
 		$normalized_attrs = Photo_Collage_Renderer::normalize_attributes( $attrs );
@@ -320,7 +320,7 @@ final class Photo_Collage_Collage_Converter {
 	 * @return array|null
 	 */
 	private function convert_image_to_core_image( array $image_block ): ?array {
-		$attrs = $image_block['attrs'] ?? array();
+		$attrs = $this->repair_string_attributes( $image_block['attrs'] ?? array() );
 		if ( empty( $attrs['url'] ) ) {
 			return null;
 		}
@@ -418,5 +418,53 @@ final class Photo_Collage_Collage_Converter {
 			'innerHTML'    => '<div class="wp-block-group"></div>',
 			'innerContent' => $inner_content,
 		);
+	}
+
+	/**
+	 * Repair malformed unicode escapes across string attributes.
+	 *
+	 * @param mixed $attrs Raw attributes.
+	 * @return array
+	 */
+	private function repair_string_attributes( mixed $attrs ): array {
+		if ( ! is_array( $attrs ) ) {
+			return array();
+		}
+
+		foreach ( $attrs as $key => $value ) {
+			if ( is_string( $value ) ) {
+				$attrs[ $key ] = $this->decode_broken_unicode_escapes( $value );
+				continue;
+			}
+
+			if ( is_array( $value ) ) {
+				$attrs[ $key ] = $this->repair_string_attributes( $value );
+			}
+		}
+
+		return $attrs;
+	}
+
+	/**
+	 * Decode unslashed unicode escape tokens (e.g. u003c) in attribute strings.
+	 *
+	 * @param string $value Attribute value.
+	 * @return string
+	 */
+	private function decode_broken_unicode_escapes( string $value ): string {
+		if ( 1 !== preg_match( '/(?<!\\\\)u[0-9a-fA-F]{4}/', $value ) ) {
+			return $value;
+		}
+
+		$decoded = preg_replace_callback(
+			'/(?<!\\\\)u([0-9a-fA-F]{4})/',
+			static function ( array $matches ): string {
+				$char = html_entity_decode( '&#x' . strtolower( $matches[1] ) . ';', ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+				return '' === $char ? $matches[0] : $char;
+			},
+			$value
+		);
+
+		return is_string( $decoded ) ? $decoded : $value;
 	}
 }
