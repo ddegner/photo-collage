@@ -107,6 +107,11 @@ Photo Collage is optimized for performance. It uses modern CSS for positioning a
 
 ## Changelog
 
+### 0.5.15
+*   IMPROVEMENT: Added a settings action to recompute legacy auto-height collage containers site-wide.
+*   IMPROVEMENT: Added a legacy auto-height migrator that removes stale hint/ratio attributes and normalizes missing `heightMode` values for legacy auto layouts.
+*   IMPROVEMENT: Added legacy auto-height recompute count/status messaging and cache invalidation for settings scans.
+
 ### 0.5.14
 *   FIX: Reduced frontend layout shift in Auto Height mode by persisting an estimated container `aspect-ratio` from editor measurements
 *   IMPROVEMENT: Applied saved auto-height ratio during server rendering so browsers reserve proportional space before JS recalculation

@@ -14,6 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once __DIR__ . '/enums.php';
 require_once __DIR__ . '/class-photo-collage-collage-scanner.php';
 require_once __DIR__ . '/class-photo-collage-collage-exporter.php';
+require_once __DIR__ . '/class-photo-collage-legacy-auto-height-migrator.php';
 
 if ( defined( 'PHOTO_COLLAGE_HAS_RELEASE_CHANNEL_SWITCH' ) && PHOTO_COLLAGE_HAS_RELEASE_CHANNEL_SWITCH ) {
 	$release_channel_enum_file = __DIR__ . '/enum-photo-collage-release-channel.php';
@@ -52,21 +53,32 @@ final class Photo_Collage_Admin_Settings {
 	private Photo_Collage_Collage_Exporter $exporter;
 
 	/**
+	 * Legacy auto-height migrator dependency.
+	 *
+	 * @var Photo_Collage_Legacy_Auto_Height_Migrator
+	 */
+	private Photo_Collage_Legacy_Auto_Height_Migrator $legacy_auto_height_migrator;
+
+	/**
 	 * Initialize the admin settings.
 	 *
-	 * @param Photo_Collage_Collage_Scanner|null  $scanner Scanner dependency.
-	 * @param Photo_Collage_Collage_Exporter|null $exporter Exporter dependency.
+	 * @param Photo_Collage_Collage_Scanner|null             $scanner Scanner dependency.
+	 * @param Photo_Collage_Collage_Exporter|null            $exporter Exporter dependency.
+	 * @param Photo_Collage_Legacy_Auto_Height_Migrator|null $legacy_auto_height_migrator Legacy auto-height migrator dependency.
 	 */
 	public function __construct(
 		?Photo_Collage_Collage_Scanner $scanner = null,
-		?Photo_Collage_Collage_Exporter $exporter = null
+		?Photo_Collage_Collage_Exporter $exporter = null,
+		?Photo_Collage_Legacy_Auto_Height_Migrator $legacy_auto_height_migrator = null
 	) {
-		$this->scanner  = $scanner ?? new Photo_Collage_Collage_Scanner();
-		$this->exporter = $exporter ?? new Photo_Collage_Collage_Exporter( $this->scanner );
+		$this->scanner                     = $scanner ?? new Photo_Collage_Collage_Scanner();
+		$this->exporter                    = $exporter ?? new Photo_Collage_Collage_Exporter( $this->scanner );
+		$this->legacy_auto_height_migrator = $legacy_auto_height_migrator ?? new Photo_Collage_Legacy_Auto_Height_Migrator( $this->scanner );
 
 		add_action( 'admin_menu', $this->add_settings_page( ... ) );
 		add_action( 'admin_init', $this->register_settings( ... ) );
 		add_action( 'admin_post_photo_collage_export', $this->handle_export_request( ... ) );
+		add_action( 'admin_post_photo_collage_recompute_auto_height', $this->handle_recompute_auto_height_request( ... ) );
 		add_filter( 'plugin_action_links_photo-collage/photo-collage.php', $this->add_settings_link( ... ) );
 	}
 
@@ -161,12 +173,19 @@ final class Photo_Collage_Admin_Settings {
 				(string) get_option( self::RELEASE_CHANNEL_OPTION_NAME, Photo_Collage_Release_Channel::STABLE->value )
 			);
 		}
-		$block_count = $this->scan_collage_blocks();
-		$export_url  = wp_nonce_url(
+		$block_count              = $this->scan_collage_blocks();
+		$export_url               = wp_nonce_url(
 			admin_url( 'admin-post.php?action=photo_collage_export' ),
 			'photo_collage_export',
 			'nonce'
 		);
+		$legacy_auto_height_count = $this->count_legacy_auto_height_blocks();
+		$recompute_url            = wp_nonce_url(
+			admin_url( 'admin-post.php?action=photo_collage_recompute_auto_height' ),
+			'photo_collage_recompute_auto_height',
+			'nonce'
+		);
+		$recompute_result         = $this->get_recompute_result();
 
 		require __DIR__ . '/admin/views/settings-page.php';
 	}
@@ -240,6 +259,37 @@ final class Photo_Collage_Admin_Settings {
 	}
 
 	/**
+	 * Handle legacy auto-height recompute action routed through admin-post.php.
+	 */
+	public function handle_recompute_auto_height_request(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'photo-collage' ) );
+		}
+
+		check_admin_referer( 'photo_collage_recompute_auto_height', 'nonce' );
+
+		$result = $this->legacy_auto_height_migrator->recompute_all_posts();
+
+		delete_transient( 'photo_collage_block_count' );
+		delete_transient( 'photo_collage_legacy_auto_height_block_count' );
+
+		$redirect_url = add_query_arg(
+			array(
+				'page'                            => 'photo-collage-settings',
+				'photo_collage_recompute_done'    => '1',
+				'photo_collage_recompute_posts'   => (string) $result['posts_updated'],
+				'photo_collage_recompute_blocks'  => (string) $result['blocks_updated'],
+				'photo_collage_recompute_scanned' => (string) $result['posts_scanned'],
+				'photo_collage_recompute_errors'  => (string) $result['errors'],
+			),
+			admin_url( 'options-general.php' )
+		);
+
+		wp_safe_redirect( $redirect_url );
+		exit;
+	}
+
+	/**
 	 * Scan all posts for photo collage blocks.
 	 *
 	 * @return int Number of collage blocks found.
@@ -260,5 +310,49 @@ final class Photo_Collage_Admin_Settings {
 		set_transient( 'photo_collage_block_count', $count, HOUR_IN_SECONDS );
 
 		return $count;
+	}
+
+	/**
+	 * Count legacy auto-height blocks requiring recompute.
+	 *
+	 * @return int
+	 */
+	private function count_legacy_auto_height_blocks(): int {
+		return $this->legacy_auto_height_migrator->count_blocks_requiring_recompute();
+	}
+
+	/**
+	 * Parse recompute result from query args.
+	 *
+	 * @return array{posts_updated:int,blocks_updated:int,posts_scanned:int,errors:int}|null
+	 */
+	private function get_recompute_result(): ?array {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Reads status-only query args after same-admin redirect.
+		if ( ! isset( $_GET['photo_collage_recompute_done'] ) ) {
+			return null;
+		}
+
+		$posts_updated  = isset( $_GET['photo_collage_recompute_posts'] )
+			? max( 0, (int) sanitize_text_field( wp_unslash( $_GET['photo_collage_recompute_posts'] ) ) )
+			: 0;
+		$blocks_updated = isset( $_GET['photo_collage_recompute_blocks'] )
+			? max( 0, (int) sanitize_text_field( wp_unslash( $_GET['photo_collage_recompute_blocks'] ) ) )
+			: 0;
+		$posts_scanned  = isset( $_GET['photo_collage_recompute_scanned'] )
+			? max( 0, (int) sanitize_text_field( wp_unslash( $_GET['photo_collage_recompute_scanned'] ) ) )
+			: 0;
+		$errors         = isset( $_GET['photo_collage_recompute_errors'] )
+			? max( 0, (int) sanitize_text_field( wp_unslash( $_GET['photo_collage_recompute_errors'] ) ) )
+			: 0;
+
+		$result = array(
+			'posts_updated'  => $posts_updated,
+			'blocks_updated' => $blocks_updated,
+			'posts_scanned'  => $posts_scanned,
+			'errors'         => $errors,
+		);
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+		return $result;
 	}
 }

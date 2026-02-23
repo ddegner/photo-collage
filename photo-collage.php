@@ -104,6 +104,7 @@ function photo_collage_invalidate_scan_cache( int $post_id = 0 ): void {
 	}
 
 	delete_transient( 'photo_collage_block_count' );
+	delete_transient( 'photo_collage_legacy_auto_height_block_count' );
 
 	$cache_version = max( 1, (int) get_option( 'photo_collage_scan_cache_version', 1 ) );
 	update_option( 'photo_collage_scan_cache_version', $cache_version + 1, false );
