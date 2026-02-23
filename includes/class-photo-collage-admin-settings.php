@@ -137,7 +137,7 @@ final class Photo_Collage_Admin_Settings {
 	 * @return array<string> Modified links.
 	 */
 	public function add_settings_link( array $links ): array {
-		$settings_link = '<a href="' . admin_url( 'options-general.php?page=photo-collage-settings' ) . '">' . __( 'Configure Uninstall', 'photo-collage' ) . '</a>';
+		$settings_link = '<a href="' . admin_url( 'options-general.php?page=photo-collage-settings' ) . '">' . __( 'Settings', 'photo-collage' ) . '</a>';
 		array_unshift( $links, $settings_link );
 		return $links;
 	}

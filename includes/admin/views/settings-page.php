@@ -26,12 +26,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 	<?php endif; ?>
 
-	<div class="notice notice-warning">
-		<p>
-			<strong><?php esc_html_e( 'Important:', 'photo-collage' ); ?></strong>
-			<?php esc_html_e( 'When you uninstall this plugin, your collage blocks will be converted based on the option you choose below. This conversion is irreversible.', 'photo-collage' ); ?>
-		</p>
-	</div>
+	<p class="description">
+		<?php esc_html_e( 'Manage plugin updates, content tools, and uninstall behavior.', 'photo-collage' ); ?>
+	</p>
 
 	<div class="notice notice-info">
 		<p>
@@ -50,7 +47,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<form method="post" action="">
 		<?php wp_nonce_field( 'photo_collage_uninstall_options', 'photo_collage_settings_nonce' ); ?>
 
-		<table class="form-table">
+		<table class="form-table" role="presentation">
 			<?php if ( $release_channel_feature_enabled && null !== $current_release_channel ) : ?>
 				<tr>
 					<th scope="row">
@@ -68,7 +65,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 									<?php checked( $current_release_channel->value, Photo_Collage_Release_Channel::STABLE->value ); ?>>
 								<strong><?php esc_html_e( 'Stable (WordPress.org)', 'photo-collage' ); ?></strong>
 								<p class="description">
-									<?php esc_html_e( 'Use production releases from the WordPress plugin directory. Recommended for most sites.', 'photo-collage' ); ?>
+									<?php esc_html_e( 'Use production releases from WordPress.org.', 'photo-collage' ); ?>
 								</p>
 							</label>
 
@@ -80,7 +77,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 									<?php checked( $current_release_channel->value, Photo_Collage_Release_Channel::BETA->value ); ?>>
 								<strong><?php esc_html_e( 'Beta (GitHub prereleases)', 'photo-collage' ); ?></strong>
 								<p class="description">
-									<?php esc_html_e( 'Use beta builds from GitHub for testing new features. These builds may be unstable.', 'photo-collage' ); ?>
+									<?php esc_html_e( 'Use prerelease builds to test new features. May be unstable.', 'photo-collage' ); ?>
 								</p>
 							</label>
 						</fieldset>
@@ -90,12 +87,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 			<tr>
 				<th scope="row">
-					<?php esc_html_e( 'Conversion Method', 'photo-collage' ); ?>
+					<?php esc_html_e( 'On Uninstall', 'photo-collage' ); ?>
 				</th>
 				<td>
 					<fieldset>
 						<legend class="screen-reader-text">
-							<span><?php esc_html_e( 'Choose conversion method', 'photo-collage' ); ?></span>
+							<span><?php esc_html_e( 'Choose uninstall behavior', 'photo-collage' ); ?></span>
 						</legend>
 
 						<label>
@@ -104,7 +101,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 								<?php checked( $current_preference->value, Photo_Collage_Uninstall_Preference::STATIC_HTML->value ); ?>>
 							<strong><?php esc_html_e( 'Convert to Static HTML (Recommended)', 'photo-collage' ); ?></strong>
 							<p class="description">
-								<?php esc_html_e( 'Preserves the exact visual appearance of your collages including layout, positioning, rotation, and opacity. Blocks will become HTML blocks that cannot be edited visually, but will look exactly the same.', 'photo-collage' ); ?>
+								<?php esc_html_e( 'Keeps the current visual layout. Collages are no longer block-editable after conversion.', 'photo-collage' ); ?>
 							</p>
 						</label>
 
@@ -116,7 +113,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 								<?php checked( $current_preference->value, Photo_Collage_Uninstall_Preference::CORE_BLOCKS->value ); ?>>
 							<strong><?php esc_html_e( 'Convert to Core Image Blocks', 'photo-collage' ); ?></strong>
 							<p class="description">
-								<?php esc_html_e( 'Converts collages to standard WordPress image blocks inside a group block. Images will be editable but will lose advanced positioning, rotation, z-index, and layout features. Images will stack vertically.', 'photo-collage' ); ?>
+								<?php esc_html_e( 'Keeps images editable but removes advanced collage positioning and layout.', 'photo-collage' ); ?>
 							</p>
 						</label>
 
@@ -128,7 +125,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 								<?php checked( $current_preference->value, Photo_Collage_Uninstall_Preference::KEEP_AS_IS->value ); ?>>
 							<strong><?php esc_html_e( 'Keep As-Is (Reversible)', 'photo-collage' ); ?></strong>
 							<p class="description">
-								<?php esc_html_e( 'Leaves block data intact. Content will not display while the plugin is uninstalled, but will be fully restored if you reinstall the plugin.', 'photo-collage' ); ?>
+								<?php esc_html_e( 'Does not convert blocks. Collages will not display until the plugin is installed again.', 'photo-collage' ); ?>
 							</p>
 						</label>
 					</fieldset>
@@ -136,65 +133,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</tr>
 		</table>
 
-		<h2><?php esc_html_e( 'Feature Comparison', 'photo-collage' ); ?></h2>
-		<table class="widefat">
-			<thead>
-				<tr>
-					<th><?php esc_html_e( 'Feature', 'photo-collage' ); ?></th>
-					<th><?php esc_html_e( 'Static HTML', 'photo-collage' ); ?></th>
-					<th><?php esc_html_e( 'Core Image Blocks', 'photo-collage' ); ?></th>
-				</tr>
-			</thead>
-			<tbody>
-				<tr>
-					<td><?php esc_html_e( 'Preserves layout', 'photo-collage' ); ?></td>
-					<td>✅</td>
-					<td>❌</td>
-				</tr>
-				<tr class="alternate">
-					<td><?php esc_html_e( 'Preserves positioning', 'photo-collage' ); ?></td>
-					<td>✅</td>
-					<td>❌</td>
-				</tr>
-				<tr>
-					<td><?php esc_html_e( 'Preserves rotation', 'photo-collage' ); ?></td>
-					<td>✅</td>
-					<td>❌</td>
-				</tr>
-				<tr class="alternate">
-					<td><?php esc_html_e( 'Preserves z-index (layering)', 'photo-collage' ); ?></td>
-					<td>✅</td>
-					<td>❌</td>
-				</tr>
-				<tr>
-					<td><?php esc_html_e( 'Editable after uninstall', 'photo-collage' ); ?></td>
-					<td>❌</td>
-					<td>✅</td>
-				</tr>
-				<tr class="alternate">
-					<td><?php esc_html_e( 'Image URL preserved', 'photo-collage' ); ?></td>
-					<td>✅</td>
-					<td>✅</td>
-				</tr>
-				<tr>
-					<td><?php esc_html_e( 'Alt text preserved', 'photo-collage' ); ?></td>
-					<td>✅</td>
-					<td>✅</td>
-				</tr>
-				<tr class="alternate">
-					<td><?php esc_html_e( 'Caption preserved', 'photo-collage' ); ?></td>
-					<td>✅</td>
-					<td>✅</td>
-				</tr>
-			</tbody>
-		</table>
-
-		<?php submit_button(); ?>
+		<?php submit_button( __( 'Save Settings', 'photo-collage' ) ); ?>
 	</form>
 
 	<?php if ( $block_count > 0 ) : ?>
-		<h2><?php esc_html_e( 'Backup Your Data', 'photo-collage' ); ?></h2>
-		<p><?php esc_html_e( 'Before uninstalling, we recommend exporting your collage data as a backup.', 'photo-collage' ); ?></p>
+		<h2><?php esc_html_e( 'Collage Data', 'photo-collage' ); ?></h2>
+		<p><?php esc_html_e( 'Export collage data as JSON for backup or migration.', 'photo-collage' ); ?></p>
 		<a href="<?php echo esc_url( $export_url ); ?>" class="button button-secondary">
 			<?php esc_html_e( 'Export Collage Data (JSON)', 'photo-collage' ); ?>
 		</a>
