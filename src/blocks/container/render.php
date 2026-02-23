@@ -16,12 +16,17 @@ $content = $content ?? '';
 
 $stack_on_mobile = $attributes['stackOnMobile'] ?? true;
 $height = $attributes['containerHeight'] ?? '';
-$auto_height_hint = isset($attributes['autoHeightHint']) ? strtolower(trim((string) $attributes['autoHeightHint'])) : '';
+$sanitize_auto_height_hint = static function ($value) {
+    if (!is_scalar($value)) {
+        return '';
+    }
+
+    $hint = strtolower(trim((string) $value));
+    return 1 === preg_match('/^\d+(?:\.\d+)?(?:px|%)$/', $hint) ? $hint : '';
+};
+$auto_height_hint = $sanitize_auto_height_hint($attributes['autoHeightHint'] ?? '');
 $height_mode = $attributes['heightMode'] ?? 'fixed';
-$has_saved_auto_height_hint = (
-	'auto' === $height_mode &&
-	1 === preg_match('/^\d+(?:\.\d+)?(?:px|%)$/', $auto_height_hint)
-);
+$has_saved_auto_height_hint = ('auto' === $height_mode && '' !== $auto_height_hint);
 
 if (!in_array($height_mode, array('fixed', 'auto'), true)) {
     $height_mode = 'fixed';

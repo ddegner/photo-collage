@@ -18,25 +18,15 @@ import { useCallback, useEffect, useRef } from '@wordpress/element';
 import BackgroundControls from '../components/BackgroundControls';
 import { getBackgroundStyle } from '../utils/background-styles';
 import { attachAutoHeight, clearAutoHeight } from './auto-height';
+import {
+	normalizeAutoHeightHint,
+	toPixelAutoHeightHint,
+} from './auto-height-hint';
 import { PRESET_BUTTONS } from './presets';
 import { usePresets } from './use-presets';
 import './editor.scss';
 
 const ALLOWED_BLOCKS = [ 'photo-collage/image', 'photo-collage/frame' ];
-const AUTO_HEIGHT_HINT_PATTERN = /^\d+(?:\.\d+)?(?:px|%)$/i;
-
-const normalizeAutoHeightHint = ( value ) => {
-	if ( typeof value !== 'string' ) {
-		return '';
-	}
-
-	const normalizedValue = value.trim().toLowerCase();
-	if ( ! AUTO_HEIGHT_HINT_PATTERN.test( normalizedValue ) ) {
-		return '';
-	}
-
-	return normalizedValue;
-};
 
 export default function Edit( { attributes, setAttributes, clientId } ) {
 	const {
@@ -47,7 +37,6 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 	} = attributes;
 	const containerRef = useRef( null );
 	const pendingAutoHeightHintRef = useRef( '' );
-	const lastPersistedAutoHeightHintRef = useRef( '' );
 	const hasPersistedForCurrentSaveRef = useRef( false );
 	const normalizedAutoHeightHint = normalizeAutoHeightHint( autoHeightHint );
 
@@ -89,23 +78,16 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 	} );
 
 	useEffect( () => {
-		lastPersistedAutoHeightHintRef.current = normalizedAutoHeightHint;
-		if ( ! pendingAutoHeightHintRef.current ) {
-			pendingAutoHeightHintRef.current = normalizedAutoHeightHint;
-		}
+		pendingAutoHeightHintRef.current = normalizedAutoHeightHint;
 	}, [ normalizedAutoHeightHint ] );
 
 	const handleAutoHeightResolved = useCallback(
 		( { height } ) => {
-			if (
-				heightMode !== 'auto' ||
-				! Number.isFinite( height ) ||
-				height <= 0
-			) {
+			if ( heightMode !== 'auto' ) {
 				return;
 			}
 
-			pendingAutoHeightHintRef.current = `${ Math.ceil( height ) }px`;
+			pendingAutoHeightHintRef.current = toPixelAutoHeightHint( height );
 		},
 		[ heightMode ]
 	);
@@ -128,17 +110,19 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		const pendingHint = normalizeAutoHeightHint(
 			pendingAutoHeightHintRef.current
 		);
-		const lastPersistedHint = normalizeAutoHeightHint(
-			lastPersistedAutoHeightHintRef.current
-		);
 
-		if ( ! pendingHint || pendingHint === lastPersistedHint ) {
+		if ( ! pendingHint || pendingHint === normalizedAutoHeightHint ) {
 			return;
 		}
 
-		lastPersistedAutoHeightHintRef.current = pendingHint;
 		setAttributes( { autoHeightHint: pendingHint } );
-	}, [ heightMode, isAutosavingPost, isSavingPost, setAttributes ] );
+	}, [
+		heightMode,
+		isAutosavingPost,
+		isSavingPost,
+		normalizedAutoHeightHint,
+		setAttributes,
+	] );
 
 	useEffect( () => {
 		const containerElement = containerRef.current;

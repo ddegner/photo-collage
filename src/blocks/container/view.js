@@ -1,13 +1,10 @@
 import { attachAutoHeight } from './auto-height';
+import { isValidAutoHeightHint } from './auto-height-hint';
 
 const AUTO_HEIGHT_SELECTOR =
 	'.wp-block-photo-collage-container[data-height-mode="auto"]';
-const AUTO_HEIGHT_HINT_PATTERN = /^\d+(?:\.\d+)?(?:px|%)$/i;
 
 const activeAutoHeight = new WeakMap();
-
-const isValidAutoHeightHint = ( value ) =>
-	typeof value === 'string' && AUTO_HEIGHT_HINT_PATTERN.test( value.trim() );
 
 const hasSavedAutoHeightHint = ( container ) => {
 	if ( ! container ) {
@@ -44,32 +41,25 @@ const unregisterContainer = ( container ) => {
 	}
 };
 
-const registerWithinNode = ( node ) => {
+const forEachMatchingContainer = ( node, callback ) => {
 	if ( ! ( node instanceof window.Element ) ) {
 		return;
 	}
 
 	if ( node.matches( AUTO_HEIGHT_SELECTOR ) ) {
-		registerContainer( node );
+		callback( node );
 	}
 
 	node.querySelectorAll( AUTO_HEIGHT_SELECTOR ).forEach( ( container ) => {
-		registerContainer( container );
+		callback( container );
 	} );
 };
 
+const registerWithinNode = ( node ) =>
+	forEachMatchingContainer( node, registerContainer );
+
 const unregisterWithinNode = ( node ) => {
-	if ( ! ( node instanceof window.Element ) ) {
-		return;
-	}
-
-	if ( node.matches( AUTO_HEIGHT_SELECTOR ) ) {
-		unregisterContainer( node );
-	}
-
-	node.querySelectorAll( AUTO_HEIGHT_SELECTOR ).forEach( ( container ) => {
-		unregisterContainer( container );
-	} );
+	forEachMatchingContainer( node, unregisterContainer );
 };
 
 const initAutoHeight = () => {
