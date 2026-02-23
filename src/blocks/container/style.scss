@@ -18,6 +18,11 @@
 		max-width: none;
 	}
 
+	&[data-height-mode="auto"][data-pc-auto-state="pending"] {
+		visibility: hidden;
+		animation: pc-auto-failsafe-reveal 0s linear 1.4s forwards;
+	}
+
 	&.is-stack-on-mobile {
 
 		// WordPress standard breakpoint for mobile
@@ -47,5 +52,11 @@
 				}
 			}
 		}
+	}
+}
+
+@keyframes pc-auto-failsafe-reveal {
+	to {
+		visibility: visible;
 	}
 }

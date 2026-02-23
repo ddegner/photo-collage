@@ -41,16 +41,24 @@ if ('fixed' === $height_mode && !empty($height)) {
 }
 $style .= "min-height: 200px; ";
 
+if ('auto' === $height_mode) {
+    $style .= 'visibility: hidden; ';
+}
+
 // Append background styles
 $style .= $bg_style_string;
 
-$wrapper_attributes = get_block_wrapper_attributes(
-    [
-        'class' => $classes,
-        'style' => $style,
-        'data-height-mode' => $height_mode,
-    ]
-);
+$wrapper_attribute_args = [
+    'class' => $classes,
+    'style' => $style,
+    'data-height-mode' => $height_mode,
+];
+
+if ('auto' === $height_mode) {
+    $wrapper_attribute_args['data-pc-auto-state'] = 'pending';
+}
+
+$wrapper_attributes = get_block_wrapper_attributes($wrapper_attribute_args);
 
 echo sprintf(
     '<div %s>%s</div>',
