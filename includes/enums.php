@@ -15,9 +15,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Enum for uninstall preference options
  */
 enum Photo_Collage_Uninstall_Preference: string {
-
-
-
 	case STATIC_HTML = 'static_html';
 	case CORE_BLOCKS = 'core_blocks';
 	case KEEP_AS_IS  = 'keep_as_is';

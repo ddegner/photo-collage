@@ -5,6 +5,8 @@
  * Variables expected from controller scope:
  * - bool                              $settings_updated
  * - Photo_Collage_Uninstall_Preference $current_preference
+ * - bool                              $release_channel_feature_enabled
+ * - Photo_Collage_Release_Channel|null $current_release_channel
  * - int                               $block_count
  * - string                            $export_url
  *
@@ -16,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 ?>
 <div class="wrap">
-	<h1><?php esc_html_e( 'Photo Collage Uninstall Settings', 'photo-collage' ); ?></h1>
+	<h1><?php esc_html_e( 'Photo Collage Settings', 'photo-collage' ); ?></h1>
 
 	<?php if ( $settings_updated ) : ?>
 		<div class="notice notice-success is-dismissible">
@@ -49,6 +51,43 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<?php wp_nonce_field( 'photo_collage_uninstall_options', 'photo_collage_settings_nonce' ); ?>
 
 		<table class="form-table">
+			<?php if ( $release_channel_feature_enabled && null !== $current_release_channel ) : ?>
+				<tr>
+					<th scope="row">
+						<?php esc_html_e( 'Release Channel', 'photo-collage' ); ?>
+					</th>
+					<td>
+						<fieldset>
+							<legend class="screen-reader-text">
+								<span><?php esc_html_e( 'Choose release channel', 'photo-collage' ); ?></span>
+							</legend>
+
+							<label>
+								<input type="radio" name="<?php echo esc_attr( Photo_Collage_Admin_Settings::RELEASE_CHANNEL_OPTION_NAME ); ?>"
+									value="<?php echo esc_attr( Photo_Collage_Release_Channel::STABLE->value ); ?>"
+									<?php checked( $current_release_channel->value, Photo_Collage_Release_Channel::STABLE->value ); ?>>
+								<strong><?php esc_html_e( 'Stable (WordPress.org)', 'photo-collage' ); ?></strong>
+								<p class="description">
+									<?php esc_html_e( 'Use production releases from the WordPress plugin directory. Recommended for most sites.', 'photo-collage' ); ?>
+								</p>
+							</label>
+
+							<br>
+
+							<label>
+								<input type="radio" name="<?php echo esc_attr( Photo_Collage_Admin_Settings::RELEASE_CHANNEL_OPTION_NAME ); ?>"
+									value="<?php echo esc_attr( Photo_Collage_Release_Channel::BETA->value ); ?>"
+									<?php checked( $current_release_channel->value, Photo_Collage_Release_Channel::BETA->value ); ?>>
+								<strong><?php esc_html_e( 'Beta (GitHub prereleases)', 'photo-collage' ); ?></strong>
+								<p class="description">
+									<?php esc_html_e( 'Use beta builds from GitHub for testing new features. These builds may be unstable.', 'photo-collage' ); ?>
+								</p>
+							</label>
+						</fieldset>
+					</td>
+				</tr>
+			<?php endif; ?>
+
 			<tr>
 				<th scope="row">
 					<?php esc_html_e( 'Conversion Method', 'photo-collage' ); ?>

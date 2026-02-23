@@ -1,4 +1,4 @@
-name: Build Beta Package
+name: Build Preview Package
 
 on:
   push:
@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build beta ZIP artifact
+    name: Build preview ZIP artifact
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -41,38 +41,18 @@ jobs:
         run: npm run build
 
       - name: Generate readme.txt from README.md
-        run: |
-          cp README.md readme.txt
-          sed -i 's/[ \t]*$//' readme.txt
-          sed -i 's/^# \(.*\)/=== \1 ===/' readme.txt
-          sed -i 's/^## \(.*\)/== \1 ==/' readme.txt
-          sed -i 's/^### \(.*\)/= \1 =/' readme.txt
-          sed -i 's/^\*\*Contributors:\*\* \(.*\)/Contributors: \1/' readme.txt
-          sed -i 's/^\*\*Tags:\*\* \(.*\)/Tags: \1/' readme.txt
-          sed -i 's/^\*\*Tested up to:\*\* \(.*\)/Tested up to: \1/' readme.txt
-          sed -i 's/^\*\*Stable tag:\*\* \(.*\)/Stable tag: \1/' readme.txt
-          sed -i 's/^\*\*Requires at least:\*\* \(.*\)/Requires at least: \1/' readme.txt
-          sed -i 's/^\*\*Requires PHP:\*\* \(.*\)/Requires PHP: \1/' readme.txt
-          sed -i 's/^\*\*License:\*\* \(.*\)/License: \1/' readme.txt
-          sed -i 's/^\*\*License URI:\*\* \(.*\)/License URI: \1/' readme.txt
+        run: bash .github/scripts/generate-readme-txt.sh README.md readme.txt
 
-      - name: Build beta ZIP
+      - name: Build preview ZIP
         run: |
           set -euo pipefail
           short_sha="${GITHUB_SHA::7}"
-          package="photo-collage-beta-${short_sha}"
-
-          mkdir -p _build/photo-collage
-          grep -vE '^(#|$)' .distignore > .rsync_ignore
-          rsync -rc --exclude-from=.rsync_ignore . _build/photo-collage/
-          cd _build
-          zip -r "../${package}.zip" photo-collage
-          cd ..
-          rm -rf _build .rsync_ignore
+          package="photo-collage-preview-${short_sha}"
+          bash .github/scripts/build-dist-zip.sh .distignore "${package}.zip"
 
           echo "PACKAGE=${package}" >> "$GITHUB_ENV"
 
-      - name: Upload beta artifact
+      - name: Upload preview artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.PACKAGE }}

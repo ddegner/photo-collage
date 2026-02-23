@@ -5,6 +5,22 @@ const AUTO_HEIGHT_SELECTOR =
 
 const activeAutoHeight = new WeakMap();
 
+const hasSavedAutoHeightHint = ( container ) => {
+	if ( ! container ) {
+		return false;
+	}
+
+	const styleHint = container.style.aspectRatio;
+	if ( styleHint && styleHint !== 'auto' ) {
+		return true;
+	}
+
+	const dataHint = Number.parseFloat(
+		container.dataset.autoHeightRatio || ''
+	);
+	return Number.isFinite( dataHint ) && dataHint > 0;
+};
+
 const registerContainer = ( container ) => {
 	if ( activeAutoHeight.has( container ) ) {
 		return;
@@ -13,6 +29,7 @@ const registerContainer = ( container ) => {
 	const cleanup = attachAutoHeight( container, {
 		watchMutations: false,
 		watchResize: true,
+		measureOnInit: ! hasSavedAutoHeightHint( container ),
 	} );
 	activeAutoHeight.set( container, cleanup );
 };

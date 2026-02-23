@@ -15,6 +15,13 @@ require_once __DIR__ . '/enums.php';
 require_once __DIR__ . '/class-photo-collage-collage-scanner.php';
 require_once __DIR__ . '/class-photo-collage-collage-exporter.php';
 
+if ( defined( 'PHOTO_COLLAGE_HAS_RELEASE_CHANNEL_SWITCH' ) && PHOTO_COLLAGE_HAS_RELEASE_CHANNEL_SWITCH ) {
+	$release_channel_enum_file = __DIR__ . '/enum-photo-collage-release-channel.php';
+	if ( file_exists( $release_channel_enum_file ) ) {
+		require_once $release_channel_enum_file;
+	}
+}
+
 /**
  * Handles the admin settings page for the Photo Collage plugin.
  */
@@ -24,6 +31,11 @@ final class Photo_Collage_Admin_Settings {
 	 * Option name for storing uninstall preference.
 	 */
 	public const OPTION_NAME = 'photo_collage_uninstall_preference';
+
+	/**
+	 * Option name for storing release channel preference.
+	 */
+	public const RELEASE_CHANNEL_OPTION_NAME = 'photo_collage_release_channel';
 
 	/**
 	 * Scanner dependency.
@@ -84,6 +96,18 @@ final class Photo_Collage_Admin_Settings {
 				'sanitize_callback' => $this->sanitize_preference( ... ),
 			)
 		);
+
+		if ( $this->is_release_channel_feature_enabled() ) {
+			register_setting(
+				option_group: 'photo_collage_settings',
+				option_name: self::RELEASE_CHANNEL_OPTION_NAME,
+				args: array(
+					'type'              => 'string',
+					'default'           => Photo_Collage_Release_Channel::STABLE->value,
+					'sanitize_callback' => $this->sanitize_release_channel( ... ),
+				)
+			);
+		}
 	}
 
 	/**
@@ -94,6 +118,16 @@ final class Photo_Collage_Admin_Settings {
 	 */
 	public function sanitize_preference( string $value ): string {
 		return Photo_Collage_Uninstall_Preference::from_string( $value )->value;
+	}
+
+	/**
+	 * Sanitize the release channel value.
+	 *
+	 * @param string $value The value to sanitize.
+	 * @return string Sanitized value.
+	 */
+	public function sanitize_release_channel( string $value ): string {
+		return Photo_Collage_Release_Channel::from_string( $value )->value;
 	}
 
 	/**
@@ -116,12 +150,19 @@ final class Photo_Collage_Admin_Settings {
 			return;
 		}
 
-		$settings_updated   = $this->handle_settings_submission();
-		$current_preference = Photo_Collage_Uninstall_Preference::from_string(
+		$settings_updated                = $this->handle_settings_submission();
+		$current_preference              = Photo_Collage_Uninstall_Preference::from_string(
 			(string) get_option( self::OPTION_NAME, Photo_Collage_Uninstall_Preference::STATIC_HTML->value )
 		);
-		$block_count        = $this->scan_collage_blocks();
-		$export_url         = wp_nonce_url(
+		$release_channel_feature_enabled = $this->is_release_channel_feature_enabled();
+		$current_release_channel         = null;
+		if ( $release_channel_feature_enabled ) {
+			$current_release_channel = Photo_Collage_Release_Channel::from_string(
+				(string) get_option( self::RELEASE_CHANNEL_OPTION_NAME, Photo_Collage_Release_Channel::STABLE->value )
+			);
+		}
+		$block_count = $this->scan_collage_blocks();
+		$export_url  = wp_nonce_url(
 			admin_url( 'admin-post.php?action=photo_collage_export' ),
 			'photo_collage_export',
 			'nonce'
@@ -146,14 +187,43 @@ final class Photo_Collage_Admin_Settings {
 			wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'photo-collage' ) );
 		}
 
-		if ( ! isset( $_POST[ self::OPTION_NAME ] ) ) {
-			return false;
+		$updated = false;
+
+		if ( isset( $_POST[ self::OPTION_NAME ] ) ) {
+			$value = sanitize_text_field( wp_unslash( $_POST[ self::OPTION_NAME ] ) );
+			update_option( self::OPTION_NAME, $this->sanitize_preference( $value ) );
+			$updated = true;
 		}
 
-		$value = sanitize_text_field( wp_unslash( $_POST[ self::OPTION_NAME ] ) );
-		update_option( self::OPTION_NAME, $this->sanitize_preference( $value ) );
+		if ( $this->is_release_channel_feature_enabled() && isset( $_POST[ self::RELEASE_CHANNEL_OPTION_NAME ] ) ) {
+			$channel = $this->sanitize_release_channel( sanitize_text_field( wp_unslash( $_POST[ self::RELEASE_CHANNEL_OPTION_NAME ] ) ) );
+			$current = Photo_Collage_Release_Channel::from_string(
+				(string) get_option( self::RELEASE_CHANNEL_OPTION_NAME, Photo_Collage_Release_Channel::STABLE->value )
+			)->value;
 
-		return true;
+			update_option( self::RELEASE_CHANNEL_OPTION_NAME, $channel );
+			if ( $current !== $channel ) {
+				delete_site_transient( 'update_plugins' );
+				if ( class_exists( 'Photo_Collage_Release_Updater' ) ) {
+					Photo_Collage_Release_Updater::clear_cached_beta_release();
+				}
+			}
+
+			$updated = true;
+		}
+
+		return $updated;
+	}
+
+	/**
+	 * Determine whether release channel settings should be available.
+	 *
+	 * @return bool True when release channel feature is enabled.
+	 */
+	private function is_release_channel_feature_enabled(): bool {
+		return defined( 'PHOTO_COLLAGE_HAS_RELEASE_CHANNEL_SWITCH' ) &&
+			PHOTO_COLLAGE_HAS_RELEASE_CHANNEL_SWITCH &&
+			enum_exists( 'Photo_Collage_Release_Channel', false );
 	}
 
 	/**

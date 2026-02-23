@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Photo Collage
  * Description:       Blocks for creating freeform photo layouts with more natural and chaotic structures that can overlap.
- * Version:           0.5.14
+ * Version:           0.5.15-beta.1
  * Requires at least: 6.8
  * Requires PHP:      8.3
  * Author:            David Degner
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Plugin version constant
  */
-define( 'PHOTO_COLLAGE_VERSION', '0.5.14' );
+define( 'PHOTO_COLLAGE_VERSION', '0.5.15-beta.1' );
 define( 'PHOTO_COLLAGE_PLUGIN_FILE', __FILE__ );
 define( 'PHOTO_COLLAGE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 
@@ -32,6 +32,17 @@ define( 'PHOTO_COLLAGE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
  */
 require_once PHOTO_COLLAGE_PLUGIN_DIR . 'includes/class-photo-collage-block-attributes.php';
 require_once PHOTO_COLLAGE_PLUGIN_DIR . 'includes/class-photo-collage-renderer.php';
+
+$release_channel_enum_file = PHOTO_COLLAGE_PLUGIN_DIR . 'includes/enum-photo-collage-release-channel.php';
+$release_updater_file      = PHOTO_COLLAGE_PLUGIN_DIR . 'includes/class-photo-collage-release-updater.php';
+$has_release_channel_files = file_exists( $release_channel_enum_file ) && file_exists( $release_updater_file );
+
+if ( $has_release_channel_files ) {
+	require_once $release_channel_enum_file;
+	require_once $release_updater_file;
+}
+
+define( 'PHOTO_COLLAGE_HAS_RELEASE_CHANNEL_SWITCH', $has_release_channel_files );
 
 /**
  * Registers plugin blocks.
@@ -58,6 +69,18 @@ function photo_collage_register_blocks(): void {
 	}
 }
 add_action( 'init', photo_collage_register_blocks( ... ) );
+
+/**
+ * Load release updater.
+ */
+function photo_collage_load_release_updater(): void {
+	if ( ! PHOTO_COLLAGE_HAS_RELEASE_CHANNEL_SWITCH || ! class_exists( 'Photo_Collage_Release_Updater' ) ) {
+		return;
+	}
+
+	new Photo_Collage_Release_Updater();
+}
+add_action( 'plugins_loaded', photo_collage_load_release_updater( ... ), 5 );
 
 /**
  * Load admin settings page.

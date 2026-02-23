@@ -1,4 +1,4 @@
-name: Deploy to WordPress.org
+name: Publish Release Packages
 
 on:
   release:
@@ -9,13 +9,12 @@ permissions:
   contents: write
 
 concurrency:
-  group: wporg-release-${{ github.event.release.tag_name }}
+  group: release-${{ github.event.release.tag_name }}
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    name: Deploy stable release
-    if: ${{ !github.event.release.prerelease && !startsWith(github.event.release.tag_name, 'beta-') }}
+  release:
+    name: Build release artifacts
     runs-on: ubuntu-latest
     steps:
       - name: Checkout release tag
@@ -44,23 +43,49 @@ jobs:
       - name: Build plugin
         run: npm run build
 
-      - name: Generate readme.txt from README.md
+      - name: Validate release tag format
         run: |
-          cp README.md readme.txt
-          sed -i 's/[ \t]*$//' readme.txt
-          sed -i 's/^# \(.*\)/=== \1 ===/' readme.txt
-          sed -i 's/^## \(.*\)/== \1 ==/' readme.txt
-          sed -i 's/^### \(.*\)/= \1 =/' readme.txt
-          sed -i 's/^\*\*Contributors:\*\* \(.*\)/Contributors: \1/' readme.txt
-          sed -i 's/^\*\*Tags:\*\* \(.*\)/Tags: \1/' readme.txt
-          sed -i 's/^\*\*Tested up to:\*\* \(.*\)/Tested up to: \1/' readme.txt
-          sed -i 's/^\*\*Stable tag:\*\* \(.*\)/Stable tag: \1/' readme.txt
-          sed -i 's/^\*\*Requires at least:\*\* \(.*\)/Requires at least: \1/' readme.txt
-          sed -i 's/^\*\*Requires PHP:\*\* \(.*\)/Requires PHP: \1/' readme.txt
-          sed -i 's/^\*\*License:\*\* \(.*\)/License: \1/' readme.txt
-          sed -i 's/^\*\*License URI:\*\* \(.*\)/License URI: \1/' readme.txt
+          set -euo pipefail
+          tag="${{ github.event.release.tag_name }}"
+          is_prerelease="${{ github.event.release.prerelease }}"
+          semver_with_suffix='^v?[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$'
+          semver_stable='^v?[0-9]+\.[0-9]+\.[0-9]+$'
+
+          if [[ "${is_prerelease}" == "true" ]]; then
+            if [[ ! "${tag}" =~ ${semver_with_suffix} ]]; then
+              echo "Prerelease tags must be semver-like (for example: 0.5.15-beta.1)."
+              echo "Received: ${tag}"
+              exit 1
+            fi
+          else
+            if [[ ! "${tag}" =~ ${semver_stable} ]]; then
+              echo "Stable release tags must be x.y.z (optional leading v)."
+              echo "Received: ${tag}"
+              exit 1
+            fi
+          fi
+
+      - name: Generate readme.txt from README.md
+        run: bash .github/scripts/generate-readme-txt.sh README.md readme.txt
+
+      - name: Build GitHub distribution ZIP
+        run: bash .github/scripts/build-dist-zip.sh .distignore "photo-collage-${{ github.event.release.tag_name }}.zip"
+
+      - name: Attach GitHub distribution ZIP to release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.release.tag_name }}
+          files: photo-collage-${{ github.event.release.tag_name }}.zip
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare WordPress.org distignore
+        if: ${{ !github.event.release.prerelease && !startsWith(github.event.release.tag_name, 'beta-') }}
+        run: cp .distignore-wporg .distignore
 
       - name: Deploy to WordPress.org and generate ZIP
+        if: ${{ !github.event.release.prerelease && !startsWith(github.event.release.tag_name, 'beta-') }}
         id: wporg
         uses: 10up/action-wordpress-plugin-deploy@stable
         with:
@@ -70,14 +95,16 @@ jobs:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SLUG: photo-collage
 
-      - name: Rename ZIP for release asset
-        run: cp "${{ steps.wporg.outputs['zip-path'] }}" "photo-collage-${{ github.event.release.tag_name }}.zip"
+      - name: Rename WordPress.org ZIP for release asset
+        if: ${{ !github.event.release.prerelease && !startsWith(github.event.release.tag_name, 'beta-') }}
+        run: cp "${{ steps.wporg.outputs['zip-path'] }}" "photo-collage-wporg-${{ github.event.release.tag_name }}.zip"
 
-      - name: Attach deploy ZIP to GitHub Release
+      - name: Attach WordPress.org ZIP to stable release
+        if: ${{ !github.event.release.prerelease && !startsWith(github.event.release.tag_name, 'beta-') }}
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.event.release.tag_name }}
-          files: photo-collage-${{ github.event.release.tag_name }}.zip
+          files: photo-collage-wporg-${{ github.event.release.tag_name }}.zip
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

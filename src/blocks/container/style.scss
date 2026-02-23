@@ -18,6 +18,11 @@
 		max-width: none;
 	}
 
+	&.is-height-auto {
+		// Avoid theme-level transition animations when JS adjusts container height.
+		transition: none !important;
+	}
+
 	&.is-stack-on-mobile {
 
 		// WordPress standard breakpoint for mobile

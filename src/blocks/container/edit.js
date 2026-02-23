@@ -12,6 +12,7 @@ import {
 	__experimentalUnitControl as UnitControl,
 	Button,
 } from '@wordpress/components';
+import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 import { useCallback, useEffect, useRef } from '@wordpress/element';
 import BackgroundControls from '../components/BackgroundControls';
@@ -33,7 +34,17 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		autoHeightRatio = 0,
 	} = attributes;
 	const containerRef = useRef( null );
-	const lastSavedAutoRatioRef = useRef( 0 );
+	const pendingAutoRatioRef = useRef( 0 );
+	const lastPersistedAutoRatioRef = useRef( 0 );
+	const hasPersistedForCurrentSaveRef = useRef( false );
+
+	const { isSavingPost, isAutosavingPost } = useSelect( ( select ) => {
+		const editorStore = select( 'core/editor' );
+		return {
+			isSavingPost: editorStore?.isSavingPost?.() ?? false,
+			isAutosavingPost: editorStore?.isAutosavingPost?.() ?? false,
+		};
+	}, [] );
 
 	const backgroundStyle = getBackgroundStyle( attributes );
 	const containerClassName = [
@@ -68,9 +79,11 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 	} );
 
 	useEffect( () => {
-		lastSavedAutoRatioRef.current = hasAutoHeightRatio
-			? autoHeightRatio
-			: 0;
+		const persistedRatio = hasAutoHeightRatio ? autoHeightRatio : 0;
+		lastPersistedAutoRatioRef.current = persistedRatio;
+		if ( pendingAutoRatioRef.current <= 0 ) {
+			pendingAutoRatioRef.current = persistedRatio;
+		}
 	}, [ autoHeightRatio, hasAutoHeightRatio ] );
 
 	const handleAutoHeightResolved = useCallback(
@@ -86,17 +99,40 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 			const roundedRatio =
 				Math.round( ratio * AUTO_RATIO_PRECISION ) /
 				AUTO_RATIO_PRECISION;
-			const lastRatio = lastSavedAutoRatioRef.current || 0;
-
-			if ( Math.abs( roundedRatio - lastRatio ) < AUTO_RATIO_TOLERANCE ) {
-				return;
-			}
-
-			lastSavedAutoRatioRef.current = roundedRatio;
-			setAttributes( { autoHeightRatio: roundedRatio } );
+			pendingAutoRatioRef.current = roundedRatio;
 		},
-		[ heightMode, setAttributes ]
+		[ heightMode ]
 	);
+
+	useEffect( () => {
+		if ( ! isSavingPost ) {
+			hasPersistedForCurrentSaveRef.current = false;
+			return;
+		}
+
+		if ( hasPersistedForCurrentSaveRef.current ) {
+			return;
+		}
+		hasPersistedForCurrentSaveRef.current = true;
+
+		if ( isAutosavingPost || heightMode !== 'auto' ) {
+			return;
+		}
+
+		const pendingRatio = pendingAutoRatioRef.current || 0;
+		const lastPersistedRatio = lastPersistedAutoRatioRef.current || 0;
+
+		if (
+			! Number.isFinite( pendingRatio ) ||
+			pendingRatio <= 0 ||
+			Math.abs( pendingRatio - lastPersistedRatio ) < AUTO_RATIO_TOLERANCE
+		) {
+			return;
+		}
+
+		lastPersistedAutoRatioRef.current = pendingRatio;
+		setAttributes( { autoHeightRatio: pendingRatio } );
+	}, [ heightMode, isAutosavingPost, isSavingPost, setAttributes ] );
 
 	useEffect( () => {
 		const containerElement = containerRef.current;

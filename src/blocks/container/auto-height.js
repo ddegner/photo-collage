@@ -130,11 +130,19 @@ export const attachAutoHeight = ( container, options = {} ) => {
 		watchMutations = true,
 		watchResize = true,
 		onHeightResolved,
+		measureOnInit = true,
 	} = options;
 
 	let animationFrameId = null;
 	let resizeObserver;
 	let mutationObserver;
+
+	const hasIncompleteImages = () =>
+		getCollageItems( container ).some( ( item ) =>
+			Array.from( item.querySelectorAll( 'img' ) ).some(
+				( image ) => ! image.complete
+			)
+		);
 
 	const scheduleMeasure = () => {
 		if ( animationFrameId !== null ) {
@@ -228,18 +236,26 @@ export const attachAutoHeight = ( container, options = {} ) => {
 		scheduleMeasure();
 	};
 
+	const onWindowLoad = () => {
+		scheduleMeasure();
+	};
+
 	container.addEventListener( 'load', onCaptureLoad, true );
 	if ( watchResize ) {
 		window.addEventListener( 'resize', onWindowResize );
 	}
+	window.addEventListener( 'load', onWindowLoad, { once: true } );
 
-	scheduleMeasure();
+	if ( measureOnInit || ! hasIncompleteImages() ) {
+		scheduleMeasure();
+	}
 
 	return () => {
 		if ( animationFrameId !== null ) {
 			window.cancelAnimationFrame( animationFrameId );
 		}
 		container.removeEventListener( 'load', onCaptureLoad, true );
+		window.removeEventListener( 'load', onWindowLoad );
 		if ( watchResize ) {
 			window.removeEventListener( 'resize', onWindowResize );
 		}

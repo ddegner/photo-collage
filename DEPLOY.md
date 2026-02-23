@@ -2,7 +2,10 @@
 
 This repo uses a release-centric flow:
 - GitHub Releases are the canonical record and release notes.
-- The attached ZIP asset is generated from the deployed WordPress.org payload.
+- Every published GitHub Release gets a GitHub distribution ZIP:
+  - `photo-collage-<tag>.zip` (includes release channel switch)
+- Stable releases also deploy to WordPress.org and attach:
+  - `photo-collage-wporg-<tag>.zip` (WordPress.org deployment payload, no release channel switch)
 
 ## Initial Setup
 
@@ -18,14 +21,15 @@ Before your first deployment, configure WordPress.org SVN credentials in GitHub:
 
 - `beta-build.yml`:
   - Runs on branch pushes (not tags) and manual dispatch.
-  - Builds a beta ZIP and uploads it as a workflow artifact.
+  - Builds a preview ZIP and uploads it as a workflow artifact.
   - Does not create GitHub Releases.
 
 - `deploy.yml`:
   - Runs on `release.published`.
-  - Skips prereleases and tags prefixed with `beta-`.
-  - Builds and deploys to WordPress.org.
-  - Generates a ZIP from the deployed package and attaches it to that GitHub Release.
+  - Builds a GitHub distribution ZIP (release-channel capable).
+  - Attaches the GitHub ZIP to that release.
+  - For stable tags (`x.y.z`), deploys to WordPress.org and attaches the WordPress.org ZIP.
+  - For prerelease tags (for example `x.y.z-beta.1`), skips WordPress.org deployment.
 
 ## Stable Release Process
 
@@ -53,16 +57,23 @@ git push origin <version>
    - Add your release notes in the GitHub Release UI.
    - Publish the release.
 
-Publishing the release triggers WordPress.org deployment and attaches `photo-collage-<version>.zip` to the same release.
+Publishing the release triggers GitHub ZIP packaging, WordPress.org deployment, and attaches both ZIPs to the same release.
+
+## Beta Release Process
+
+1. Create and push a prerelease tag using semver prerelease format (example: `0.5.15-beta.1`).
+2. Create and publish a GitHub Release marked as prerelease for that tag.
+3. The workflow attaches `photo-collage-<tag>.zip` to the prerelease and skips WordPress.org deployment.
 
 ## Monitoring
 
 1. Open https://github.com/ddegner/photo-collage/actions
-2. Open the latest `Deploy to WordPress.org` run
+2. Open the latest `Publish Release Packages` run
 3. Verify success and check https://wordpress.org/plugins/photo-collage/
 
 ## Notes
 
-- `.distignore` controls which files are excluded from deployment.
+- `.distignore` controls files excluded from GitHub ZIP packaging.
+- `.distignore-wporg` controls files excluded from WordPress.org deployment ZIP.
 - `.wordpress-org/` contains plugin assets (banners/icons/screenshots).
 - If deployment fails, check Actions logs and verify `SVN_USERNAME`/`SVN_PASSWORD`.
