@@ -11,6 +11,7 @@
 	const MIN_HEIGHT = 200;
 	const FAILSAFE_REVEAL_MS = 350;
 	const MOBILE_STACK_MEDIA_QUERY = '(max-width: 782px)';
+	const AUTO_LAYOUT_MAX_ITERATIONS = 8;
 
 	const cleanupByContainer = new WeakMap();
 	const geometryByContainer = new WeakMap();
@@ -188,22 +189,34 @@
 		}
 
 		const precomputedHeight = solvePrecomputedHeight( container );
-		let solvedHeight = Number.isFinite( precomputedHeight ) ? precomputedHeight : null;
+		const minResolvedHeight = Number.isFinite( precomputedHeight )
+			? Math.max( MIN_HEIGHT, precomputedHeight )
+			: MIN_HEIGHT;
+		let nextHeight = Number.isFinite( precomputedHeight )
+			? minResolvedHeight
+			: Math.max( MIN_HEIGHT, container.offsetHeight || MIN_HEIGHT );
+		let solvedHeight = null;
 
-		// Set precomputed height first so absolute children resolve against a stable box.
-		if ( Number.isFinite( solvedHeight ) && solvedHeight > 0 ) {
-			container.style.height = `${ solvedHeight }px`;
-		}
+		for (
+			let iteration = 0;
+			iteration < AUTO_LAYOUT_MAX_ITERATIONS;
+			iteration += 1
+		) {
+			const roundedHeight = Math.max( MIN_HEIGHT, Math.ceil( nextHeight ) );
+			container.style.height = `${ roundedHeight }px`;
 
-		const measuredBottom = Math.max(
-			MIN_HEIGHT,
-			measureAbsoluteBottom( container, items )
-		);
+			const measuredBottom = Math.max(
+				MIN_HEIGHT,
+				measureAbsoluteBottom( container, items )
+			);
+			const resolvedHeight = Math.max( minResolvedHeight, measuredBottom );
+			solvedHeight = resolvedHeight;
 
-		if ( Number.isFinite( solvedHeight ) ) {
-			solvedHeight = Math.max( solvedHeight, measuredBottom );
-		} else {
-			solvedHeight = measuredBottom;
+			if ( Math.abs( resolvedHeight - roundedHeight ) <= 1 ) {
+				break;
+			}
+
+			nextHeight = resolvedHeight;
 		}
 
 		if ( Number.isFinite( solvedHeight ) && solvedHeight > 0 ) {

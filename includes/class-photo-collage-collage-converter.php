@@ -452,12 +452,13 @@ final class Photo_Collage_Collage_Converter {
 	 * @return string
 	 */
 	private function decode_broken_unicode_escapes( string $value ): string {
-		if ( 1 !== preg_match( '/(?<!\\\\)u[0-9a-fA-F]{4}/', $value ) ) {
+		$pattern = '/(?<!\\\\)u(003c|003e|0022|0027|0026|0060)/i';
+		if ( 1 !== preg_match( $pattern, $value ) ) {
 			return $value;
 		}
 
 		$decoded = preg_replace_callback(
-			'/(?<!\\\\)u([0-9a-fA-F]{4})/',
+			$pattern,
 			static function ( array $matches ): string {
 				$char = html_entity_decode( '&#x' . strtolower( $matches[1] ) . ';', ENT_QUOTES | ENT_HTML5, 'UTF-8' );
 				return '' === $char ? $matches[0] : $char;

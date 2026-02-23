@@ -3,7 +3,7 @@
 **Contributors:** ddegner  
 **Tags:** block, photo collage, image gallery, overlapping images, visual design  
 **Tested up to:** 6.9  
-**Stable tag:** 0.5.14  
+**Stable tag:** 0.5.16  
 **Requires at least:** 6.8  
 **Requires PHP:** 8.3  
 **License:** GPL-2.0-or-later  
@@ -107,10 +107,13 @@ Photo Collage is optimized for performance. It uses modern CSS for positioning a
 
 ## Changelog
 
+### 0.5.16
+*   FIX: Prevented unicode escape repair from mutating normal text/URL values during uninstall conversion and migration paths.
+*   FIX: Restored iterative auto-height convergence when geometry hints are unavailable to avoid under-resolved container heights.
+*   REMOVED: Legacy auto-height recompute tooling from settings and runtime.
+
 ### 0.5.15
-*   IMPROVEMENT: Added a settings action to recompute legacy auto-height collage containers site-wide.
-*   IMPROVEMENT: Added a legacy auto-height migrator that removes stale hint/ratio attributes and normalizes missing `heightMode` values for legacy auto layouts.
-*   IMPROVEMENT: Added legacy auto-height recompute count/status messaging and cache invalidation for settings scans.
+*   IMPROVEMENT: Added release-channel infrastructure and distribution automation for stable/beta release flows.
 
 ### 0.5.14
 *   FIX: Reduced frontend layout shift in Auto Height mode by persisting an estimated container `aspect-ratio` from editor measurements
