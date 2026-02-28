@@ -541,7 +541,11 @@ final class Photo_Collage_Release_Updater {
 			return false;
 		}
 
-		return $this->is_prerelease_version( $candidate_version ) && ! $this->is_prerelease_version( $current_version );
+		// If we reach here, both versions share the same base and candidate was not
+		// strictly greater via version_compare(). This means the candidate is either
+		// the same effective version or a downgrade (e.g. offering 0.5.16-beta.1 to
+		// a user already on stable 0.5.16). Never offer a downgrade.
+		return false;
 	}
 
 	/**

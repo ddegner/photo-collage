@@ -51,10 +51,12 @@ function photo_collage_uninstall(): void {
 		}
 	}
 
-	// Clean up plugin options.
+	// Clean up plugin options and transients.
 	delete_option( 'photo_collage_uninstall_preference' );
 	delete_option( 'photo_collage_scan_cache_version' );
+	delete_option( 'photo_collage_release_channel' );
 	delete_transient( 'photo_collage_block_count' );
+	delete_site_transient( 'photo_collage_beta_release_data' );
 }
 
 // Run the uninstall process.

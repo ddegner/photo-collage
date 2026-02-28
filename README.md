@@ -3,7 +3,7 @@
 **Contributors:** ddegner  
 **Tags:** block, photo collage, image gallery, overlapping images, visual design  
 **Tested up to:** 6.9  
-**Stable tag:** 0.5.16  
+**Stable tag:** 0.5.17  
 **Requires at least:** 6.8  
 **Requires PHP:** 8.3  
 **License:** GPL-2.0-or-later  
@@ -106,6 +106,14 @@ Photo Collage is optimized for performance. It uses modern CSS for positioning a
 4.  Mobile-responsive stacking in action
 
 ## Changelog
+
+### 0.5.17
+*   FIX: Prevented beta updater from offering version downgrades when a prerelease has the same base version as the installed stable release.
+*   FIX: Corrected aspect ratio dropdown to show "Original" as selected on newly inserted image blocks instead of appearing empty.
+*   FIX: Used dynamic plugin basename for settings link filter so the link appears even if the plugin directory is renamed.
+*   FIX: Added proper URL and text escaping to the plugin settings link.
+*   FIX: Cleaned up release channel option and beta transient during plugin uninstall.
+*   CLEANUP: Removed dead description attribute code from renderer, block attributes, and preset application that could never be populated.
 
 ### 0.5.16
 *   FIX: Prevented unicode escape repair from mutating normal text/URL values during uninstall conversion and migration paths.

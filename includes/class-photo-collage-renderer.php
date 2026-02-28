@@ -209,9 +209,6 @@ final class Photo_Collage_Renderer {
 			$img_style .= ' ' . $attributes->img_style;
 		}
 
-		$has_description = ! empty( $attributes->description ) && ! $is_decorative;
-		$description_id  = $has_description ? 'photo-collage-desc-' . uniqid() : '';
-
 		// Generate IMG tag.
 		if ( $attributes->id > 0 ) {
 			// Use native WordPress function for responsive images.
@@ -231,10 +228,6 @@ final class Photo_Collage_Renderer {
 				$img_attributes['title'] = $attributes->title;
 			}
 
-			if ( $has_description ) {
-				$img_attributes['aria-describedby'] = $description_id;
-			}
-
 			// Add Lightbox directives if enabled.
 			if ( ! empty( $attributes->lightbox['enabled'] ) && empty( $attributes->href ) ) {
 				$img_attributes['data-wp-interactive'] = 'core/image';
@@ -248,10 +241,10 @@ final class Photo_Collage_Renderer {
 
 			// Fallback if image ID is invalid or deleted.
 			if ( empty( $img_html ) ) {
-				$img_html = self::generate_fallback_img( $attributes, $img_style, $alt_attr, $description_id, $has_description );
+				$img_html = self::generate_fallback_img( $attributes, $img_style, $alt_attr );
 			}
 		} else {
-			$img_html = self::generate_fallback_img( $attributes, $img_style, $alt_attr, $description_id, $has_description );
+			$img_html = self::generate_fallback_img( $attributes, $img_style, $alt_attr );
 		}
 
 		// Wrap in link if href is present.
@@ -324,7 +317,7 @@ final class Photo_Collage_Renderer {
 		// Caption classes - include typography classes for proper styling.
 		$caption_classes = trim( 'photo-collage-image-caption wp-element-caption ' . $typography_classes . ' ' . $attributes->caption_class );
 
-		$html = match ( true ) {
+		return match ( true ) {
 			$has_caption && $caption_before_image => sprintf(
 				'<figure class="photo-collage-image-figure" style="%s"><figcaption class="%s" style="%s">%s</figcaption>%s</figure>',
 				esc_attr( $figure_style ),
@@ -343,16 +336,6 @@ final class Photo_Collage_Renderer {
 			),
 			default => $img_html,
 		};
-
-		if ( $has_description ) {
-			$html .= sprintf(
-				'<div id="%s" class="screen-reader-text">%s</div>',
-				esc_attr( $description_id ),
-				wp_kses_post( $attributes->description )
-			);
-		}
-
-		return $html;
 	}
 
 	/**
@@ -361,16 +344,12 @@ final class Photo_Collage_Renderer {
 	 * @param Photo_Collage_Block_Attributes $attributes Attributes.
 	 * @param string                         $img_style Style string.
 	 * @param string                         $alt_attr Alt text.
-	 * @param string                         $description_id Description ID.
-	 * @param bool                           $has_description Has description.
 	 * @return string
 	 */
 	private static function generate_fallback_img(
 		Photo_Collage_Block_Attributes $attributes,
 		string $img_style,
-		string $alt_attr,
-		string $description_id,
-		bool $has_description
+		string $alt_attr
 	): string {
 		$tags = new WP_HTML_Tag_Processor( '<img />' );
 		$tags->next_tag();
@@ -384,10 +363,6 @@ final class Photo_Collage_Renderer {
 
 		if ( ! empty( $attributes->title ) ) {
 			$tags->set_attribute( 'title', $attributes->title );
-		}
-
-		if ( $has_description ) {
-			$tags->set_attribute( 'aria-describedby', $description_id );
 		}
 
 		// Add Lightbox directives if enabled for fallback images too.

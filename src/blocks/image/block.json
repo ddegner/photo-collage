@@ -73,7 +73,7 @@
 		},
 		"aspectRatio": {
 			"type": "string",
-			"default": ""
+			"default": "auto"
 		},
 		"sizeSlug": {
 			"type": "string",

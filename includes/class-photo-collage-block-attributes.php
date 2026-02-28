@@ -49,7 +49,6 @@ final class Photo_Collage_Block_Attributes {
 	 * @param string $margin_left           Left margin.
 	 * @param string $caption               Caption text.
 	 * @param string $title                 Title text.
-	 * @param string $description           Description text.
 	 * @param string $align                 Alignment.
 	 * @param bool   $show_caption          Whether to show caption.
 	 * @param string $caption_align         Caption text alignment.
@@ -78,7 +77,7 @@ final class Photo_Collage_Block_Attributes {
 		public string $rel = '',
 		public string $link_class = '',
 		public string $alt = '',
-		public string $aspect_ratio = '',
+		public string $aspect_ratio = 'auto',
 		public string $size_slug = 'large',
 		public string $anchor = '',
 		public bool $is_decorative = false,
@@ -99,7 +98,6 @@ final class Photo_Collage_Block_Attributes {
 		public string $margin_left = '0%',
 		public string $caption = '',
 		public string $title = '',
-		public string $description = '',
 		public string $align = '',
 		public bool $show_caption = true,
 		public string $caption_align = 'left',
@@ -137,7 +135,7 @@ final class Photo_Collage_Block_Attributes {
 			rel: (string) ( $attributes['rel'] ?? '' ),
 			link_class: (string) ( $attributes['linkClass'] ?? '' ),
 			alt: (string) ( $attributes['alt'] ?? '' ),
-			aspect_ratio: (string) ( $attributes['aspectRatio'] ?? '' ),
+			aspect_ratio: (string) ( $attributes['aspectRatio'] ?? 'auto' ),
 			size_slug: (string) ( $attributes['sizeSlug'] ?? 'large' ),
 			anchor: (string) ( $attributes['anchor'] ?? '' ),
 			is_decorative: (bool) ( $attributes['isDecorative'] ?? false ),
@@ -158,7 +156,6 @@ final class Photo_Collage_Block_Attributes {
 			margin_left: self::get_margin_value( $attributes, 'left' ),
 			caption: (string) ( $attributes['caption'] ?? '' ),
 			title: (string) ( $attributes['title'] ?? '' ),
-			description: (string) ( $attributes['description'] ?? '' ),
 			align: (string) ( $attributes['align'] ?? '' ),
 			show_caption: (bool) ( $attributes['showCaption'] ?? true ),
 			caption_align: (string) ( $attributes['captionAlign'] ?? 'left' ),

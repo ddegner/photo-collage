@@ -65,7 +65,6 @@ export const usePresets = ( {
 							alt: existingBlock.attributes.alt,
 							title: existingBlock.attributes.title,
 							caption: existingBlock.attributes.caption,
-							description: existingBlock.attributes.description,
 							isDecorative: existingBlock.attributes.isDecorative,
 							aspectRatio: existingBlock.attributes.aspectRatio,
 					  }

@@ -139,7 +139,7 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 		url,
 		alt,
 		id,
-		aspectRatio = '',
+		aspectRatio = 'auto',
 		sizeSlug = 'large',
 		anchor = '',
 		isDecorative,

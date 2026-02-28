@@ -286,7 +286,7 @@ return array(
 			),
 			'aspectRatio' => array(
 				'type' => 'string',
-				'default' => ''
+				'default' => 'auto'
 			),
 			'sizeSlug' => array(
 				'type' => 'string',

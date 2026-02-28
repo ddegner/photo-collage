@@ -67,7 +67,7 @@ final class Photo_Collage_Admin_Settings {
 		add_action( 'admin_menu', $this->add_settings_page( ... ) );
 		add_action( 'admin_init', $this->register_settings( ... ) );
 		add_action( 'admin_post_photo_collage_export', $this->handle_export_request( ... ) );
-		add_filter( 'plugin_action_links_photo-collage/photo-collage.php', $this->add_settings_link( ... ) );
+		add_filter( 'plugin_action_links_' . plugin_basename( PHOTO_COLLAGE_PLUGIN_FILE ), $this->add_settings_link( ... ) );
 	}
 
 	/**
@@ -137,7 +137,7 @@ final class Photo_Collage_Admin_Settings {
 	 * @return array<string> Modified links.
 	 */
 	public function add_settings_link( array $links ): array {
-		$settings_link = '<a href="' . admin_url( 'options-general.php?page=photo-collage-settings' ) . '">' . __( 'Settings', 'photo-collage' ) . '</a>';
+		$settings_link = '<a href="' . esc_url( admin_url( 'options-general.php?page=photo-collage-settings' ) ) . '">' . esc_html__( 'Settings', 'photo-collage' ) . '</a>';
 		array_unshift( $links, $settings_link );
 		return $links;
 	}
