@@ -162,13 +162,13 @@ final class Photo_Collage_Admin_Settings {
 				(string) get_option( self::RELEASE_CHANNEL_OPTION_NAME, Photo_Collage_Release_Channel::STABLE->value )
 			);
 		}
-		$block_count = $this->scan_collage_blocks();
-		$export_url  = wp_nonce_url(
+		$block_count   = $this->scan_collage_blocks();
+		$export_url    = wp_nonce_url(
 			admin_url( 'admin-post.php?action=photo_collage_export' ),
 			'photo_collage_export',
 			'nonce'
 		);
-		$resave_url  = wp_nonce_url(
+		$resave_url    = wp_nonce_url(
 			admin_url( 'admin-post.php?action=photo_collage_resave_blocks' ),
 			'photo_collage_resave_blocks',
 			'nonce'
