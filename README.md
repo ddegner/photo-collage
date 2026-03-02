@@ -3,7 +3,7 @@
 **Contributors:** ddegner  
 **Tags:** block, photo collage, image gallery, overlapping images, visual design  
 **Tested up to:** 6.9  
-**Stable tag:** 0.5.17  
+**Stable tag:** 0.5.18  
 **Requires at least:** 6.8  
 **Requires PHP:** 8.3  
 **License:** GPL-2.0-or-later  
@@ -106,6 +106,11 @@ Photo Collage is optimized for performance. It uses modern CSS for positioning a
 4.  Mobile-responsive stacking in action
 
 ## Changelog
+
+### 0.5.18
+*   SEO: Image blocks now store an `<img>` tag in post content so SEO plugins can discover collage images for og:image and social sharing thumbnails.
+*   SEO: Added "Re-save Collage Posts for SEO" tool on the settings page to bulk-update existing posts with the new markup.
+*   COMPATIBILITY: Added block deprecation handler so existing collages load without recovery prompts in the editor.
 
 ### 0.5.17
 *   FIX: Prevented beta updater from offering version downgrades when a prerelease has the same base version as the installed stable release.

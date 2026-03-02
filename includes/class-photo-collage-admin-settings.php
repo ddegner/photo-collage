@@ -67,6 +67,7 @@ final class Photo_Collage_Admin_Settings {
 		add_action( 'admin_menu', $this->add_settings_page( ... ) );
 		add_action( 'admin_init', $this->register_settings( ... ) );
 		add_action( 'admin_post_photo_collage_export', $this->handle_export_request( ... ) );
+		add_action( 'admin_post_photo_collage_resave_blocks', $this->handle_resave_request( ... ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( PHOTO_COLLAGE_PLUGIN_FILE ), $this->add_settings_link( ... ) );
 	}
 
@@ -167,6 +168,12 @@ final class Photo_Collage_Admin_Settings {
 			'photo_collage_export',
 			'nonce'
 		);
+		$resave_url  = wp_nonce_url(
+			admin_url( 'admin-post.php?action=photo_collage_resave_blocks' ),
+			'photo_collage_resave_blocks',
+			'nonce'
+		);
+		$resaved_count = isset( $_GET['resaved'] ) ? absint( $_GET['resaved'] ) : null; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 		require __DIR__ . '/admin/views/settings-page.php';
 	}
@@ -237,6 +244,99 @@ final class Photo_Collage_Admin_Settings {
 		check_admin_referer( 'photo_collage_export', 'nonce' );
 		$this->exporter->send_json_export();
 		exit;
+	}
+
+	/**
+	 * Handle the resave blocks request.
+	 */
+	public function handle_resave_request(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'photo-collage' ) );
+		}
+
+		check_admin_referer( 'photo_collage_resave_blocks', 'nonce' );
+
+		$updated = $this->resave_collage_posts();
+
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'    => 'photo-collage-settings',
+					'resaved' => $updated,
+				),
+				admin_url( 'options-general.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
+	 * Re-save all posts containing collage blocks to update stored block markup.
+	 *
+	 * @return int Number of posts updated.
+	 */
+	private function resave_collage_posts(): int {
+		$post_ids = $this->scanner->get_posts_with_collage_blocks();
+		$updated  = 0;
+
+		foreach ( $post_ids as $post_id ) {
+			$post = get_post( $post_id );
+			if ( ! $post instanceof WP_Post ) {
+				continue;
+			}
+
+			$blocks   = parse_blocks( $post->post_content );
+			$modified = false;
+			$blocks   = $this->add_img_to_image_blocks( $blocks, $modified );
+
+			if ( $modified ) {
+				wp_update_post(
+					array(
+						'ID'           => $post_id,
+						'post_content' => serialize_blocks( $blocks ),
+					)
+				);
+				++$updated;
+			}
+		}
+
+		return $updated;
+	}
+
+	/**
+	 * Recursively add img innerHTML to collage image blocks that lack it.
+	 *
+	 * @param array<array<string, mixed>> $blocks Parsed block array.
+	 * @param bool                        $modified Reference flag set when any block is changed.
+	 * @return array<array<string, mixed>> Updated blocks.
+	 */
+	private function add_img_to_image_blocks( array $blocks, bool &$modified ): array {
+		foreach ( $blocks as &$block ) {
+			if (
+				'photo-collage/image' === ( $block['blockName'] ?? '' )
+				&& '' === trim( $block['innerHTML'] ?? '' )
+			) {
+				$attrs = $block['attrs'] ?? array();
+				$url   = $attrs['url'] ?? '';
+				$alt   = $attrs['alt'] ?? '';
+				$id    = (int) ( $attrs['id'] ?? 0 );
+
+				if ( '' !== $url ) {
+					$class_attr = $id > 0 ? ' class="wp-image-' . $id . '"' : '';
+					$img        = '<img src="' . esc_url( $url ) . '" alt="' . esc_attr( $alt ) . '"' . $class_attr . ' />';
+
+					$block['innerHTML']    = $img;
+					$block['innerContent'] = array( $img );
+					$modified              = true;
+				}
+			}
+
+			if ( ! empty( $block['innerBlocks'] ) ) {
+				$block['innerBlocks'] = $this->add_img_to_image_blocks( $block['innerBlocks'], $modified );
+			}
+		}
+
+		return $blocks;
 	}
 
 	/**

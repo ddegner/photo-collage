@@ -276,4 +276,13 @@ const v1 = {
 	},
 };
 
-export default [ v2, v1 ];
+/**
+ * Deprecation for null-save format before SEO-visible img output.
+ */
+const v3 = {
+	save() {
+		return null;
+	},
+};
+
+export default [ v3, v2, v1 ];

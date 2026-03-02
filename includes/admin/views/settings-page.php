@@ -9,6 +9,8 @@
  * - Photo_Collage_Release_Channel|null $current_release_channel
  * - int                               $block_count
  * - string                            $export_url
+ * - string                            $resave_url
+ * - int|null                          $resaved_count
  *
  * @package PhotoCollage
  */
@@ -23,6 +25,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<?php if ( $settings_updated ) : ?>
 		<div class="notice notice-success is-dismissible">
 			<p><?php esc_html_e( 'Settings saved successfully.', 'photo-collage' ); ?></p>
+		</div>
+	<?php endif; ?>
+
+	<?php if ( null !== $resaved_count ) : ?>
+		<div class="notice notice-success is-dismissible">
+			<p>
+				<?php
+				/* translators: %d: number of posts updated */
+				printf( esc_html( _n( '%d post re-saved for SEO compatibility.', '%d posts re-saved for SEO compatibility.', $resaved_count, 'photo-collage' ) ), absint( $resaved_count ) );
+				?>
+			</p>
 		</div>
 	<?php endif; ?>
 
@@ -141,6 +154,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<p><?php esc_html_e( 'Export collage data as JSON for backup or migration.', 'photo-collage' ); ?></p>
 		<a href="<?php echo esc_url( $export_url ); ?>" class="button button-secondary">
 			<?php esc_html_e( 'Export Collage Data (JSON)', 'photo-collage' ); ?>
+		</a>
+
+		<h2><?php esc_html_e( 'SEO Compatibility', 'photo-collage' ); ?></h2>
+		<p><?php esc_html_e( 'Update stored block markup so SEO plugins can discover collage images for social sharing thumbnails.', 'photo-collage' ); ?></p>
+		<a href="<?php echo esc_url( $resave_url ); ?>" class="button button-secondary"
+			onclick="return confirm('<?php echo esc_js( __( 'Re-save all posts containing collage blocks? This updates their stored markup for SEO compatibility.', 'photo-collage' ) ); ?>');">
+			<?php esc_html_e( 'Re-save Collage Posts for SEO', 'photo-collage' ); ?>
 		</a>
 	<?php endif; ?>
 </div>
