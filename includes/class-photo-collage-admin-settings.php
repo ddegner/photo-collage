@@ -14,6 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once __DIR__ . '/enums.php';
 require_once __DIR__ . '/class-photo-collage-collage-scanner.php';
 require_once __DIR__ . '/class-photo-collage-collage-exporter.php';
+require_once __DIR__ . '/class-photo-collage-block-attributes.php';
 
 if ( defined( 'PHOTO_COLLAGE_HAS_RELEASE_CHANNEL_SWITCH' ) && PHOTO_COLLAGE_HAS_RELEASE_CHANNEL_SWITCH ) {
 	$release_channel_enum_file = __DIR__ . '/enum-photo-collage-release-channel.php';
@@ -288,6 +289,7 @@ final class Photo_Collage_Admin_Settings {
 			$blocks   = parse_blocks( $post->post_content );
 			$modified = false;
 			$blocks   = $this->add_img_to_image_blocks( $blocks, $modified );
+			$blocks   = $this->repair_broken_unicode_in_blocks( $blocks, $modified );
 
 			if ( $modified ) {
 				wp_update_post(
@@ -336,6 +338,49 @@ final class Photo_Collage_Admin_Settings {
 
 			if ( ! empty( $block['innerBlocks'] ) ) {
 				$block['innerBlocks'] = $this->add_img_to_image_blocks( $block['innerBlocks'], $modified );
+			}
+		}
+
+		return $blocks;
+	}
+
+	/**
+	 * Recursively repair broken unicode escape sequences in collage block attributes.
+	 *
+	 * JavaScript's block serializer escapes <, >, ", & as \u003c etc. If backslashes
+	 * are stripped these degrade to bare literals that render as plain text. This
+	 * method restores the actual characters so serialize_blocks() stores them correctly.
+	 *
+	 * @param array<array<string, mixed>> $blocks   Parsed block array.
+	 * @param bool                        $modified Reference flag set when any block is changed.
+	 * @return array<array<string, mixed>> Updated blocks.
+	 */
+	private function repair_broken_unicode_in_blocks( array $blocks, bool &$modified ): array {
+		foreach ( $blocks as &$block ) {
+			$block_name = $block['blockName'] ?? '';
+			if ( str_starts_with( $block_name, 'photo-collage/' ) ) {
+				$attrs    = $block['attrs'] ?? array();
+				$repaired = false;
+
+				foreach ( $attrs as $key => $value ) {
+					if ( ! is_string( $value ) || ! str_contains( $value, 'u00' ) ) {
+						continue;
+					}
+					$fixed = Photo_Collage_Block_Attributes::repair_broken_unicode_escapes( $value );
+					if ( $fixed !== $value ) {
+						$attrs[ $key ] = $fixed;
+						$repaired      = true;
+					}
+				}
+
+				if ( $repaired ) {
+					$block['attrs'] = $attrs;
+					$modified       = true;
+				}
+			}
+
+			if ( ! empty( $block['innerBlocks'] ) ) {
+				$block['innerBlocks'] = $this->repair_broken_unicode_in_blocks( $block['innerBlocks'], $modified );
 			}
 		}
 

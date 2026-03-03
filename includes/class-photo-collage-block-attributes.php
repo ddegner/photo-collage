@@ -127,6 +127,8 @@ final class Photo_Collage_Block_Attributes {
 	 * @return self
 	 */
 	public static function from_array( array $attributes ): self {
+		$attributes = self::repair_broken_unicode_in_attributes( $attributes );
+
 		return new self(
 			url: (string) ( $attributes['url'] ?? '' ),
 			id: (int) ( $attributes['id'] ?? 0 ),
@@ -275,5 +277,50 @@ final class Photo_Collage_Block_Attributes {
 		}
 
 		return "var(--wp--preset--{$preset_type}--{$slug})";
+	}
+
+	/**
+	 * Repair broken JavaScript unicode escapes in all string attribute values.
+	 *
+	 * @param array<string, mixed> $attributes Raw block attributes.
+	 * @return array<string, mixed> Attributes with repaired string values.
+	 */
+	private static function repair_broken_unicode_in_attributes( array $attributes ): array {
+		foreach ( $attributes as $key => $value ) {
+			if ( is_string( $value ) ) {
+				$attributes[ $key ] = self::repair_broken_unicode_escapes( $value );
+			}
+		}
+		return $attributes;
+	}
+
+	/**
+	 * Repair broken JavaScript unicode escape sequences in a string value.
+	 *
+	 * JavaScript's block serializer escapes <, >, ", and & as \u003c, \u003e,
+	 * \u0022, and \u0026 in block comment JSON. If backslashes are lost during
+	 * a save cycle, the escapes degrade to bare literals (e.g. u003c) that
+	 * json_decode treats as plain text instead of the intended characters.
+	 *
+	 * @param string $value Raw attribute value.
+	 * @return string Repaired value.
+	 */
+	public static function repair_broken_unicode_escapes( string $value ): string {
+		if ( ! str_contains( $value, 'u00' ) ) {
+			return $value;
+		}
+
+		return preg_replace_callback(
+			'/u([0-9a-fA-F]{4})/',
+			static function ( array $matches ): string {
+				$codepoint = (int) hexdec( $matches[1] );
+				// Only fix codepoints produced by JavaScript's block serializer.
+				return match ( $codepoint ) {
+					0x003C, 0x003E, 0x0022, 0x0026 => mb_chr( $codepoint, 'UTF-8' ),
+					default => $matches[0],
+				};
+			},
+			$value
+		) ?? $value;
 	}
 }
