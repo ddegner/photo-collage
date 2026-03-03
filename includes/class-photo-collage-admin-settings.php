@@ -322,8 +322,11 @@ final class Photo_Collage_Admin_Settings {
 				$id    = (int) ( $attrs['id'] ?? 0 );
 
 				if ( '' !== $url ) {
-					$class_attr = $id > 0 ? ' class="wp-image-' . $id . '"' : '';
-					$img        = '<img src="' . esc_url( $url ) . '" alt="' . esc_attr( $alt ) . '"' . $class_attr . ' />';
+					$class = 'wp-block-photo-collage-image';
+					if ( $id > 0 ) {
+						$class .= ' wp-image-' . $id;
+					}
+					$img = '<img src="' . esc_url( $url ) . '" alt="' . esc_attr( $alt ) . '" class="' . esc_attr( $class ) . '" />';
 
 					$block['innerHTML']    = $img;
 					$block['innerContent'] = array( $img );

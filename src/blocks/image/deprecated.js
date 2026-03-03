@@ -285,4 +285,26 @@ const v3 = {
 	},
 };
 
-export default [ v3, v2, v1 ];
+/**
+ * Deprecation for PHP-resaved img format (admin SEO tool) without default block class.
+ */
+const v4 = {
+	supports: {
+		className: false,
+	},
+	save( { attributes } ) {
+		const { url, alt, id } = attributes;
+		if ( ! url ) {
+			return null;
+		}
+		return (
+			<img
+				src={ url }
+				alt={ alt || '' }
+				className={ id ? `wp-image-${ id }` : undefined }
+			/>
+		);
+	},
+};
+
+export default [ v4, v3, v2, v1 ];

@@ -233,6 +233,7 @@ return array(
 				'allowEditing' => true
 			),
 			'spacing' => array(
+				'__experimentalSkipSerialization' => true,
 				'margin' => true,
 				'padding' => true,
 				'blockGap' => true,
@@ -246,6 +247,7 @@ return array(
 				)
 			),
 			'border' => array(
+				'__experimentalSkipSerialization' => true,
 				'color' => true,
 				'radius' => true,
 				'style' => true,
@@ -253,6 +255,7 @@ return array(
 			),
 			'shadow' => true,
 			'typography' => array(
+				'__experimentalSkipSerialization' => true,
 				'fontSize' => true,
 				'lineHeight' => true,
 				'fontFamily' => true,
@@ -260,6 +263,7 @@ return array(
 				'textDecoration' => true
 			),
 			'color' => array(
+				'__experimentalSkipSerialization' => true,
 				'background' => true,
 				'gradients' => true
 			)
