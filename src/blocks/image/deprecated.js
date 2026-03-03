@@ -2,7 +2,22 @@
  * Block deprecations for the Photo Collage Image block.
  *
  * Migrate legacy custom spacing/background attributes toward native block supports.
+ *
+ * IMPORTANT: Every deprecated entry MUST include an explicit `attributes` object.
+ * WordPress strips the current block type's attributes when building the deprecated
+ * block type (via omit + Object.assign), so omitting `attributes` here means the
+ * deprecation will only see the three default block-level attributes (lock, className,
+ * metadata). Comment attributes like url, alt, and id would then be silently dropped
+ * during block parsing.
  */
+
+import metadata from './block.json';
+
+/**
+ * Current block.json attributes, used by deprecations whose attribute schema
+ * matches the current version so they can read comment attributes correctly.
+ */
+const currentAttributes = metadata.attributes;
 
 const hasStringValue = ( value ) =>
 	typeof value === 'string' && value.trim() !== '';
@@ -280,6 +295,7 @@ const v1 = {
  * Deprecation for null-save format before SEO-visible img output.
  */
 const v3 = {
+	attributes: currentAttributes,
 	save() {
 		return null;
 	},
@@ -289,6 +305,7 @@ const v3 = {
  * Deprecation for PHP-resaved img format (admin SEO tool) without default block class.
  */
 const v4 = {
+	attributes: currentAttributes,
 	supports: {
 		className: false,
 	},
