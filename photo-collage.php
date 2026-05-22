@@ -33,16 +33,16 @@ define( 'PHOTO_COLLAGE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 require_once PHOTO_COLLAGE_PLUGIN_DIR . 'includes/class-photo-collage-block-attributes.php';
 require_once PHOTO_COLLAGE_PLUGIN_DIR . 'includes/class-photo-collage-renderer.php';
 
-$release_channel_enum_file = PHOTO_COLLAGE_PLUGIN_DIR . 'includes/enum-photo-collage-release-channel.php';
-$release_updater_file      = PHOTO_COLLAGE_PLUGIN_DIR . 'includes/class-photo-collage-release-updater.php';
-$has_release_channel_files = file_exists( $release_channel_enum_file ) && file_exists( $release_updater_file );
+$photo_collage_release_channel_enum_file = PHOTO_COLLAGE_PLUGIN_DIR . 'includes/enum-photo-collage-release-channel.php';
+$photo_collage_release_updater_file      = PHOTO_COLLAGE_PLUGIN_DIR . 'includes/class-photo-collage-release-updater.php';
+$photo_collage_has_release_channel_files = file_exists( $photo_collage_release_channel_enum_file ) && file_exists( $photo_collage_release_updater_file );
 
-if ( $has_release_channel_files ) {
-	require_once $release_channel_enum_file;
-	require_once $release_updater_file;
+if ( $photo_collage_has_release_channel_files ) {
+	require_once $photo_collage_release_channel_enum_file;
+	require_once $photo_collage_release_updater_file;
 }
 
-define( 'PHOTO_COLLAGE_HAS_RELEASE_CHANNEL_SWITCH', $has_release_channel_files );
+define( 'PHOTO_COLLAGE_HAS_RELEASE_CHANNEL_SWITCH', $photo_collage_has_release_channel_files );
 
 /**
  * Registers plugin blocks.

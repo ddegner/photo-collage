@@ -11,6 +11,8 @@
     "align": true,
     "html": false,
     "reusable": false,
+    "contentRole": true,
+    "listView": true,
     "spacing": {
       "margin": true,
       "padding": true,

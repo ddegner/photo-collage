@@ -17,9 +17,9 @@ require_once __DIR__ . '/class-photo-collage-collage-exporter.php';
 require_once __DIR__ . '/class-photo-collage-block-attributes.php';
 
 if ( defined( 'PHOTO_COLLAGE_HAS_RELEASE_CHANNEL_SWITCH' ) && PHOTO_COLLAGE_HAS_RELEASE_CHANNEL_SWITCH ) {
-	$release_channel_enum_file = __DIR__ . '/enum-photo-collage-release-channel.php';
-	if ( file_exists( $release_channel_enum_file ) ) {
-		require_once $release_channel_enum_file;
+	$photo_collage_release_channel_enum_file = __DIR__ . '/enum-photo-collage-release-channel.php';
+	if ( file_exists( $photo_collage_release_channel_enum_file ) ) {
+		require_once $photo_collage_release_channel_enum_file;
 	}
 }
 

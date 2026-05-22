@@ -62,18 +62,22 @@
 	"render": "file:./render.php",
 	"attributes": {
 		"url": {
-			"type": "string"
+			"type": "string",
+			"role": "content"
 		},
 		"alt": {
 			"type": "string",
-			"default": ""
+			"default": "",
+			"role": "content"
 		},
 		"isDecorative": {
 			"type": "boolean",
-			"default": false
+			"default": false,
+			"role": "content"
 		},
 		"id": {
-			"type": "number"
+			"type": "number",
+			"role": "content"
 		},
 		"aspectRatio": {
 			"type": "string",
@@ -137,7 +141,8 @@
 		},
 		"caption": {
 			"type": "string",
-			"default": ""
+			"default": "",
+			"role": "content"
 		},
 		"captionAlign": {
 			"type": "string",
@@ -191,10 +196,12 @@
 		},
 		"title": {
 			"type": "string",
-			"default": ""
+			"default": "",
+			"role": "content"
 		},
 		"href": {
-			"type": "string"
+			"type": "string",
+			"role": "content"
 		},
 		"linkTarget": {
 			"type": "string"
@@ -207,7 +214,8 @@
 		},
 		"linkDestination": {
 			"type": "string",
-			"default": "none"
+			"default": "none",
+			"role": "content"
 		},
 		"backgroundType": {
 			"type": "string",

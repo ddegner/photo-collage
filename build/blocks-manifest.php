@@ -16,6 +16,8 @@ return array(
 				'full'
 			),
 			'html' => false,
+			'contentRole' => true,
+			'listView' => true,
 			'spacing' => array(
 				'margin' => true,
 				'padding' => true
@@ -104,6 +106,8 @@ return array(
 			'align' => true,
 			'html' => false,
 			'reusable' => false,
+			'contentRole' => true,
+			'listView' => true,
 			'spacing' => array(
 				'margin' => true,
 				'padding' => true,
@@ -275,18 +279,22 @@ return array(
 		'render' => 'file:./render.php',
 		'attributes' => array(
 			'url' => array(
-				'type' => 'string'
+				'type' => 'string',
+				'role' => 'content'
 			),
 			'alt' => array(
 				'type' => 'string',
-				'default' => ''
+				'default' => '',
+				'role' => 'content'
 			),
 			'isDecorative' => array(
 				'type' => 'boolean',
-				'default' => false
+				'default' => false,
+				'role' => 'content'
 			),
 			'id' => array(
-				'type' => 'number'
+				'type' => 'number',
+				'role' => 'content'
 			),
 			'aspectRatio' => array(
 				'type' => 'string',
@@ -350,7 +358,8 @@ return array(
 			),
 			'caption' => array(
 				'type' => 'string',
-				'default' => ''
+				'default' => '',
+				'role' => 'content'
 			),
 			'captionAlign' => array(
 				'type' => 'string',
@@ -404,10 +413,12 @@ return array(
 			),
 			'title' => array(
 				'type' => 'string',
-				'default' => ''
+				'default' => '',
+				'role' => 'content'
 			),
 			'href' => array(
-				'type' => 'string'
+				'type' => 'string',
+				'role' => 'content'
 			),
 			'linkTarget' => array(
 				'type' => 'string'
@@ -420,7 +431,8 @@ return array(
 			),
 			'linkDestination' => array(
 				'type' => 'string',
-				'default' => 'none'
+				'default' => 'none',
+				'role' => 'content'
 			),
 			'backgroundType' => array(
 				'type' => 'string',
