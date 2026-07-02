@@ -15,10 +15,6 @@
     "align": true,
     "html": false,
     "customClassName": false,
-    "interactivity": true,
-    "lightbox": {
-      "allowEditing": true
-    },
     "spacing": {
       "__experimentalSkipSerialization": true,
       "margin": true,
@@ -59,8 +55,12 @@
   "editorScript": "file:./index.js",
   "editorStyle": "file:./index.css",
   "style": "file:./style-index.css",
+  "viewScript": "file:./view.js",
   "render": "file:./render.php",
   "attributes": {
+    "lightbox": {
+      "type": "object"
+    },
     "url": {
       "type": "string",
       "role": "content"

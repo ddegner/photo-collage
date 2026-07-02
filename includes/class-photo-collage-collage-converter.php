@@ -100,6 +100,7 @@ final class Photo_Collage_Collage_Converter {
 		$inner_blocks = $block['innerBlocks'] ?? array();
 
 		$height            = $attributes['containerHeight'] ?? '';
+		$height_mode       = $attributes['heightMode'] ?? 'fixed';
 		$stack_on_mobile   = $attributes['stackOnMobile'] ?? true;
 		$normalized_attrs  = Photo_Collage_Renderer::normalize_attributes( $attributes );
 		$background_styles = $this->get_static_background_styles( $attributes, $normalized_attrs );
@@ -109,11 +110,19 @@ final class Photo_Collage_Collage_Converter {
 			$classes .= ' is-stack-on-mobile';
 		}
 
+		// Match the live renderer: containerHeight only applies in fixed mode.
+		// Auto mode normally computes height in JS, which won't exist after
+		// uninstall, so approximate it with static CSS from child geometry.
 		$style = '';
-		if ( ! empty( $height ) ) {
-			$style .= 'height: ' . esc_attr( $height ) . '; ';
+		if ( 'auto' === $height_mode ) {
+			$style .= $this->get_static_auto_height_style( $inner_blocks );
+		} else {
+			if ( ! empty( $height ) ) {
+				$style .= 'height: ' . esc_attr( $height ) . '; ';
+			}
+			$style .= 'min-height: 200px; ';
 		}
-		$style .= 'min-height: 200px; position: relative; display: flex; flex-wrap: wrap; width: 100%; box-sizing: border-box;';
+		$style .= 'position: relative; display: flex; flex-wrap: wrap; width: 100%; box-sizing: border-box;';
 		$style .= ' ' . Photo_Collage_Renderer::build_style_string( $background_styles );
 
 		$html = sprintf( '<div class="%s" style="%s">', esc_attr( $classes ), esc_attr( $style ) );
@@ -131,6 +140,45 @@ final class Photo_Collage_Collage_Converter {
 			'innerHTML'    => $html,
 			'innerContent' => array( $html ),
 		);
+	}
+
+	/**
+	 * Build static height styles for an auto-height container.
+	 *
+	 * The dominant child constraint (bottom edge at a * width + b pixels)
+	 * is expressed as an aspect-ratio for the width-proportional part and
+	 * a min-height for the fixed part, since the auto-height JS is gone
+	 * after uninstall.
+	 *
+	 * @param array $inner_blocks Parsed inner block arrays.
+	 * @return string Style declarations with trailing space.
+	 */
+	private function get_static_auto_height_style( array $inner_blocks ): string {
+		$constraints = Photo_Collage_Renderer::get_auto_height_constraints( $inner_blocks );
+
+		$reference_width = 1024.0;
+		$best_a          = 0.0;
+		$best_b          = 0.0;
+		$best_score      = 0.0;
+
+		foreach ( $constraints as $constraint ) {
+			$score = ( $constraint[0] * $reference_width ) + $constraint[1];
+			if ( $score > $best_score ) {
+				$best_score = $score;
+				$best_a     = $constraint[0];
+				$best_b     = $constraint[1];
+			}
+		}
+
+		$style = '';
+		if ( $best_a > 0 ) {
+			$style .= 'aspect-ratio: 1 / ' . number_format( $best_a, 6, '.', '' ) . '; ';
+		}
+
+		$min_height = max( 200, (int) ceil( $best_b ) );
+		$style     .= "min-height: {$min_height}px; ";
+
+		return $style;
 	}
 
 	/**
@@ -326,7 +374,7 @@ final class Photo_Collage_Collage_Converter {
 		}
 
 		$image_attrs = array(
-			'url'      => (string) $attrs['url'],
+			'url'      => esc_url_raw( (string) $attrs['url'] ),
 			'alt'      => (string) ( $attrs['alt'] ?? '' ),
 			'sizeSlug' => (string) ( $attrs['sizeSlug'] ?? 'full' ),
 		);
@@ -334,7 +382,7 @@ final class Photo_Collage_Collage_Converter {
 			$image_attrs['id'] = (int) $attrs['id'];
 		}
 		if ( ! empty( $attrs['href'] ) ) {
-			$image_attrs['href']            = (string) $attrs['href'];
+			$image_attrs['href']            = esc_url_raw( (string) $attrs['href'] );
 			$image_attrs['linkDestination'] = 'custom';
 			if ( ! empty( $attrs['linkTarget'] ) ) {
 				$image_attrs['linkTarget'] = (string) $attrs['linkTarget'];
@@ -346,7 +394,7 @@ final class Photo_Collage_Collage_Converter {
 
 		$img_tags = new WP_HTML_Tag_Processor( '<img />' );
 		$img_tags->next_tag();
-		$img_tags->set_attribute( 'src', (string) $attrs['url'] );
+		$img_tags->set_attribute( 'src', esc_url( (string) $attrs['url'] ) );
 		$img_tags->set_attribute( 'alt', (string) ( $attrs['alt'] ?? '' ) );
 		if ( ! empty( $attrs['id'] ) ) {
 			$img_tags->set_attribute( 'class', 'wp-image-' . (int) $attrs['id'] );
@@ -359,7 +407,7 @@ final class Photo_Collage_Collage_Converter {
 		if ( ! empty( $attrs['href'] ) ) {
 			$link_tags = new WP_HTML_Tag_Processor( '<a></a>' );
 			$link_tags->next_tag();
-			$link_tags->set_attribute( 'href', (string) $attrs['href'] );
+			$link_tags->set_attribute( 'href', esc_url( (string) $attrs['href'] ) );
 			if ( ! empty( $attrs['linkTarget'] ) ) {
 				$link_tags->set_attribute( 'target', (string) $attrs['linkTarget'] );
 			}

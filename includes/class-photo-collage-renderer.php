@@ -139,6 +139,218 @@ final class Photo_Collage_Renderer {
 	}
 
 	/**
+	 * Compute auto-height geometry constraints from a container's inner blocks.
+	 *
+	 * Each constraint is an [a, b] pair meaning an absolutely positioned
+	 * child's bottom edge sits at (a * containerWidth + b) pixels, so an
+	 * auto-height container needs height >= max(a * W + b) over all pairs.
+	 *
+	 * @param array $inner_blocks Parsed inner block arrays.
+	 * @return array<array{0: float, 1: float}> Constraint pairs.
+	 */
+	public static function get_auto_height_constraints( array $inner_blocks ): array {
+		$constraints            = array();
+		$attachment_ratio_cache = array();
+
+		foreach ( $inner_blocks as $inner_block ) {
+			if ( ! is_array( $inner_block ) ) {
+				continue;
+			}
+
+			$block_name = $inner_block['blockName'] ?? '';
+			if ( ! in_array( $block_name, array( 'photo-collage/image', 'photo-collage/frame' ), true ) ) {
+				continue;
+			}
+
+			$item_attrs = isset( $inner_block['attrs'] ) && is_array( $inner_block['attrs'] )
+				? $inner_block['attrs']
+				: array();
+			if ( empty( $item_attrs['useAbsolutePosition'] ) ) {
+				continue;
+			}
+
+			$item_width    = isset( $item_attrs['width'] ) ? (string) $item_attrs['width'] : '50%';
+			$width_percent = self::parse_unit_value( $item_width, '%' );
+			$width_pixels  = self::parse_unit_value( $item_width, 'px' );
+
+			$item_height            = isset( $item_attrs['height'] ) ? (string) $item_attrs['height'] : 'auto';
+			$explicit_height_pixels = self::parse_unit_value( $item_height, 'px' );
+
+			$base_a   = 0.0;
+			$base_b   = 0.0;
+			$has_base = false;
+
+			if ( null !== $explicit_height_pixels && $explicit_height_pixels > 0 ) {
+				$base_b   = $explicit_height_pixels;
+				$has_base = true;
+			} else {
+				$aspect_ratio = null;
+				if ( 'photo-collage/image' === $block_name ) {
+					$aspect_ratio = self::get_image_aspect_ratio( $item_attrs, $attachment_ratio_cache );
+				}
+
+				if ( null !== $aspect_ratio && $aspect_ratio > 0 ) {
+					if ( null !== $width_percent ) {
+						$base_a   = $aspect_ratio * ( $width_percent / 100 );
+						$has_base = true;
+					} elseif ( null !== $width_pixels ) {
+						$base_b   = $aspect_ratio * $width_pixels;
+						$has_base = true;
+					}
+				}
+			}
+
+			if ( ! $has_base ) {
+				continue;
+			}
+
+			$top_value    = isset( $item_attrs['top'] ) ? (string) $item_attrs['top'] : 'auto';
+			$bottom_value = isset( $item_attrs['bottom'] ) ? (string) $item_attrs['bottom'] : 'auto';
+
+			$offset_candidates = array();
+			$top_percent       = self::parse_unit_value( $top_value, '%' );
+			$top_pixels        = self::parse_unit_value( $top_value, 'px' );
+			$bottom_percent    = self::parse_unit_value( $bottom_value, '%' );
+			$bottom_pixels     = self::parse_unit_value( $bottom_value, 'px' );
+
+			if ( null !== $top_percent || null !== $top_pixels ) {
+				$offset_candidates[] = array( $top_percent, $top_pixels );
+			}
+			if ( null !== $bottom_percent || null !== $bottom_pixels ) {
+				$offset_candidates[] = array( $bottom_percent, $bottom_pixels );
+			}
+
+			if ( empty( $offset_candidates ) ) {
+				$offset_candidates[] = array( 0.0, 0.0 );
+			}
+
+			foreach ( $offset_candidates as $candidate ) {
+				$constraint_a = $base_a;
+				$constraint_b = $base_b;
+
+				$percent_offset = $candidate[0];
+				if ( null !== $percent_offset ) {
+					if ( $percent_offset >= 99.5 ) {
+						continue;
+					}
+
+					$factor        = 1 / ( 1 - ( $percent_offset / 100 ) );
+					$constraint_a *= $factor;
+					$constraint_b *= $factor;
+				}
+
+				$pixel_offset = $candidate[1];
+				if ( null !== $pixel_offset ) {
+					$constraint_b += $pixel_offset;
+				}
+
+				if (
+					! is_finite( $constraint_a ) ||
+					! is_finite( $constraint_b ) ||
+					( $constraint_a <= 0 && $constraint_b <= 0 )
+				) {
+					continue;
+				}
+
+				$constraints[] = array( $constraint_a, $constraint_b );
+			}
+		}
+
+		return $constraints;
+	}
+
+	/**
+	 * Parse a numeric CSS value with the given unit.
+	 *
+	 * @param mixed  $value Raw value (e.g. "50%", "120px").
+	 * @param string $unit  Expected unit.
+	 * @return float|null Numeric part, or null when the value uses another unit.
+	 */
+	private static function parse_unit_value( mixed $value, string $unit ): ?float {
+		if ( ! is_string( $value ) || '' === trim( $value ) ) {
+			return null;
+		}
+
+		$pattern = '/^\s*(-?\d+(?:\.\d+)?)\s*' . preg_quote( $unit, '/' ) . '\s*$/i';
+		if ( 1 !== preg_match( $pattern, $value, $matches ) ) {
+			return null;
+		}
+
+		$numeric = (float) $matches[1];
+		return is_finite( $numeric ) ? $numeric : null;
+	}
+
+	/**
+	 * Parse an aspectRatio attribute value into a height/width ratio.
+	 *
+	 * @param mixed $value Raw aspectRatio value (e.g. "16/9", "1.5").
+	 * @return float|null Height divided by width, or null when unavailable.
+	 */
+	private static function parse_image_aspect_ratio( mixed $value ): ?float {
+		if ( ! is_string( $value ) ) {
+			return null;
+		}
+
+		$trimmed = trim( $value );
+		if ( '' === $trimmed || 'auto' === strtolower( $trimmed ) ) {
+			return null;
+		}
+
+		if ( str_contains( $trimmed, '/' ) ) {
+			[ $width, $height ] = array_map( 'trim', explode( '/', $trimmed, 2 ) );
+			$width_value        = is_numeric( $width ) ? (float) $width : 0.0;
+			$height_value       = is_numeric( $height ) ? (float) $height : 0.0;
+			if ( $width_value > 0 && $height_value > 0 ) {
+				return $height_value / $width_value;
+			}
+			return null;
+		}
+
+		if ( ! is_numeric( $trimmed ) ) {
+			return null;
+		}
+
+		$ratio = (float) $trimmed;
+		return $ratio > 0 ? 1 / $ratio : null;
+	}
+
+	/**
+	 * Resolve an image block's height/width ratio from its attributes or attachment metadata.
+	 *
+	 * @param array                  $item_attrs Image block attributes.
+	 * @param array<int, float|null> $cache      Attachment ratio cache, keyed by attachment ID.
+	 * @return float|null
+	 */
+	private static function get_image_aspect_ratio( array $item_attrs, array &$cache ): ?float {
+		$aspect_ratio = self::parse_image_aspect_ratio( $item_attrs['aspectRatio'] ?? '' );
+		if ( null !== $aspect_ratio && $aspect_ratio > 0 ) {
+			return $aspect_ratio;
+		}
+
+		$attachment_id = isset( $item_attrs['id'] ) ? (int) $item_attrs['id'] : 0;
+		if ( $attachment_id <= 0 ) {
+			return null;
+		}
+
+		if ( array_key_exists( $attachment_id, $cache ) ) {
+			return $cache[ $attachment_id ];
+		}
+
+		$ratio    = null;
+		$metadata = wp_get_attachment_metadata( $attachment_id );
+		if ( is_array( $metadata ) ) {
+			$width_value  = isset( $metadata['width'] ) ? (float) $metadata['width'] : 0.0;
+			$height_value = isset( $metadata['height'] ) ? (float) $metadata['height'] : 0.0;
+			if ( $width_value > 0 && $height_value > 0 ) {
+				$ratio = $height_value / $width_value;
+			}
+		}
+
+		$cache[ $attachment_id ] = $ratio;
+		return $ratio;
+	}
+
+	/**
 	 * Build style string from array
 	 *
 	 * @param array<string, string|int|float> $styles Style array.
@@ -228,12 +440,17 @@ final class Photo_Collage_Renderer {
 				$img_attributes['title'] = $attributes->title;
 			}
 
-			// Add Lightbox directives if enabled.
+			// Add lightbox trigger attributes if enabled (handled by view.js).
 			if ( ! empty( $attributes->lightbox['enabled'] ) && empty( $attributes->href ) ) {
-				$img_attributes['data-wp-interactive'] = 'core/image';
-				$img_attributes['data-wp-on--click']   = 'actions.showLightbox';
-				$img_attributes['data-wp-context']     = wp_json_encode( array( 'lightbox' => array( 'enabled' => true ) ) );
-				$img_attributes['style']              .= ' cursor: zoom-in;';
+				$full_src = wp_get_attachment_image_url( $attributes->id, 'full' );
+
+				$img_attributes['data-pc-lightbox'] = 'true';
+				if ( ! empty( $full_src ) ) {
+					$img_attributes['data-pc-lightbox-src'] = esc_url( $full_src );
+				}
+				$img_attributes['role']     = 'button';
+				$img_attributes['tabindex'] = '0';
+				$img_attributes['style']   .= ' cursor: zoom-in;';
 			}
 
 			$image_size = ! empty( $attributes->size_slug ) ? $attributes->size_slug : 'full';
@@ -250,7 +467,7 @@ final class Photo_Collage_Renderer {
 		// Wrap in link if href is present.
 		if ( ! empty( $attributes->href ) ) {
 			$link_attributes = array(
-				'href'   => $attributes->href,
+				'href'   => esc_url( $attributes->href ),
 				'class'  => $attributes->link_class,
 				'target' => $attributes->link_target,
 				'rel'    => $attributes->rel,
@@ -353,7 +570,7 @@ final class Photo_Collage_Renderer {
 	): string {
 		$tags = new WP_HTML_Tag_Processor( '<img />' );
 		$tags->next_tag();
-		$tags->set_attribute( 'src', $attributes->url );
+		$tags->set_attribute( 'src', esc_url( $attributes->url ) );
 		$tags->set_attribute( 'alt', $alt_attr );
 		$tags->set_attribute( 'loading', 'lazy' );
 		if ( ! empty( $attributes->img_class ) ) {
@@ -365,11 +582,11 @@ final class Photo_Collage_Renderer {
 			$tags->set_attribute( 'title', $attributes->title );
 		}
 
-		// Add Lightbox directives if enabled for fallback images too.
+		// Add lightbox trigger attributes for fallback images too.
 		if ( ! empty( $attributes->lightbox['enabled'] ) && empty( $attributes->href ) ) {
-			$tags->set_attribute( 'data-wp-interactive', 'core/image' );
-			$tags->set_attribute( 'data-wp-on--click', 'actions.showLightbox' );
-			$tags->set_attribute( 'data-wp-context', wp_json_encode( array( 'lightbox' => array( 'enabled' => true ) ) ) );
+			$tags->set_attribute( 'data-pc-lightbox', 'true' );
+			$tags->set_attribute( 'role', 'button' );
+			$tags->set_attribute( 'tabindex', '0' );
 			$current_style = $tags->get_attribute( 'style' );
 			$tags->set_attribute( 'style', $current_style . ' cursor: zoom-in;' );
 		}
@@ -378,34 +595,25 @@ final class Photo_Collage_Renderer {
 	}
 
 	/**
-	 * Get allowed HTML for kses with Interactivity API support
+	 * Get allowed HTML for kses with lightbox trigger support
 	 *
 	 * @return array Allowed HTML tags and attributes.
 	 */
 	public static function get_allowed_html(): array {
 		$allowed_html = wp_kses_allowed_html( 'post' );
 
-		// Add Interactivity API attributes to img tag.
+		// Add lightbox trigger attributes to img tag.
 		if ( isset( $allowed_html['img'] ) ) {
-			$allowed_html['img']['data-wp-interactive'] = true;
-			$allowed_html['img']['data-wp-on--click']   = true;
-			$allowed_html['img']['data-wp-context']     = true;
+			$allowed_html['img']['data-pc-lightbox']     = true;
+			$allowed_html['img']['data-pc-lightbox-src'] = true;
+			$allowed_html['img']['role']                 = true;
+			$allowed_html['img']['tabindex']             = true;
 		}
 
-		// Add Interactivity API attributes to div tag (if needed for container or wrappers).
-		if ( isset( $allowed_html['div'] ) ) {
-			$allowed_html['div']['data-wp-interactive'] = true;
-			$allowed_html['div']['data-wp-on--click']   = true;
-			$allowed_html['div']['data-wp-context']     = true;
-			$allowed_html['div']['style']               = true;
-			$allowed_html['div']['class']               = true;
-		} else {
+		if ( ! isset( $allowed_html['div'] ) ) {
 			$allowed_html['div'] = array(
-				'data-wp-interactive' => true,
-				'data-wp-on--click'   => true,
-				'data-wp-context'     => true,
-				'style'               => true,
-				'class'               => true,
+				'style' => true,
+				'class' => true,
 			);
 		}
 

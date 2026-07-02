@@ -60,7 +60,14 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		}
 
 		if ( heightMode !== 'auto' ) {
-			clearAutoHeight( containerElement );
+			// Re-apply the fixed height instead of clearing it: React committed
+			// it via blockProps before this effect runs, and it won't re-apply
+			// an unchanged value on later renders once removed from the DOM.
+			if ( heightMode === 'fixed' && containerHeight ) {
+				containerElement.style.height = containerHeight;
+			} else {
+				clearAutoHeight( containerElement );
+			}
 			return undefined;
 		}
 
@@ -68,7 +75,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 			watchMutations: true,
 			watchResize: true,
 		} );
-	}, [ heightMode, stackOnMobile, clientId ] );
+	}, [ heightMode, containerHeight, stackOnMobile, clientId ] );
 
 	const innerBlocksProps = useInnerBlocksProps( blockProps, {
 		allowedBlocks: ALLOWED_BLOCKS,

@@ -232,10 +232,6 @@ return array(
 			'align' => true,
 			'html' => false,
 			'customClassName' => false,
-			'interactivity' => true,
-			'lightbox' => array(
-				'allowEditing' => true
-			),
 			'spacing' => array(
 				'__experimentalSkipSerialization' => true,
 				'margin' => true,
@@ -276,8 +272,12 @@ return array(
 		'editorScript' => 'file:./index.js',
 		'editorStyle' => 'file:./index.css',
 		'style' => 'file:./style-index.css',
+		'viewScript' => 'file:./view.js',
 		'render' => 'file:./render.php',
 		'attributes' => array(
+			'lightbox' => array(
+				'type' => 'object'
+			),
 			'url' => array(
 				'type' => 'string',
 				'role' => 'content'

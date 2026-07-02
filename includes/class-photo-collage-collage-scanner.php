@@ -91,15 +91,19 @@ final class Photo_Collage_Collage_Scanner {
 	}
 
 	/**
-	 * Get public post types we should scan for collage blocks.
+	 * Get post types we should scan for collage blocks.
 	 *
 	 * @return array<string>
 	 */
 	private function get_supported_post_types(): array {
 		$post_types = get_post_types( array( 'public' => true ), 'names' );
-		$excluded   = array(
+
+		// Synced patterns are not public but can contain collage blocks;
+		// skipping them would leave every post embedding one unconverted.
+		$post_types['wp_block'] = 'wp_block';
+
+		$excluded = array(
 			'attachment',
-			'wp_block',
 			'wp_navigation',
 			'wp_template',
 			'wp_template_part',
@@ -136,7 +140,7 @@ final class Photo_Collage_Collage_Scanner {
 		$posts = get_posts(
 			array(
 				'post_type'      => $post_types,
-				'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private' ),
+				'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private', 'trash' ),
 				'posts_per_page' => -1,
 				'orderby'        => 'ID',
 				'order'          => 'ASC',

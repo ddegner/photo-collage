@@ -107,6 +107,16 @@ Photo Collage is optimized for performance. It uses modern CSS for positioning a
 
 ## Changelog
 
+### 0.5.19
+*   SECURITY: Escaped image and link URLs on the frontend and in uninstall conversion to close a stored XSS path via crafted `href`/`url` block attributes.
+*   FIX: Reimplemented the "Enlarge on click" lightbox as a plugin-owned view script — the setting was being silently dropped on save because it was never declared as a real block attribute.
+*   FIX: Wrapped block content in `wp_slash()` before the "Re-save Collage Posts for SEO" tool updates a post, preventing it from corrupting unicode-escaped caption/link text.
+*   FIX: Prevented the editor from clearing a fixed container height immediately after applying it, which collapsed fixed-height collages to the minimum height in the block canvas.
+*   IMPROVEMENT: Registered the plugin's bundled layout patterns so they appear in the block inserter.
+*   IMPROVEMENT: Rendered padding, border, and native background color/gradient block-support values for the Image block on both the frontend and in the editor.
+*   IMPROVEMENT: Approximated auto-height container geometry during uninstall conversion instead of using a stale or default height.
+*   IMPROVEMENT: Included synced patterns and trashed posts when scanning for collage blocks so uninstall conversion no longer misses them.
+
 ### 0.5.18
 *   SEO: Image blocks now store an `<img>` tag in post content so SEO plugins can discover collage images for og:image and social sharing thumbnails.
 *   SEO: Added "Re-save Collage Posts for SEO" tool on the settings page to bulk-update existing posts with the new markup.

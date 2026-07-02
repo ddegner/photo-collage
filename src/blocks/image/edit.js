@@ -9,6 +9,14 @@ import {
 	MediaReplaceFlow,
 	LinkControl as LinkControlBase,
 	getTypographyClassesAndStyles,
+	// Stable equivalents are not exposed yet; core blocks that skip support
+	// serialization (e.g. core/search) use these same exports.
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalUseBorderProps as useBorderProps,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalUseColorProps as useColorProps,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalGetSpacingClassesAndStyles as getSpacingClassesAndStyles,
 } from '@wordpress/block-editor';
 import { useInstanceId } from '@wordpress/compose';
 
@@ -366,9 +374,35 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 		imageSizeStyle = { width: '100%', height: 'auto' };
 	}
 
+	// Skip-serialized supports (padding, border, native color) are not applied
+	// by useBlockProps for this block, so mirror render.php by applying them
+	// manually. Preset color/gradient slugs share attribute names with the
+	// legacy background system; backgroundType claims them for the legacy path.
+	const backgroundType = attributes.backgroundType || 'none';
+	const borderProps = useBorderProps( attributes );
+	const colorProps = useColorProps( {
+		backgroundColor:
+			backgroundType !== 'color' ? attributes.backgroundColor : undefined,
+		gradient:
+			backgroundType !== 'gradient' ? attributes.gradient : undefined,
+		style: { color: attributes.style?.color },
+	} );
+	const spacingProps = getSpacingClassesAndStyles( {
+		style: { spacing: { padding: attributes.style?.spacing?.padding } },
+	} );
+
 	const blockProps = useBlockProps( {
 		id: anchor,
-		style: getBlockStyles( attributes, getBackgroundStyle ),
+		className:
+			[ borderProps.className, colorProps.className ]
+				.filter( Boolean )
+				.join( ' ' ) || undefined,
+		style: {
+			...borderProps.style,
+			...colorProps.style,
+			...spacingProps.style,
+			...getBlockStyles( attributes, getBackgroundStyle ),
+		},
 	} );
 
 	if ( ! url ) {

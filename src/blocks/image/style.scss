@@ -21,6 +21,49 @@
 	}
 }
 
+// Lightbox overlay opened by view.js for images with "Enlarge on click".
+.pc-lightbox-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 100000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 24px;
+	background: rgba(0, 0, 0, 0.85);
+
+	&[hidden] {
+		display: none;
+	}
+
+	.pc-lightbox-image {
+		max-width: 100%;
+		max-height: 100%;
+		object-fit: contain;
+	}
+
+	.pc-lightbox-close {
+		position: absolute;
+		top: 16px;
+		right: 16px;
+		width: 44px;
+		height: 44px;
+		padding: 0;
+		border: 0;
+		border-radius: 50%;
+		background: rgba(0, 0, 0, 0.6);
+		color: #fff;
+		font-size: 28px;
+		line-height: 1;
+		cursor: pointer;
+
+		&:hover,
+		&:focus {
+			background: rgba(255, 255, 255, 0.25);
+		}
+	}
+}
+
 // Mobile responsive styles for side captions when Stack on Mobile is enabled
 .wp-block-photo-collage-container.is-stack-on-mobile {
 

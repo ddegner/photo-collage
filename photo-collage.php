@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Photo Collage
  * Description:       Blocks for creating freeform photo layouts with more natural and chaotic structures that can overlap.
- * Version:           0.5.18
+ * Version:           0.5.19
  * Requires at least: 6.8
  * Requires PHP:      8.3
  * Author:            David Degner
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Plugin version constant
  */
-define( 'PHOTO_COLLAGE_VERSION', '0.5.18' );
+define( 'PHOTO_COLLAGE_VERSION', '0.5.19' );
 define( 'PHOTO_COLLAGE_PLUGIN_FILE', __FILE__ );
 define( 'PHOTO_COLLAGE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 
@@ -69,6 +69,54 @@ function photo_collage_register_blocks(): void {
 	}
 }
 add_action( 'init', photo_collage_register_blocks( ... ) );
+
+/**
+ * Registers block patterns from the patterns/ directory.
+ *
+ * WordPress only auto-registers a patterns/ directory for themes,
+ * so plugin patterns must be registered explicitly.
+ */
+function photo_collage_register_block_patterns(): void {
+	$pattern_files = glob( PHOTO_COLLAGE_PLUGIN_DIR . 'patterns/*.php' );
+	if ( empty( $pattern_files ) ) {
+		return;
+	}
+
+	foreach ( $pattern_files as $pattern_file ) {
+		$headers = get_file_data(
+			$pattern_file,
+			array(
+				'title'       => 'Title',
+				'slug'        => 'Slug',
+				'description' => 'Description',
+				'categories'  => 'Categories',
+			)
+		);
+
+		if ( empty( $headers['title'] ) || empty( $headers['slug'] ) ) {
+			continue;
+		}
+
+		ob_start();
+		include $pattern_file;
+		$content = trim( (string) ob_get_clean() );
+
+		if ( '' === $content ) {
+			continue;
+		}
+
+		register_block_pattern(
+			$headers['slug'],
+			array(
+				'title'       => $headers['title'],
+				'description' => $headers['description'],
+				'categories'  => array_filter( array_map( 'trim', explode( ',', $headers['categories'] ) ) ),
+				'content'     => $content,
+			)
+		);
+	}
+}
+add_action( 'init', photo_collage_register_block_patterns( ... ) );
 
 /**
  * Load release updater.

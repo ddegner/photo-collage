@@ -292,10 +292,13 @@ final class Photo_Collage_Admin_Settings {
 			$blocks   = $this->repair_broken_unicode_in_blocks( $blocks, $modified );
 
 			if ( $modified ) {
+				// wp_update_post() expects slashed data and unslashes internally;
+				// without wp_slash() the \u003c-style escapes in block comment
+				// JSON lose their backslashes and corrupt attributes.
 				wp_update_post(
 					array(
 						'ID'           => $post_id,
-						'post_content' => serialize_blocks( $blocks ),
+						'post_content' => wp_slash( serialize_blocks( $blocks ) ),
 					)
 				);
 				++$updated;
