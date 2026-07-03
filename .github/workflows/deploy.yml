@@ -100,6 +100,19 @@ jobs:
       - name: Generate readme.txt from README.md
         run: bash .github/scripts/generate-readme-txt.sh README.md readme.txt
 
+      - name: Force readme.txt Stable tag to release version
+        run: |
+          set -euo pipefail
+          # WordPress.org serves whichever version the "Stable tag" field points
+          # to. Force it to the version being released so a stale value in
+          # README.md can never leave the live version behind the deployed code.
+          sed -i -E "s/^Stable tag:.*/Stable tag: ${RELEASE_VERSION}/" readme.txt
+          if ! grep -qE "^Stable tag: ${RELEASE_VERSION}$" readme.txt; then
+            echo "Failed to set Stable tag to ${RELEASE_VERSION} in readme.txt"
+            exit 1
+          fi
+          grep -E "^Stable tag:" readme.txt
+
       - name: Build GitHub distribution ZIP
         run: bash .github/scripts/build-dist-zip.sh .distignore "photo-collage-${{ github.event.release.tag_name }}.zip"
 

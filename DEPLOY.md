@@ -42,6 +42,10 @@ Before your first deployment, configure WordPress.org SVN credentials in GitHub:
 
 1. Prepare release changes:
    - Update versions in `photo-collage.php` and `package.json`
+   - Update the `Stable tag` in `README.md` to the new version (this is what
+     WordPress.org serves as the live version). The deploy workflow also forces
+     the generated `readme.txt` Stable tag to the release version as a safety
+     net, but keep `README.md` accurate too.
    - Update changelog/release notes content
    - Test the plugin
 
