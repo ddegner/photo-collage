@@ -107,6 +107,9 @@ Photo Collage is optimized for performance. It uses modern CSS for positioning a
 
 ## Changelog
 
+### 0.5.20
+*   MAINTENANCE: Reformatted the container block's view script and stylesheet to satisfy the project's lint rules. No functional changes.
+
 ### 0.5.19
 *   SECURITY: Escaped image and link URLs on the frontend and in uninstall conversion to close a stored XSS path via crafted `href`/`url` block attributes.
 *   FIX: Reimplemented the "Enlarge on click" lightbox as a plugin-owned view script — the setting was being silently dropped on save because it was never declared as a real block attribute.
