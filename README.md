@@ -3,7 +3,7 @@
 **Contributors:** ddegner  
 **Tags:** block, photo collage, image gallery, overlapping images, visual design  
 **Tested up to:** 7.0
-**Stable tag:** 0.5.21  
+**Stable tag:** 0.5.22
 **Requires at least:** 6.8  
 **Requires PHP:** 8.3  
 **License:** GPL-2.0-or-later  
@@ -106,6 +106,10 @@ Photo Collage is optimized for performance. It uses modern CSS for positioning a
 4.  Mobile-responsive stacking in action
 
 ## Changelog
+
+### 0.5.22
+*   FIX: Removed redundant container wrappers from bundled layouts and normalized previously wrapped content during rendering, preventing full-width collages from collapsing while restoring correct auto-height and mobile stacking.
+*   TEST: Added regression coverage for canonical and previously wrapped container output across both source and production builds.
 
 ### 0.5.21
 *   FIX: Corrected the WordPress.org stable version pointer so the security and bug fixes from 0.5.19 and 0.5.20 are actually served to users. The prior releases uploaded their code to WordPress.org but left the "Stable tag" at 0.5.18, so the update never went live. No functional code changes since 0.5.20.

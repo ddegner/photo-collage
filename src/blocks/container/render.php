@@ -15,6 +15,19 @@ $attributes = $attributes ?? [];
 $content = $content ?? '';
 $min_auto_height = 200;
 
+// Backward compatibility: some stored content includes the dynamic block's
+// wrapper. Strip it before emitting the canonical server-rendered wrapper.
+if (
+	is_string( $content ) &&
+	preg_match(
+		'/^\s*<div\b[^>]*class=(["\'])[^"\']*\bwp-block-photo-collage-container\b[^"\']*\1[^>]*>(.*)<\/div>\s*$/is',
+		$content,
+		$matches
+	)
+) {
+	$content = (string) $matches[2];
+}
+
 $stack_on_mobile = $attributes['stackOnMobile'] ?? true;
 $height = $attributes['containerHeight'] ?? '';
 $height_mode = $attributes['heightMode'] ?? 'fixed';

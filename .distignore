@@ -4,10 +4,12 @@
 .editorconfig
 .vscode
 .DS_Store
+AGENTS.md
 .agent
 .kiro
 Sites
 research
+tests
 node_modules
 src
 vendor

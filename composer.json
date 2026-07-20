@@ -8,6 +8,7 @@
 		"wp-coding-standards/wpcs": "^3.0"
 	},
 	"scripts": {
+		"test": "php tests/container-wrapper-regression.php",
 		"lint": "phpcs",
 		"fix": "phpcbf"
 	},

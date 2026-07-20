@@ -13,9 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 ?>
 <!-- wp:photo-collage/container {"heightMode":"auto"} -->
-<div class="wp-block-photo-collage-container" style="min-height: 200px;">
 	<!-- wp:photo-collage/image {"width":"33.33%","marginLeft":"0%","marginTop":"0%"} /-->
 	<!-- wp:photo-collage/image {"width":"33.33%","marginLeft":"0%","marginTop":"0%"} /-->
 	<!-- wp:photo-collage/image {"width":"33.33%","marginLeft":"0%","marginTop":"0%"} /-->
-</div>
 <!-- /wp:photo-collage/container -->
