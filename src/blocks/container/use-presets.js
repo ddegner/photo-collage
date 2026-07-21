@@ -1,7 +1,8 @@
 import { useDispatch, useSelect } from '@wordpress/data';
 import { createBlock } from '@wordpress/blocks';
-import { useCallback, useRef } from '@wordpress/element';
+import { useCallback, useRef, useState } from '@wordpress/element';
 import { getPresetLayout, PRESET_HEIGHTS } from './presets';
+import { createPresetApplicationPlan } from './preset-application';
 
 /**
  * Manage quick layout preset application for the container block.
@@ -21,6 +22,7 @@ export const usePresets = ( {
 } ) => {
 	const { replaceInnerBlocks } = useDispatch( 'core/block-editor' );
 	const hasAppliedPresetRef = useRef( false );
+	const [ pendingApplication, setPendingApplication ] = useState( null );
 	const innerBlocks = useSelect(
 		( select ) => {
 			const blocks = select( 'core/block-editor' ).getBlocks( clientId );
@@ -29,13 +31,8 @@ export const usePresets = ( {
 		[ clientId ]
 	);
 
-	const applyPreset = useCallback(
-		( preset ) => {
-			const config = getPresetLayout( preset );
-			if ( ! config ) {
-				return;
-			}
-
+	const commitPreset = useCallback(
+		( preset, blocks ) => {
 			const hasExplicitHeight =
 				typeof containerHeight === 'string'
 					? containerHeight.trim() !== ''
@@ -56,40 +53,58 @@ export const usePresets = ( {
 				} );
 			}
 
-			const newBlocks = config.map( ( attrs, index ) => {
-				const existingBlock = innerBlocks[ index ];
-				const imageData = existingBlock
-					? {
-							url: existingBlock.attributes.url,
-							id: existingBlock.attributes.id,
-							alt: existingBlock.attributes.alt,
-							title: existingBlock.attributes.title,
-							caption: existingBlock.attributes.caption,
-							isDecorative: existingBlock.attributes.isDecorative,
-							aspectRatio: existingBlock.attributes.aspectRatio,
-					  }
-					: {};
-
-				return createBlock( 'photo-collage/image', {
-					...attrs,
-					...imageData,
-				} );
-			} );
-
-			replaceInnerBlocks( clientId, newBlocks );
+			replaceInnerBlocks( clientId, blocks );
 			hasAppliedPresetRef.current = true;
 		},
 		[
 			clientId,
 			containerHeight,
 			heightMode,
-			innerBlocks,
 			replaceInnerBlocks,
 			setAttributes,
 		]
 	);
 
+	const applyPreset = useCallback(
+		( preset ) => {
+			const config = getPresetLayout( preset );
+			if ( ! config ) {
+				return;
+			}
+
+			const application = createPresetApplicationPlan(
+				innerBlocks,
+				config,
+				createBlock
+			);
+
+			if ( application.removedBlocks.length > 0 ) {
+				setPendingApplication( { preset, ...application } );
+				return;
+			}
+
+			commitPreset( preset, application.blocks );
+		},
+		[ commitPreset, innerBlocks ]
+	);
+
+	const confirmPreset = useCallback( () => {
+		if ( ! pendingApplication ) {
+			return;
+		}
+
+		commitPreset( pendingApplication.preset, pendingApplication.blocks );
+		setPendingApplication( null );
+	}, [ commitPreset, pendingApplication ] );
+
+	const cancelPreset = useCallback( () => {
+		setPendingApplication( null );
+	}, [] );
+
 	return {
 		applyPreset,
+		pendingRemovalCount: pendingApplication?.removedBlocks.length ?? 0,
+		confirmPreset,
+		cancelPreset,
 	};
 };

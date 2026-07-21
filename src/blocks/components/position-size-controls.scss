@@ -1,0 +1,11 @@
+.block-editor-block-inspector {
+
+	[role="tabpanel"]:has(.photo-collage-position-size-panel) {
+		display: flex;
+		flex-direction: column;
+	}
+
+	[role="tabpanel"] > :has(.photo-collage-position-size-panel) {
+		order: -1;
+	}
+}

@@ -3,7 +3,7 @@
 **Contributors:** ddegner  
 **Tags:** block, photo collage, image gallery, overlapping images, visual design  
 **Tested up to:** 7.0
-**Stable tag:** 0.5.22
+**Stable tag:** 0.5.23
 **Requires at least:** 6.8  
 **Requires PHP:** 8.3  
 **License:** GPL-2.0-or-later  
@@ -106,6 +106,12 @@ Photo Collage is optimized for performance. It uses modern CSS for positioning a
 4.  Mobile-responsive stacking in action
 
 ## Changelog
+
+### 0.5.23
+*   FIX: Made Quick Layout presets preserve existing images, captions, styles, Frames, and other collage content instead of rebuilding the collage destructively.
+*   IMPROVEMENT: Added a confirmation dialog with the exact removal count when a preset has fewer image positions than the current collage.
+*   IMPROVEMENT: Moved Position and Size above the generic Typography, Color, Dimensions, and Shadow controls for Image and Frame blocks.
+*   TEST: Added JavaScript regression coverage for preserved content, retained block identities, blank-slot insertion, and surplus-image detection.
 
 ### 0.5.22
 *   FIX: Removed redundant container wrappers from bundled layouts and normalized previously wrapped content during rendering, preventing full-width collages from collapsing while restoring correct auto-height and mobile stacking.

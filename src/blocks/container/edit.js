@@ -7,12 +7,15 @@ import {
 	PanelBody,
 	SelectControl,
 	ToggleControl,
+	// WordPress core currently exposes ConfirmDialog only via this export.
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalConfirmDialog as ConfirmDialog,
 	// WordPress core currently exposes UnitControl only via this export.
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalUnitControl as UnitControl,
 	Button,
 } from '@wordpress/components';
-import { __ } from '@wordpress/i18n';
+import { __, _n, sprintf } from '@wordpress/i18n';
 import { useEffect, useRef } from '@wordpress/element';
 import BackgroundControls from '../components/BackgroundControls';
 import { getBackgroundStyle } from '../utils/background-styles';
@@ -46,12 +49,13 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		},
 	} );
 
-	const { applyPreset } = usePresets( {
-		clientId,
-		heightMode,
-		containerHeight,
-		setAttributes,
-	} );
+	const { applyPreset, pendingRemovalCount, confirmPreset, cancelPreset } =
+		usePresets( {
+			clientId,
+			heightMode,
+			containerHeight,
+			setAttributes,
+		} );
 
 	useEffect( () => {
 		const containerElement = containerRef.current;
@@ -84,6 +88,30 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 
 	return (
 		<>
+			<ConfirmDialog
+				isOpen={ pendingRemovalCount > 0 }
+				title={ __( 'Apply layout?', 'photo-collage' ) }
+				confirmButtonText={ __( 'Remove and Apply', 'photo-collage' ) }
+				cancelButtonText={ __(
+					'Keep Current Layout',
+					'photo-collage'
+				) }
+				onConfirm={ confirmPreset }
+				onCancel={ cancelPreset }
+			>
+				<p>
+					{ sprintf(
+						/* translators: %d: number of image blocks that will be removed */
+						_n(
+							'This layout has fewer image positions than the current collage. Applying it will remove %d image block. Frames and all other content will be kept.',
+							'This layout has fewer image positions than the current collage. Applying it will remove %d image blocks. Frames and all other content will be kept.',
+							pendingRemovalCount,
+							'photo-collage'
+						),
+						pendingRemovalCount
+					) }
+				</p>
+			</ConfirmDialog>
 			<InspectorControls>
 				<PanelBody
 					title={ __( 'Quick Layouts', 'photo-collage' ) }

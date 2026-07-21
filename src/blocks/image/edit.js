@@ -41,7 +41,7 @@ import './editor.scss';
 import CaptionPositionControl from './components/caption-position-control';
 import CaptionEditor from './components/caption-editor';
 import BackgroundControls from '../components/BackgroundControls';
-import AbsolutePositionControls from '../components/AbsolutePositionControls';
+import PositionSizeControls from '../components/PositionSizeControls';
 import { getBackgroundStyle } from '../utils/background-styles';
 import { getBlockStyles } from '../utils/positioning-styles';
 
@@ -582,27 +582,6 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 						__nextHasNoMarginBottom={ true }
 						__next40pxDefaultSize={ true }
 					/>
-					<div
-						className="photo-collage-dimensions-row"
-						style={ { display: 'flex', gap: '10px' } }
-					>
-						<UnitControl
-							label={ __( 'Width', 'photo-collage' ) }
-							value={ width }
-							onChange={ ( value ) =>
-								setAttributes( { width: value } )
-							}
-							__next40pxDefaultSize={ true }
-						/>
-						<UnitControl
-							label={ __( 'Height', 'photo-collage' ) }
-							value={ height }
-							onChange={ ( value ) =>
-								setAttributes( { height: value } )
-							}
-							__next40pxDefaultSize={ true }
-						/>
-					</div>
 					<SelectControl
 						label={ __( 'Resolution', 'photo-collage' ) }
 						value={ sizeSlug }
@@ -848,77 +827,27 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 			</InspectorControls>
 			<InspectorControls group="styles">
 				<PanelBody
-					title={ __( 'Layout', 'photo-collage' ) }
+					title={ __( 'Position and Size', 'photo-collage' ) }
 					initialOpen={ true }
+					className="photo-collage-position-size-panel"
 				>
-					<ToggleControl
-						label={ __(
-							'Use Absolute Positioning',
-							'photo-collage'
-						) }
-						id={ `inspector-image-absolute-position-${ instanceId }` }
-						help={ __(
+					<PositionSizeControls
+						width={ width }
+						height={ height }
+						useAbsolutePosition={ useAbsolutePosition }
+						top={ top }
+						right={ right }
+						bottom={ bottom }
+						left={ left }
+						zIndex={ zIndex }
+						setAttributes={ setAttributes }
+						instanceId={ instanceId }
+						idPrefix="inspector-image"
+						positioningHelp={ __(
 							'Position image relative to container edges instead of using margins.',
 							'photo-collage'
 						) }
-						checked={ useAbsolutePosition }
-						onChange={ ( value ) =>
-							setAttributes( { useAbsolutePosition: value } )
-						}
-						__nextHasNoMarginBottom={ true }
 					/>
-					{ useAbsolutePosition && (
-						<AbsolutePositionControls
-							top={ top }
-							right={ right }
-							bottom={ bottom }
-							left={ left }
-							setAttributes={ setAttributes }
-							instanceId={ instanceId }
-							idPrefix="inspector-image"
-						/>
-					) }
-					<div className="photo-collage-z-index-control">
-						<RangeControl
-							label={ __(
-								'Z-Index (Layer Order)',
-								'photo-collage'
-							) }
-							id={ `inspector-image-z-index-${ instanceId }` }
-							value={ zIndex }
-							onChange={ ( value ) =>
-								setAttributes( { zIndex: value } )
-							}
-							min={ -10 }
-							max={ 100 }
-							help={ __(
-								'Higher numbers are on top.',
-								'photo-collage'
-							) }
-							__next40pxDefaultSize={ true }
-							__nextHasNoMarginBottom={ true }
-						/>
-						<div className="photo-collage-z-index-buttons">
-							<Button
-								variant="secondary"
-								size="small"
-								onClick={ () =>
-									setAttributes( { zIndex: zIndex - 1 } )
-								}
-								icon="minus"
-								label={ __( 'Move Backward', 'photo-collage' ) }
-							/>
-							<Button
-								variant="secondary"
-								size="small"
-								onClick={ () =>
-									setAttributes( { zIndex: zIndex + 1 } )
-								}
-								icon="plus"
-								label={ __( 'Move Forward', 'photo-collage' ) }
-							/>
-						</div>
-					</div>
 				</PanelBody>
 
 				<PanelBody
