@@ -32,6 +32,9 @@ define( 'PHOTO_COLLAGE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
  */
 require_once PHOTO_COLLAGE_PLUGIN_DIR . 'includes/class-photo-collage-block-attributes.php';
 require_once PHOTO_COLLAGE_PLUGIN_DIR . 'includes/class-photo-collage-renderer.php';
+require_once PHOTO_COLLAGE_PLUGIN_DIR . 'includes/class-photo-collage-mcp.php';
+
+Photo_Collage_MCP::register();
 
 $photo_collage_release_channel_enum_file = PHOTO_COLLAGE_PLUGIN_DIR . 'includes/enum-photo-collage-release-channel.php';
 $photo_collage_release_updater_file      = PHOTO_COLLAGE_PLUGIN_DIR . 'includes/class-photo-collage-release-updater.php';
