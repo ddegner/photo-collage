@@ -1,5 +1,5 @@
 import { __ } from '@wordpress/i18n';
-import { useEffect, useState } from '@wordpress/element';
+import { useEffect, useRef, useState } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 import {
 	useBlockProps,
@@ -41,8 +41,11 @@ import './editor.scss';
 import CaptionPositionControl from './components/caption-position-control';
 import CaptionEditor from './components/caption-editor';
 import BackgroundControls from '../components/BackgroundControls';
+import CanvasTransformControls from '../components/CanvasTransformControls';
 import PositionSizeControls from '../components/PositionSizeControls';
+import useCanvasParent from '../components/useCanvasParent';
 import { getBackgroundStyle } from '../utils/background-styles';
+import { requestArrangeFreely } from '../utils/canvas-events';
 import { getBlockStyles } from '../utils/positioning-styles';
 
 const LinkControl = LinkControlBase;
@@ -142,7 +145,12 @@ const parseInlineStyle = ( inlineStyle ) => {
 	}, {} );
 };
 
-export default function Edit( { attributes, setAttributes, isSelected } ) {
+export default function Edit( {
+	attributes,
+	setAttributes,
+	isSelected,
+	clientId,
+} ) {
 	const {
 		url,
 		alt,
@@ -181,6 +189,13 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 	} = attributes;
 
 	const instanceId = useInstanceId( Edit );
+	const blockRef = useRef( null );
+	const { isDirectCanvasChild, parentClientId } = useCanvasParent( clientId );
+	const onArrangeFreely = () =>
+		requestArrangeFreely( blockRef.current, {
+			containerClientId: parentClientId,
+			sourceClientId: clientId,
+		} );
 
 	// Safely extract string values from potentially corrupted attributes
 	const caption = safeStringValue( rawCaption );
@@ -392,9 +407,15 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 	} );
 
 	const blockProps = useBlockProps( {
+		ref: blockRef,
+		...( isDirectCanvasChild ? { draggable: false } : {} ),
 		id: anchor,
 		className:
-			[ borderProps.className, colorProps.className ]
+			[
+				borderProps.className,
+				colorProps.className,
+				useAbsolutePosition ? 'is-pc-absolute' : '',
+			]
 				.filter( Boolean )
 				.join( ' ' ) || undefined,
 		style: {
@@ -415,6 +436,16 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 					allowedTypes={ [ 'image' ] }
 					multiple={ false }
 					labels={ { title: __( 'Collage Image', 'photo-collage' ) } }
+				/>
+				<CanvasTransformControls
+					attributes={ attributes }
+					clientId={ clientId }
+					parentClientId={ parentClientId }
+					isSelected={ isSelected }
+					blockRef={ blockRef }
+					itemName={ __( 'image', 'photo-collage' ) }
+					lockAspectRatio={ ! height || height === 'auto' }
+					preserveAutoHeight={ ! height || height === 'auto' }
 				/>
 			</div>
 		);
@@ -840,13 +871,25 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 						bottom={ bottom }
 						left={ left }
 						zIndex={ zIndex }
+						lock={ attributes.lock }
+						rotation={ rotation }
 						setAttributes={ setAttributes }
+						onArrangeFreely={
+							isDirectCanvasChild ? onArrangeFreely : undefined
+						}
 						instanceId={ instanceId }
 						idPrefix="inspector-image"
-						positioningHelp={ __(
-							'Position image relative to container edges instead of using margins.',
-							'photo-collage'
-						) }
+						positioningHelp={
+							useAbsolutePosition
+								? __(
+										'Place this image freely on the collage canvas. Turn this off to return this item to the responsive layout.',
+										'photo-collage'
+								  )
+								: __(
+										'Keep images responsive and reorderable. Enabling this preserves every item in place and makes the collage freeform.',
+										'photo-collage'
+								  )
+						}
 					/>
 				</PanelBody>
 
@@ -960,6 +1003,7 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 					<img
 						src={ url }
 						alt={ alt }
+						draggable={ false }
 						style={ {
 							objectFit:
 								aspectRatio && aspectRatio !== 'auto'
@@ -994,6 +1038,16 @@ export default function Edit( { attributes, setAttributes, isSelected } ) {
 							/>
 						) }
 				</figure>
+				<CanvasTransformControls
+					attributes={ attributes }
+					clientId={ clientId }
+					parentClientId={ parentClientId }
+					isSelected={ isSelected }
+					blockRef={ blockRef }
+					itemName={ __( 'image', 'photo-collage' ) }
+					lockAspectRatio={ ! height || height === 'auto' }
+					preserveAutoHeight={ ! height || height === 'auto' }
+				/>
 			</div>
 		</>
 	);

@@ -13,8 +13,9 @@
     <!-- Check all PHP files -->
     <file>.</file>
 
-    <!-- Exclude build and node_modules directories -->
+    <!-- Exclude generated dependencies and auxiliary worktrees -->
     <exclude-pattern>*/build/*</exclude-pattern>
+    <exclude-pattern>*/.claude/*</exclude-pattern>
     <exclude-pattern>*/node_modules/*</exclude-pattern>
     <exclude-pattern>*/vendor/*</exclude-pattern>
 

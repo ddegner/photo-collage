@@ -27,6 +27,15 @@
 		margin-top: 0; /* Remove flow layout margins if any */
 		max-width: none;
 	}
+
+	/*
+	 * WordPress's global block-gap selector can add margin-block-start after
+	 * an item becomes absolute. Absolute collage coordinates replace flow
+	 * margins, so keep that theme margin from shifting promoted siblings.
+	 */
+	> .is-pc-absolute {
+		margin: 0 !important;
+	}
 }
 
 .photo-collage-quick-layouts {
@@ -73,4 +82,15 @@
 	margin-bottom: 0;
 	font-size: 12px;
 	color: #50575e;
+}
+
+.photo-collage-layout-mode-help {
+	margin-top: 0;
+	margin-bottom: 8px;
+	font-size: 12px;
+	color: #50575e;
+
+	+ .components-button {
+		margin-bottom: 16px;
+	}
 }

@@ -5,6 +5,7 @@
 .vscode
 .DS_Store
 AGENTS.md
+CLAUDE.md
 .agent
 .kiro
 Sites
@@ -20,6 +21,7 @@ README.md
 DEPLOY.md
 .distignore*
 .eslintignore
+jest.config.js
 package.json
 package-lock.json
 photo-collage.zip

@@ -20,6 +20,32 @@ const MARGIN_DEFAULTS = {
 };
 
 /**
+ * Keep native block movement aligned with the applied positioning model.
+ *
+ * Absolute items use the plugin's canvas mover, so native source-order moving
+ * is locked. Flow items return movement to WordPress by removing only the move
+ * lock while retaining removal, editing, and future lock properties.
+ *
+ * @param {Object|undefined} lock                Existing block lock.
+ * @param {boolean}          useAbsolutePosition Applied positioning mode.
+ * @return {Object|undefined} Updated lock, or undefined when no locks remain.
+ */
+const getPositioningLock = ( lock, useAbsolutePosition ) => {
+	const nextLock =
+		lock && typeof lock === 'object' && ! Array.isArray( lock )
+			? { ...lock }
+			: {};
+
+	if ( useAbsolutePosition ) {
+		nextLock.move = true;
+	} else {
+		delete nextLock.move;
+	}
+
+	return Object.keys( nextLock ).length > 0 ? nextLock : undefined;
+};
+
+/**
  * Apply only layout-owned preset attributes while preserving all block content
  * and presentation attributes that the preset does not control.
  *
@@ -41,11 +67,13 @@ export const applyPresetLayoutToAttributes = (
 
 	const style = attributes.style || {};
 	const spacing = style.spacing || {};
+	const useAbsolutePosition = layoutAttributes.useAbsolutePosition === true;
 
 	return {
 		...attributes,
 		...LAYOUT_DEFAULTS,
 		...layoutAttributes,
+		lock: getPositioningLock( attributes.lock, useAbsolutePosition ),
 		style: {
 			...style,
 			spacing: {

@@ -1,3 +1,8 @@
+import {
+	CANVAS_GEOMETRY_CHANGE_EVENT,
+	CANVAS_INTERACTION_ATTRIBUTE,
+} from '../utils/canvas-geometry';
+
 const COLLAGE_ITEM_CLASS_NAMES = [
 	'wp-block-photo-collage-image',
 	'wp-block-photo-collage-frame',
@@ -133,12 +138,18 @@ export const attachAutoHeight = ( container, options = {} ) => {
 	let mutationObserver;
 
 	const scheduleMeasure = () => {
-		if ( animationFrameId !== null ) {
+		if (
+			animationFrameId !== null ||
+			container.hasAttribute( CANVAS_INTERACTION_ATTRIBUTE )
+		) {
 			return;
 		}
 
 		animationFrameId = window.requestAnimationFrame( () => {
 			animationFrameId = null;
+			if ( container.hasAttribute( CANVAS_INTERACTION_ATTRIBUTE ) ) {
+				return;
+			}
 			applyAutoHeight( container, options );
 		} );
 	};
@@ -210,6 +221,7 @@ export const attachAutoHeight = ( container, options = {} ) => {
 	};
 
 	container.addEventListener( 'load', onCaptureLoad, true );
+	container.addEventListener( CANVAS_GEOMETRY_CHANGE_EVENT, scheduleMeasure );
 	if ( watchResize ) {
 		window.addEventListener( 'resize', onWindowResize );
 	}
@@ -221,6 +233,10 @@ export const attachAutoHeight = ( container, options = {} ) => {
 			window.cancelAnimationFrame( animationFrameId );
 		}
 		container.removeEventListener( 'load', onCaptureLoad, true );
+		container.removeEventListener(
+			CANVAS_GEOMETRY_CHANGE_EVENT,
+			scheduleMeasure
+		);
 		if ( watchResize ) {
 			window.removeEventListener( 'resize', onWindowResize );
 		}

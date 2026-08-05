@@ -8,6 +8,7 @@ import {
 	__experimentalUnitControl as UnitControl,
 } from '@wordpress/components';
 import AbsolutePositionControls from './AbsolutePositionControls';
+import { removeMoveLock } from '../utils/canvas-geometry';
 import './position-size-controls.scss';
 
 /**
@@ -22,7 +23,10 @@ import './position-size-controls.scss';
  * @param {string}   props.bottom              Bottom position.
  * @param {string}   props.left                Left position.
  * @param {number}   props.zIndex              Layer order.
+ * @param {Object}   props.lock                Core block lock settings.
+ * @param {number}   props.rotation            Rotation in degrees.
  * @param {Function} props.setAttributes       Block attribute setter.
+ * @param {Function} props.onArrangeFreely     Safe whole-collage conversion.
  * @param {string}   props.instanceId          Unique control instance id.
  * @param {string}   props.idPrefix            Control id prefix.
  * @param {string}   props.positioningHelp     Help text for positioning mode.
@@ -37,11 +41,26 @@ export default function PositionSizeControls( {
 	bottom,
 	left,
 	zIndex,
+	lock,
+	rotation = 0,
 	setAttributes,
+	onArrangeFreely,
 	instanceId,
 	idPrefix,
 	positioningHelp,
 } ) {
+	const onChangePositioning = ( value ) => {
+		if ( value && ! useAbsolutePosition && onArrangeFreely ) {
+			onArrangeFreely();
+			return;
+		}
+
+		setAttributes( {
+			useAbsolutePosition: value,
+			...( value ? {} : { lock: removeMoveLock( lock ) } ),
+		} );
+	};
+
 	return (
 		<>
 			<div
@@ -64,15 +83,22 @@ export default function PositionSizeControls( {
 				/>
 			</div>
 			<ToggleControl
-				label={ __( 'Use Absolute Positioning', 'photo-collage' ) }
+				label={ __( 'Free positioning', 'photo-collage' ) }
 				id={ `${ idPrefix }-absolute-position-${ instanceId }` }
 				help={ positioningHelp }
 				checked={ useAbsolutePosition }
-				onChange={ ( value ) =>
-					setAttributes( { useAbsolutePosition: value } )
-				}
+				onChange={ onChangePositioning }
 				__nextHasNoMarginBottom={ true }
 			/>
+			{ ! useAbsolutePosition &&
+				Math.abs( rotation ) > Number.EPSILON && (
+					<p className="components-base-control__help">
+						{ __(
+							'Enable free positioning before resizing a rotated item on the canvas.',
+							'photo-collage'
+						) }
+					</p>
+				) }
 			{ useAbsolutePosition && (
 				<AbsolutePositionControls
 					top={ top }

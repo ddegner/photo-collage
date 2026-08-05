@@ -53,6 +53,12 @@ if (!empty($support_styles['classnames'])) {
     $support_classes[] = $support_styles['classnames'];
 }
 
+// Lets container styles neutralise theme block-gap margins, which apply to
+// normal flow rather than canvas coordinates.
+if ($normalized_attrs->use_absolute_position) {
+    $support_classes[] = 'is-pc-absolute';
+}
+
 // Preset color/gradient slugs share attribute names with the legacy custom
 // background system; backgroundType claims them for the legacy path.
 $background_type = $attributes['backgroundType'] ?? 'none';

@@ -3,7 +3,7 @@
 **Contributors:** ddegner  
 **Tags:** block, photo collage, image gallery, overlapping images, visual design  
 **Tested up to:** 7.0
-**Stable tag:** 0.5.23
+**Stable tag:** 0.5.24
 **Requires at least:** 6.8  
 **Requires PHP:** 8.3  
 **License:** GPL-2.0-or-later  
@@ -106,6 +106,17 @@ Photo Collage is optimized for performance. It uses modern CSS for positioning a
 4.  Mobile-responsive stacking in action
 
 ## Changelog
+
+### 0.5.24
+*   NEW: Added on-canvas move and resize handles to Collage Image and Collage Frame blocks, so items can be positioned by dragging them directly in the editor instead of typing coordinates.
+*   NEW: Added keyboard control for both handles - arrow keys nudge by one pixel, Shift steps by ten, and Escape cancels the change in progress.
+*   NEW: Added an "Arrange collage freely" button to Container Settings that switches a responsive collage to freeform positioning in a single undoable step, leaving every item exactly where it already sits.
+*   FIX: Stopped the Image and Frame editor scripts from loading the full WordPress post editor package, which could interfere with other screens that embed the block editor.
+*   FIX: Prevented theme block-gap margins from offsetting freely positioned items on the front end, so a saved collage renders where the editor showed it.
+*   FIX: Restored the live preview of the Opacity control, which had no visible effect while a block was selected.
+*   FIX: Stopped canvas drag and resize from rewriting lock settings on neighbouring items that were never touched.
+*   IMPROVEMENT: Reduced editor re-rendering so unselected collage items no longer update on every change elsewhere in the post.
+*   TEST: Added JavaScript coverage for canvas geometry, freeform conversion, gesture handling, and the container's arrange-freely path.
 
 ### 0.5.23
 *   FIX: Made Quick Layout presets preserve existing images, captions, styles, Frames, and other collage content instead of rebuilding the collage destructively.

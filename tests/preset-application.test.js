@@ -2,6 +2,10 @@ import {
 	applyPresetLayoutToAttributes,
 	createPresetApplicationPlan,
 } from '../src/blocks/container/preset-application';
+import {
+	COLLAGE_LAYOUT_STATE,
+	getCollageLayoutState,
+} from '../src/blocks/container/layout-mode';
 
 const imageBlock = ( clientId, attributes = {} ) => ( {
 	clientId,
@@ -78,6 +82,60 @@ describe( 'preset application', () => {
 		} );
 	} );
 
+	it( 'locks native movement for absolute presets while preserving other locks', () => {
+		const result = applyPresetLayoutToAttributes(
+			{
+				lock: {
+					move: false,
+					remove: true,
+					edit: false,
+					futureLock: 'keep',
+				},
+			},
+			{
+				useAbsolutePosition: true,
+				top: '10%',
+				left: '20%',
+			}
+		);
+
+		expect( result.lock ).toEqual( {
+			move: true,
+			remove: true,
+			edit: false,
+			futureLock: 'keep',
+		} );
+	} );
+
+	it( 'clears only the move lock for flow presets', () => {
+		const result = applyPresetLayoutToAttributes(
+			{
+				lock: {
+					move: true,
+					remove: true,
+					edit: false,
+					futureLock: 'keep',
+				},
+			},
+			{ width: '60%' }
+		);
+
+		expect( result.lock ).toEqual( {
+			remove: true,
+			edit: false,
+			futureLock: 'keep',
+		} );
+	} );
+
+	it( 'omits an empty lock after returning an item to flow', () => {
+		const result = applyPresetLayoutToAttributes(
+			{ lock: { move: true } },
+			{ width: '60%' }
+		);
+
+		expect( result.lock ).toBeUndefined();
+	} );
+
 	it( 'preserves frames, image identities, and complete image attributes', () => {
 		const first = imageBlock( 'image-1', {
 			url: 'one.jpg',
@@ -152,5 +210,47 @@ describe( 'preset application', () => {
 		expect( plan.blocks[ 0 ].clientId ).toBe( 'image-1' );
 		expect( plan.blocks[ 1 ] ).toBe( frame );
 		expect( plan.removedBlocks ).toEqual( [ second ] );
+	} );
+} );
+
+describe( 'collage layout state', () => {
+	it( 'treats empty and all-flow collages as responsive', () => {
+		expect( getCollageLayoutState( [] ) ).toBe(
+			COLLAGE_LAYOUT_STATE.RESPONSIVE
+		);
+		expect(
+			getCollageLayoutState( [
+				imageBlock( 'image-1' ),
+				frameBlock( 'frame-1' ),
+			] )
+		).toBe( COLLAGE_LAYOUT_STATE.RESPONSIVE );
+	} );
+
+	it( 'derives freeform only when every positionable child is absolute', () => {
+		expect(
+			getCollageLayoutState( [
+				imageBlock( 'image-1', { useAbsolutePosition: true } ),
+				{
+					...frameBlock( 'frame-1' ),
+					attributes: {
+						useAbsolutePosition: true,
+					},
+				},
+			] )
+		).toBe( COLLAGE_LAYOUT_STATE.FREEFORM );
+	} );
+
+	it( 'derives mixed state and ignores unknown legacy children', () => {
+		expect(
+			getCollageLayoutState( [
+				imageBlock( 'image-1', { useAbsolutePosition: true } ),
+				frameBlock( 'frame-1' ),
+				{
+					clientId: 'legacy',
+					name: 'core/paragraph',
+					attributes: {},
+				},
+			] )
+		).toBe( COLLAGE_LAYOUT_STATE.MIXED );
 	} );
 } );

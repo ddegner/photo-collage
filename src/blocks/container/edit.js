@@ -2,6 +2,7 @@ import {
 	useBlockProps,
 	InspectorControls,
 	useInnerBlocksProps,
+	store as blockEditorStore,
 } from '@wordpress/block-editor';
 import {
 	PanelBody,
@@ -16,10 +17,23 @@ import {
 	Button,
 } from '@wordpress/components';
 import { __, _n, sprintf } from '@wordpress/i18n';
-import { useEffect, useRef } from '@wordpress/element';
+import { useCallback, useEffect, useRef } from '@wordpress/element';
+import { useDispatch, useSelect } from '@wordpress/data';
+import { store as coreStore } from '@wordpress/core-data';
+import { store as noticesStore } from '@wordpress/notices';
 import BackgroundControls from '../components/BackgroundControls';
 import { getBackgroundStyle } from '../utils/background-styles';
+import { CANVAS_ARRANGE_FREELY_REQUEST_EVENT } from '../utils/canvas-events';
+import {
+	CANVAS_INTERACTION_ATTRIBUTE,
+	CANVAS_GEOMETRY_CHANGE_EVENT,
+} from '../utils/canvas-geometry';
+import {
+	captureFreeformSnapshot,
+	createFreeformUpdatePlan,
+} from '../utils/canvas-freeform';
 import { attachAutoHeight, clearAutoHeight } from './auto-height';
+import { COLLAGE_LAYOUT_STATE, getCollageLayoutState } from './layout-mode';
 import { PRESET_BUTTONS } from './presets';
 import { usePresets } from './use-presets';
 import './editor.scss';
@@ -29,6 +43,33 @@ const ALLOWED_BLOCKS = [ 'photo-collage/image', 'photo-collage/frame' ];
 export default function Edit( { attributes, setAttributes, clientId } ) {
 	const { stackOnMobile, containerHeight, heightMode = 'fixed' } = attributes;
 	const containerRef = useRef( null );
+	const { blocks, canMoveByClientId, layoutState, positionableCount } =
+		useSelect(
+			( select ) => {
+				const { canMoveBlock, getBlocks } = select( blockEditorStore );
+				const directChildren = getBlocks( clientId ) || [];
+				const positionable = directChildren.filter( ( block ) =>
+					ALLOWED_BLOCKS.includes( block.name )
+				);
+				const movable = {};
+
+				positionable.forEach( ( block ) => {
+					movable[ block.clientId ] = canMoveBlock( block.clientId );
+				} );
+
+				return {
+					blocks: positionable,
+					canMoveByClientId: movable,
+					layoutState: getCollageLayoutState( directChildren ),
+					positionableCount: positionable.length,
+				};
+			},
+			[ clientId ]
+		);
+	const { updateBlockAttributes } = useDispatch( blockEditorStore );
+	const { createErrorNotice, createSuccessNotice } =
+		useDispatch( noticesStore );
+	const { undo } = useDispatch( coreStore );
 
 	const backgroundStyle = getBackgroundStyle( attributes );
 	const containerClassName = [
@@ -84,7 +125,138 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 	const innerBlocksProps = useInnerBlocksProps( blockProps, {
 		allowedBlocks: ALLOWED_BLOCKS,
 		template: [ [ 'photo-collage/image' ], [ 'photo-collage/image' ] ],
+		orientation: 'horizontal',
 	} );
+
+	/**
+	 * Promote every direct child to canvas coordinates in one transaction.
+	 *
+	 * Lives on the container because that is what owns both the DOM element the
+	 * geometry is measured from and the child list the plan is built over.
+	 */
+	const arrangeFreely = useCallback( () => {
+		const container = containerRef.current;
+		const { snapshot, error } = captureFreeformSnapshot( {
+			container,
+			parentClientId: clientId,
+			parentAttributes: attributes,
+			blocks,
+			canMoveBlock: ( blockClientId ) =>
+				canMoveByClientId[ blockClientId ] !== false,
+		} );
+
+		if ( ! snapshot ) {
+			const messages = {
+				'child-locked': __(
+					'Unlock the responsive collage items before arranging them freely.',
+					'photo-collage'
+				),
+				'empty-collage': __(
+					'Add an image or frame before arranging the collage.',
+					'photo-collage'
+				),
+			};
+
+			createErrorNotice(
+				messages[ error ] ||
+					__(
+						'The collage could not be arranged because one of its items is hidden or unavailable.',
+						'photo-collage'
+					),
+				{ type: 'snackbar' }
+			);
+			return;
+		}
+
+		const plan = createFreeformUpdatePlan( { snapshot } );
+		const clientIds = plan ? Object.keys( plan.updatesByClientId ) : [];
+		if ( ! plan || clientIds.length === 0 ) {
+			return;
+		}
+
+		// Hold auto-height measurement until the new coordinates have painted.
+		container.setAttribute( CANVAS_INTERACTION_ATTRIBUTE, 'true' );
+		updateBlockAttributes( clientIds, plan.updatesByClientId, true );
+		container.ownerDocument.defaultView.requestAnimationFrame( () => {
+			container.removeAttribute( CANVAS_INTERACTION_ATTRIBUTE );
+			container.dispatchEvent(
+				new container.ownerDocument.defaultView.CustomEvent(
+					CANVAS_GEOMETRY_CHANGE_EVENT
+				)
+			);
+		} );
+
+		if ( plan.promotedCount > 0 ) {
+			createSuccessNotice(
+				__(
+					'Free positioning enabled. Undo restores the responsive layout.',
+					'photo-collage'
+				),
+				{
+					type: 'snackbar',
+					actions: [
+						{ label: __( 'Undo', 'photo-collage' ), onClick: undo },
+					],
+				}
+			);
+		}
+	}, [
+		attributes,
+		blocks,
+		canMoveByClientId,
+		clientId,
+		createErrorNotice,
+		createSuccessNotice,
+		undo,
+		updateBlockAttributes,
+	] );
+
+	// Child blocks ask for the conversion by dispatching on this element, which
+	// keeps their inspector controls independent of the container component.
+	useEffect( () => {
+		const container = containerRef.current;
+		if ( ! container ) {
+			return undefined;
+		}
+
+		const onRequest = ( event ) => {
+			if (
+				event.detail?.containerClientId &&
+				event.detail.containerClientId !== clientId
+			) {
+				return;
+			}
+
+			event.stopImmediatePropagation();
+			arrangeFreely();
+		};
+
+		container.addEventListener(
+			CANVAS_ARRANGE_FREELY_REQUEST_EVENT,
+			onRequest
+		);
+		return () => {
+			container.removeEventListener(
+				CANVAS_ARRANGE_FREELY_REQUEST_EVENT,
+				onRequest
+			);
+		};
+	}, [ arrangeFreely, clientId ] );
+
+	const layoutStateLabels = {
+		[ COLLAGE_LAYOUT_STATE.RESPONSIVE ]: __(
+			'Responsive layout',
+			'photo-collage'
+		),
+		[ COLLAGE_LAYOUT_STATE.MIXED ]: __(
+			'Mixed positioning',
+			'photo-collage'
+		),
+		[ COLLAGE_LAYOUT_STATE.FREEFORM ]: __(
+			'Freeform layout',
+			'photo-collage'
+		),
+	};
 
 	return (
 		<>
@@ -134,6 +306,26 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 				<PanelBody
 					title={ __( 'Container Settings', 'photo-collage' ) }
 				>
+					<p className="photo-collage-layout-mode-help">
+						{ sprintf(
+							/* translators: %s: current collage layout mode */
+							__( 'Positioning: %s', 'photo-collage' ),
+							layoutStateLabels[ layoutState ]
+						) }
+					</p>
+					{ positionableCount > 0 &&
+						layoutState !== COLLAGE_LAYOUT_STATE.FREEFORM && (
+							<Button
+								variant="secondary"
+								onClick={ arrangeFreely }
+								data-pc-arrange-freely
+							>
+								{ __(
+									'Arrange collage freely',
+									'photo-collage'
+								) }
+							</Button>
+						) }
 					<SelectControl
 						label={ __( 'Height Mode', 'photo-collage' ) }
 						value={ heightMode }

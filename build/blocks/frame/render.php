@@ -38,9 +38,12 @@ $styles = array_merge($styles, $bg_styles);
 
 $style_string = Photo_Collage_Renderer::build_style_string($styles);
 
+// The class lets container styles neutralise theme block-gap margins, which
+// apply to normal flow rather than canvas coordinates.
 $wrapper_attributes = get_block_wrapper_attributes(
     array(
         'style' => $style_string,
+        'class' => $normalized_attrs->use_absolute_position ? 'is-pc-absolute' : '',
     )
 );
 

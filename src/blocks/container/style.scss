@@ -18,6 +18,14 @@
 		max-width: none;
 	}
 
+	/*
+	 * Theme block-gap rules apply to normal flow, not canvas coordinates.
+	 * Prevent them from offsetting absolute items on the frontend.
+	 */
+	> .is-pc-absolute {
+		margin: 0 !important;
+	}
+
 	&[data-height-mode="auto"][data-pc-auto-state="pending"] {
 		visibility: hidden;
 		animation: pc-auto-failsafe-reveal 0s linear 0.35s forwards;
