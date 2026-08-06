@@ -17,7 +17,12 @@ import {
 	Button,
 } from '@wordpress/components';
 import { __, _n, sprintf } from '@wordpress/i18n';
-import { useCallback, useEffect, useRef } from '@wordpress/element';
+import {
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useRef,
+} from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
 import { store as noticesStore } from '@wordpress/notices';
@@ -32,8 +37,17 @@ import {
 	captureFreeformSnapshot,
 	createFreeformUpdatePlan,
 } from '../utils/canvas-freeform';
+import {
+	captureProportionalSnapshot,
+	createProportionalUpdatePlan,
+} from '../utils/canvas-proportional';
 import { attachAutoHeight, clearAutoHeight } from './auto-height';
-import { COLLAGE_LAYOUT_STATE, getCollageLayoutState } from './layout-mode';
+import {
+	COLLAGE_GEOMETRY_UNITS,
+	COLLAGE_LAYOUT_STATE,
+	getCollageGeometryUnits,
+	getCollageLayoutState,
+} from './layout-mode';
 import { PRESET_BUTTONS } from './presets';
 import { usePresets } from './use-presets';
 import './editor.scss';
@@ -43,6 +57,10 @@ const ALLOWED_BLOCKS = [ 'photo-collage/image', 'photo-collage/frame' ];
 export default function Edit( { attributes, setAttributes, clientId } ) {
 	const { stackOnMobile, containerHeight, heightMode = 'fixed' } = attributes;
 	const containerRef = useRef( null );
+	// Height to seed the container with when a conversion flips it to auto:
+	// applied in the layout effect below, after React's own style diff has
+	// removed the fixed height but before the browser paints.
+	const pendingProjectedHeightRef = useRef( null );
 	const { blocks, canMoveByClientId, layoutState, positionableCount } =
 		useSelect(
 			( select ) => {
@@ -71,6 +89,9 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		useDispatch( noticesStore );
 	const { undo } = useDispatch( coreStore );
 
+	// Derived from live attributes, never stored, so it cannot drift.
+	const geometryUnits = getCollageGeometryUnits( blocks, attributes );
+
 	const backgroundStyle = getBackgroundStyle( attributes );
 	const containerClassName = [
 		stackOnMobile ? 'is-stack-on-mobile' : '',
@@ -98,13 +119,14 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 			setAttributes,
 		} );
 
-	useEffect( () => {
+	useLayoutEffect( () => {
 		const containerElement = containerRef.current;
 		if ( ! containerElement ) {
 			return undefined;
 		}
 
 		if ( heightMode !== 'auto' ) {
+			pendingProjectedHeightRef.current = null;
 			// Re-apply the fixed height instead of clearing it: React committed
 			// it via blockProps before this effect runs, and it won't re-apply
 			// an unchanged value on later renders once removed from the DOM.
@@ -114,6 +136,11 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 				clearAutoHeight( containerElement );
 			}
 			return undefined;
+		}
+
+		if ( pendingProjectedHeightRef.current !== null ) {
+			containerElement.style.height = `${ pendingProjectedHeightRef.current }px`;
+			pendingProjectedHeightRef.current = null;
 		}
 
 		return attachAutoHeight( containerElement, {
@@ -127,6 +154,44 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		template: [ [ 'photo-collage/image' ], [ 'photo-collage/image' ] ],
 		orientation: 'horizontal',
 	} );
+
+	/**
+	 * Apply a per-client update map as one undoable transaction.
+	 *
+	 * Auto-height measurement is held until the new coordinates have painted,
+	 * then resumed through the geometry-change event.
+	 */
+	const commitPlanUpdates = useCallback(
+		( container, updatesByClientId, successMessage ) => {
+			const clientIds = Object.keys( updatesByClientId );
+			if ( clientIds.length === 0 ) {
+				return false;
+			}
+
+			container.setAttribute( CANVAS_INTERACTION_ATTRIBUTE, 'true' );
+			updateBlockAttributes( clientIds, updatesByClientId, true );
+			container.ownerDocument.defaultView.requestAnimationFrame( () => {
+				container.removeAttribute( CANVAS_INTERACTION_ATTRIBUTE );
+				container.dispatchEvent(
+					new container.ownerDocument.defaultView.CustomEvent(
+						CANVAS_GEOMETRY_CHANGE_EVENT
+					)
+				);
+			} );
+
+			if ( successMessage ) {
+				createSuccessNotice( successMessage, {
+					type: 'snackbar',
+					actions: [
+						{ label: __( 'Undo', 'photo-collage' ), onClick: undo },
+					],
+				} );
+			}
+
+			return true;
+		},
+		[ createSuccessNotice, undo, updateBlockAttributes ]
+	);
 
 	/**
 	 * Promote every direct child to canvas coordinates in one transaction.
@@ -169,47 +234,100 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		}
 
 		const plan = createFreeformUpdatePlan( { snapshot } );
-		const clientIds = plan ? Object.keys( plan.updatesByClientId ) : [];
-		if ( ! plan || clientIds.length === 0 ) {
+		if ( ! plan ) {
 			return;
 		}
 
-		// Hold auto-height measurement until the new coordinates have painted.
-		container.setAttribute( CANVAS_INTERACTION_ATTRIBUTE, 'true' );
-		updateBlockAttributes( clientIds, plan.updatesByClientId, true );
-		container.ownerDocument.defaultView.requestAnimationFrame( () => {
-			container.removeAttribute( CANVAS_INTERACTION_ATTRIBUTE );
-			container.dispatchEvent(
-				new container.ownerDocument.defaultView.CustomEvent(
-					CANVAS_GEOMETRY_CHANGE_EVENT
-				)
-			);
-		} );
-
-		if ( plan.promotedCount > 0 ) {
-			createSuccessNotice(
-				__(
-					'Free positioning enabled. Undo restores the responsive layout.',
-					'photo-collage'
-				),
-				{
-					type: 'snackbar',
-					actions: [
-						{ label: __( 'Undo', 'photo-collage' ), onClick: undo },
-					],
-				}
-			);
-		}
+		commitPlanUpdates(
+			container,
+			plan.updatesByClientId,
+			plan.promotedCount > 0
+				? __(
+						'Free positioning enabled. Undo restores the responsive layout.',
+						'photo-collage'
+				  )
+				: null
+		);
 	}, [
 		attributes,
 		blocks,
 		canMoveByClientId,
 		clientId,
+		commitPlanUpdates,
 		createErrorNotice,
-		createSuccessNotice,
-		undo,
-		updateBlockAttributes,
 	] );
+
+	/**
+	 * Re-express stored pixel positions as percentages in one transaction.
+	 *
+	 * The layout is visually unchanged at the current width; it simply starts
+	 * scaling with the container from here on.
+	 */
+	const convertToProportional = useCallback( () => {
+		const container = containerRef.current;
+		const { snapshot, error } = captureProportionalSnapshot( {
+			container,
+			parentClientId: clientId,
+			parentAttributes: attributes,
+			blocks,
+		} );
+
+		if ( ! snapshot ) {
+			const messages = {
+				'nothing-to-convert': __(
+					'Position an image or frame on the canvas before converting.',
+					'photo-collage'
+				),
+				'no-height-anchor': __(
+					'Give at least one item an automatic or pixel height first — an all-percentage collage would collapse to its minimum height.',
+					'photo-collage'
+				),
+			};
+
+			createErrorNotice(
+				messages[ error ] ||
+					__(
+						'The collage could not be converted because one of its items is hidden or unavailable.',
+						'photo-collage'
+					),
+				{ type: 'snackbar' }
+			);
+			return;
+		}
+
+		const plan = createProportionalUpdatePlan( { snapshot } );
+		if ( ! plan ) {
+			return;
+		}
+
+		// Seed the projected height so children never paint at percentages
+		// of the stale fixed height: React's style diff clears the inline
+		// fixed height in the same commit, so the seed must be re-applied
+		// from the layout effect, not written to the DOM here.
+		if ( plan.updatesByClientId[ clientId ]?.heightMode === 'auto' ) {
+			pendingProjectedHeightRef.current = plan.projectedHeight;
+		}
+
+		const committed = commitPlanUpdates(
+			container,
+			plan.updatesByClientId,
+			__(
+				'Proportional sizing enabled — positions now scale with the container width. Undo restores the previous layout.',
+				'photo-collage'
+			)
+		);
+
+		if ( ! committed ) {
+			pendingProjectedHeightRef.current = null;
+			createErrorNotice(
+				__(
+					'Nothing could be converted — the remaining pixel offsets sit too close to the container edge to become percentages.',
+					'photo-collage'
+				),
+				{ type: 'snackbar' }
+			);
+		}
+	}, [ attributes, blocks, clientId, commitPlanUpdates, createErrorNotice ] );
 
 	// Child blocks ask for the conversion by dispatching on this element, which
 	// keeps their inspector controls independent of the container component.
@@ -326,6 +444,31 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 								) }
 							</Button>
 						) }
+					{ geometryUnits !== null &&
+						geometryUnits !==
+							COLLAGE_GEOMETRY_UNITS.PROPORTIONAL && (
+							<>
+								<Button
+									variant="secondary"
+									onClick={ convertToProportional }
+									data-pc-convert-proportional
+								>
+									{ __(
+										'Convert to proportional',
+										'photo-collage'
+									) }
+								</Button>
+								<p className="photo-collage-layout-mode-help">
+									{ __(
+										'Rewrites pixel positions as percentages so the layout keeps its proportions at every screen width.',
+										'photo-collage'
+									) }
+								</p>
+							</>
+						) }
+					{ /* Future direction (deferred by design): an aspect-ratio
+					     height mode that fixes the canvas to width * ratio
+					     without depending on child geometry. */ }
 					<SelectControl
 						label={ __( 'Height Mode', 'photo-collage' ) }
 						value={ heightMode }
@@ -354,7 +497,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 							}
 							__next40pxDefaultSize={ true }
 							help={ __(
-								'Set an explicit canvas height for absolute layouts.',
+								'Set an explicit canvas height for absolute layouts. A pixel height does not scale when the page width changes; use Auto Height (or a vw value) for a proportional collage.',
 								'photo-collage'
 							) }
 						/>

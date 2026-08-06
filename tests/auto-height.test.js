@@ -55,6 +55,82 @@ describe( 'auto-height canvas interaction coordination', () => {
 		expect( container.style.height ).toBe( '320px' );
 	} );
 
+	it( 'solves percentage tops exactly instead of iterating toward them', () => {
+		const { container, item } = createAutoHeightFixture();
+		item.style.top = '90%';
+
+		// Affine layout mock: the item tracks the container height the way a
+		// real percentage top would, so an iterative measure-and-retry loop
+		// only converges geometrically while the solver lands in one pass.
+		const currentHeight = () =>
+			Number.parseFloat( container.style.height ) || 200;
+		Object.defineProperty( container, 'clientHeight', {
+			configurable: true,
+			get: currentHeight,
+		} );
+		Object.defineProperty( container, 'offsetHeight', {
+			configurable: true,
+			get: currentHeight,
+		} );
+		container.getBoundingClientRect = () => ( {
+			top: 0,
+			bottom: currentHeight(),
+			left: 0,
+			right: 1000,
+			width: 1000,
+			height: currentHeight(),
+		} );
+		item.getBoundingClientRect = () => ( {
+			top: 0.9 * currentHeight(),
+			bottom: 0.9 * currentHeight() + 300,
+			left: 0,
+			right: 300,
+			width: 300,
+			height: 300,
+		} );
+
+		// 300 / (1 - 0.9) = 3000.
+		expect( applyAutoHeight( container ) ).toBe( 3000 );
+		expect( container.style.height ).toBe( '3000px' );
+	} );
+
+	it( 'keeps bottom-anchored children fully inside the container', () => {
+		const { container, item } = createAutoHeightFixture();
+		item.style.top = '';
+		item.style.bottom = '0%';
+
+		const currentHeight = () =>
+			Number.parseFloat( container.style.height ) || 200;
+		Object.defineProperty( container, 'clientHeight', {
+			configurable: true,
+			get: currentHeight,
+		} );
+		Object.defineProperty( container, 'offsetHeight', {
+			configurable: true,
+			get: currentHeight,
+		} );
+		container.getBoundingClientRect = () => ( {
+			top: 0,
+			bottom: currentHeight(),
+			left: 0,
+			right: 1000,
+			width: 1000,
+			height: currentHeight(),
+		} );
+		item.getBoundingClientRect = () => ( {
+			top: currentHeight() - 340,
+			bottom: currentHeight(),
+			left: 0,
+			right: 300,
+			width: 300,
+			height: 340,
+		} );
+
+		// The child's own 340px extent is the requirement — the naive
+		// bottom-edge measurement would sit at the current height forever.
+		expect( applyAutoHeight( container ) ).toBe( 340 );
+	} );
+
 	it( 'defers measurement during a gesture and resumes on its event', () => {
 		const { container } = createAutoHeightFixture();
 		const frames = [];

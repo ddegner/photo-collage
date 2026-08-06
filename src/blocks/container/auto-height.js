@@ -2,38 +2,19 @@ import {
 	CANVAS_GEOMETRY_CHANGE_EVENT,
 	CANVAS_INTERACTION_ATTRIBUTE,
 } from '../utils/canvas-geometry';
-
-const COLLAGE_ITEM_CLASS_NAMES = [
-	'wp-block-photo-collage-image',
-	'wp-block-photo-collage-frame',
-];
+import {
+	MIN_AUTO_HEIGHT,
+	collectMeasuredCandidates,
+	getCollageItems,
+	solveMeasuredHeight,
+} from '../utils/height-solver';
 
 const MOBILE_STACK_BREAKPOINT = 782;
-const DEFAULT_MIN_HEIGHT = 200;
-const DEFAULT_MAX_ITERATIONS = 8;
 
-const COLLAGE_ITEM_SELECTOR = COLLAGE_ITEM_CLASS_NAMES.map(
-	( className ) => `.${ className }`
-).join( ', ' );
-
-const getCollageItems = ( container ) =>
-	Array.from( container.querySelectorAll( COLLAGE_ITEM_SELECTOR ) ).filter(
-		( item ) => {
-			// Keep only items that belong to this container and are not nested
-			// inside another collage item.
-			if (
-				item.closest( '.wp-block-photo-collage-container' ) !==
-				container
-			) {
-				return false;
-			}
-
-			const parentCollageItem = item.parentElement?.closest(
-				COLLAGE_ITEM_SELECTOR
-			);
-			return ! parentCollageItem;
-		}
-	);
+// The closed-form solve is exact in one pass for parseable percentage
+// slopes; the extra passes are a measured safety net for rotated or
+// otherwise unmodelled children.
+const DEFAULT_MAX_ITERATIONS = 3;
 
 const hasAbsoluteChildren = ( items ) =>
 	items.some(
@@ -47,16 +28,13 @@ const isMobileStacked = ( container ) =>
 const hasAutoHeightMode = ( container ) =>
 	! container.dataset.heightMode || container.dataset.heightMode === 'auto';
 
-const getMeasuredBottom = ( container, items ) => {
-	const containerRect = container.getBoundingClientRect();
-	let maxBottom = 0;
+// The editor canvas can render zoomed; bounding rectangles are scaled while
+// offset metrics stay in layout pixels.
+const getContainerScaleY = ( container ) => {
+	const rectHeight = container.getBoundingClientRect().height;
+	const layoutHeight = container.offsetHeight;
 
-	items.forEach( ( item ) => {
-		const itemRect = item.getBoundingClientRect();
-		maxBottom = Math.max( maxBottom, itemRect.bottom - containerRect.top );
-	} );
-
-	return maxBottom;
+	return rectHeight > 0 && layoutHeight > 0 ? rectHeight / layoutHeight : 1;
 };
 
 export const clearAutoHeight = ( container ) => {
@@ -69,10 +47,7 @@ export const clearAutoHeight = ( container ) => {
 
 export const calculateAutoHeight = (
 	container,
-	{
-		minHeight = DEFAULT_MIN_HEIGHT,
-		maxIterations = DEFAULT_MAX_ITERATIONS,
-	} = {}
+	{ minHeight = MIN_AUTO_HEIGHT, maxIterations = DEFAULT_MAX_ITERATIONS } = {}
 ) => {
 	if (
 		! container ||
@@ -91,27 +66,32 @@ export const calculateAutoHeight = (
 		return null;
 	}
 
-	let nextHeight = Math.max( minHeight, container.offsetHeight || minHeight );
+	let appliedHeight = null;
 
 	for ( let index = 0; index < maxIterations; index += 1 ) {
-		const roundedHeight = Math.ceil( nextHeight );
-		container.style.height = `${ roundedHeight }px`;
-
-		const measuredBottom = getMeasuredBottom( container, items );
-		const resolvedHeight = Math.max(
-			minHeight,
-			Math.ceil( measuredBottom )
+		const { candidates, currentHeight } = collectMeasuredCandidates(
+			container,
+			items,
+			{ scaleY: getContainerScaleY( container ) }
 		);
+		const resolvedHeight = solveMeasuredHeight( {
+			candidates,
+			currentHeight,
+			minHeight,
+		} );
 
-		if ( Math.abs( resolvedHeight - roundedHeight ) <= 1 ) {
-			nextHeight = resolvedHeight;
+		if (
+			appliedHeight !== null &&
+			Math.abs( resolvedHeight - appliedHeight ) <= 1
+		) {
 			break;
 		}
 
-		nextHeight = resolvedHeight;
+		container.style.height = `${ resolvedHeight }px`;
+		appliedHeight = resolvedHeight;
 	}
 
-	return Math.max( minHeight, Math.ceil( nextHeight ) );
+	return appliedHeight;
 };
 
 export const applyAutoHeight = ( container, options = {} ) => {

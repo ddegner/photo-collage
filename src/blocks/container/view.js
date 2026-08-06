@@ -1,34 +1,25 @@
+import {
+	collectMeasuredCandidates,
+	getCollageItems,
+	solveMeasuredHeight,
+} from '../utils/height-solver';
+
 const AUTO_CONTAINER_SELECTOR =
 	'.wp-block-photo-collage-container[data-height-mode="auto"]';
-const ITEM_SELECTOR = [
-	'wp-block-photo-collage-image',
-	'wp-block-photo-collage-frame',
-]
-	.map( ( className ) => `.${ className }` )
-	.join( ', ' );
 
 const MIN_HEIGHT = 200;
 const FAILSAFE_REVEAL_MS = 350;
 const MOBILE_STACK_MEDIA_QUERY = '(max-width: 782px)';
-const AUTO_LAYOUT_MAX_ITERATIONS = 8;
+
+// The closed-form solve is exact in one pass for parseable percentage
+// slopes; the extra passes are a measured safety net for rotated or
+// otherwise unmodelled children.
+const AUTO_LAYOUT_MAX_ITERATIONS = 3;
 
 const cleanupByContainer = new WeakMap();
 const geometryByContainer = new WeakMap();
 
-const getDirectItems = ( container ) =>
-	Array.from( container.querySelectorAll( ITEM_SELECTOR ) ).filter(
-		( item ) => {
-			if (
-				item.closest( '.wp-block-photo-collage-container' ) !==
-				container
-			) {
-				return false;
-			}
-
-			const nestedItem = item.parentElement?.closest( ITEM_SELECTOR );
-			return ! nestedItem;
-		}
-	);
+const getDirectItems = ( container ) => getCollageItems( container );
 
 const getContainerWidth = ( container ) => {
 	const rectWidth = container.getBoundingClientRect().width;
@@ -138,16 +129,13 @@ const solvePrecomputedHeight = ( container ) => {
 	return Math.max( MIN_HEIGHT, Math.ceil( solvedHeight ) );
 };
 
-const measureAbsoluteBottom = ( container, items ) => {
-	const containerRect = container.getBoundingClientRect();
-	let maxBottom = 0;
+// Ancestor transforms scale bounding rectangles while offset metrics stay in
+// layout pixels.
+const getContainerScaleY = ( container ) => {
+	const rectHeight = container.getBoundingClientRect().height;
+	const layoutHeight = container.offsetHeight;
 
-	items.forEach( ( item ) => {
-		const itemRect = item.getBoundingClientRect();
-		maxBottom = Math.max( maxBottom, itemRect.bottom - containerRect.top );
-	} );
-
-	return maxBottom;
+	return rectHeight > 0 && layoutHeight > 0 ? rectHeight / layoutHeight : 1;
 };
 
 const hasAbsoluteItems = ( items ) =>
@@ -197,13 +185,18 @@ const applyAutoLayout = ( container ) => {
 		return { mode: 'skip', height: null };
 	}
 
+	// The server-precomputed constraint solve stays both the seed (applied
+	// before the first measurement so images that have not loaded yet cannot
+	// collapse the container) and the floor for the measured refinement.
 	const precomputedHeight = solvePrecomputedHeight( container );
 	const minResolvedHeight = Number.isFinite( precomputedHeight )
 		? Math.max( MIN_HEIGHT, precomputedHeight )
 		: MIN_HEIGHT;
-	let nextHeight = Number.isFinite( precomputedHeight )
-		? minResolvedHeight
-		: Math.max( MIN_HEIGHT, container.offsetHeight || MIN_HEIGHT );
+
+	if ( Number.isFinite( precomputedHeight ) ) {
+		container.style.height = `${ minResolvedHeight }px`;
+	}
+
 	let solvedHeight = null;
 
 	for (
@@ -211,27 +204,29 @@ const applyAutoLayout = ( container ) => {
 		iteration < AUTO_LAYOUT_MAX_ITERATIONS;
 		iteration += 1
 	) {
-		const roundedHeight = Math.max( MIN_HEIGHT, Math.ceil( nextHeight ) );
-		container.style.height = `${ roundedHeight }px`;
-
-		const measuredBottom = Math.max(
-			MIN_HEIGHT,
-			measureAbsoluteBottom( container, items )
+		const { candidates, currentHeight } = collectMeasuredCandidates(
+			container,
+			items,
+			{ scaleY: getContainerScaleY( container ) }
 		);
-		const resolvedHeight = Math.max( minResolvedHeight, measuredBottom );
-		solvedHeight = resolvedHeight;
+		const resolvedHeight = Math.max(
+			minResolvedHeight,
+			solveMeasuredHeight( {
+				candidates,
+				currentHeight,
+				minHeight: MIN_HEIGHT,
+			} )
+		);
 
-		if ( Math.abs( resolvedHeight - roundedHeight ) <= 1 ) {
+		if (
+			solvedHeight !== null &&
+			Math.abs( resolvedHeight - solvedHeight ) <= 1
+		) {
 			break;
 		}
 
-		nextHeight = resolvedHeight;
-	}
-
-	if ( Number.isFinite( solvedHeight ) && solvedHeight > 0 ) {
-		const roundedHeight = Math.max( MIN_HEIGHT, Math.ceil( solvedHeight ) );
-		container.style.height = `${ roundedHeight }px`;
-		solvedHeight = roundedHeight;
+		container.style.height = `${ resolvedHeight }px`;
+		solvedHeight = resolvedHeight;
 	}
 
 	return {

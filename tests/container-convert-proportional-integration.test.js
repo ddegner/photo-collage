@@ -1,3 +1,8 @@
+/**
+ * Integration contract for the container's "Convert to proportional" button:
+ * one bulk dispatch, single-undo semantics, interaction hold, and gating.
+ */
+
 // React is supplied transitively by the WordPress test runtime.
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { act, createElement } from 'react';
@@ -17,7 +22,8 @@ jest.mock(
 	'@wordpress/block-editor',
 	() => ( {
 		store: 'block-editor',
-		InspectorControls: () => null,
+		// Panels must render for the button to exist in this suite.
+		InspectorControls: ( { children } ) => children || null,
 		useBlockProps: ( props = {} ) => {
 			capturedContainerRef = props.ref || null;
 			return props;
@@ -32,17 +38,21 @@ jest.mock(
 
 jest.mock(
 	'@wordpress/components',
-	() => ( {
-		Button: () => null,
-		PanelBody: ( { children } ) => children || null,
-		SelectControl: () => null,
-		ToggleControl: () => null,
-		__experimentalConfirmDialog: () => null,
-		__experimentalUnitControl: () => null,
-		// Preset icons build SVG trees this suite never renders.
-		SVG: () => null,
-		Rect: () => null,
-	} ),
+	() => {
+		// eslint-disable-next-line import/no-extraneous-dependencies
+		const { createElement: h } = require( 'react' );
+		return {
+			Button: ( { children, variant, ...props } ) =>
+				h( 'button', { type: 'button', ...props }, children ),
+			PanelBody: ( { children } ) => children || null,
+			SelectControl: () => null,
+			ToggleControl: () => null,
+			__experimentalConfirmDialog: () => null,
+			__experimentalUnitControl: () => null,
+			SVG: () => null,
+			Rect: () => null,
+		};
+	},
 	{ virtual: true }
 );
 
@@ -107,10 +117,13 @@ jest.mock(
 	{ virtual: true }
 );
 
+jest.mock( '../src/blocks/container/presets', () => ( {
+	PRESET_BUTTONS: [],
+	PRESET_HEIGHTS: {},
+} ) );
+
 // eslint-disable-next-line import/first
 import ContainerEdit from '../src/blocks/container/edit';
-// eslint-disable-next-line import/first
-import { requestArrangeFreely } from '../src/blocks/utils/canvas-events';
 
 const CONTAINER_CLIENT_ID = 'container-client-id';
 
@@ -123,23 +136,38 @@ const defineGeometry = ( element, geometry ) => {
 	} );
 };
 
-const createChildren = () =>
-	[
-		{
-			clientId: 'image-one',
-			name: 'photo-collage/image',
-			attributes: { useAbsolutePosition: false, width: '25%' },
-			geometry: { left: 20, top: 30, width: 250, height: 180 },
+const createChildren = () => [
+	{
+		clientId: 'pixel-image',
+		name: 'photo-collage/image',
+		attributes: {
+			useAbsolutePosition: true,
+			top: '120px',
+			bottom: 'auto',
+			left: '40px',
+			right: 'auto',
+			width: '500px',
+			height: 'auto',
 		},
-		{
-			clientId: 'frame-two',
-			name: 'photo-collage/frame',
-			attributes: { useAbsolutePosition: false, width: '32%' },
-			geometry: { left: 300, top: 40, width: 320, height: 210 },
+		geometry: { left: 40, top: 120, width: 500, height: 280 },
+	},
+	{
+		clientId: 'percent-image',
+		name: 'photo-collage/image',
+		attributes: {
+			useAbsolutePosition: true,
+			top: '10%',
+			bottom: 'auto',
+			left: '60%',
+			right: 'auto',
+			width: '30%',
+			height: 'auto',
 		},
-	].map( ( spec ) => spec );
+		geometry: { left: 600, top: 60, width: 300, height: 200 },
+	},
+];
 
-describe( 'Collage container "Arrange collage freely"', () => {
+describe( 'Collage container "Convert to proportional" integration', () => {
 	let reactRoot;
 	let mountPoint;
 	let containerElement;
@@ -180,7 +208,14 @@ describe( 'Collage container "Arrange collage freely"', () => {
 		jest.restoreAllMocks();
 	} );
 
-	const render = ( { children = createChildren() } = {} ) => {
+	const render = ( {
+		children = createChildren(),
+		attributes = {
+			heightMode: 'auto',
+			containerHeight: '',
+			stackOnMobile: false,
+		},
+	} = {} ) => {
 		mockGetBlocks.mockImplementation( ( clientId ) =>
 			clientId === CONTAINER_CLIENT_ID
 				? children.map( ( spec ) => ( {
@@ -191,23 +226,20 @@ describe( 'Collage container "Arrange collage freely"', () => {
 				: []
 		);
 
-		act( () => {
-			reactRoot = createRoot( mountPoint );
+		const renderEdit = () =>
 			reactRoot.render(
 				createElement( ContainerEdit, {
-					attributes: {
-						heightMode: 'fixed',
-						containerHeight: '',
-						stackOnMobile: false,
-					},
+					attributes,
 					setAttributes: () => {},
 					clientId: CONTAINER_CLIENT_ID,
 				} )
 			);
+
+		act( () => {
+			reactRoot = createRoot( mountPoint );
+			renderEdit();
 		} );
 
-		// The component owns the container element through useBlockProps' ref;
-		// build the DOM the geometry is measured from around that same node.
 		containerElement = document.createElement( 'div' );
 		containerElement.className = 'wp-block-photo-collage-container';
 		defineGeometry( containerElement, {
@@ -216,18 +248,31 @@ describe( 'Collage container "Arrange collage freely"', () => {
 			offsetWidth: 1000,
 			offsetHeight: 600,
 		} );
+		containerElement.getBoundingClientRect = () => ( {
+			top: 0,
+			bottom: 600,
+			left: 0,
+			right: 1000,
+			width: 1000,
+			height: 600,
+		} );
 		children.forEach( ( spec ) => {
 			const child = document.createElement( 'div' );
 			child.dataset.block = spec.clientId;
-			child.className =
-				spec.name === 'photo-collage/frame'
-					? 'wp-block-photo-collage-frame'
-					: 'wp-block-photo-collage-image';
+			child.className = 'wp-block-photo-collage-image';
 			defineGeometry( child, {
 				offsetLeft: spec.geometry.left,
 				offsetTop: spec.geometry.top,
 				offsetWidth: spec.geometry.width,
 				offsetHeight: spec.geometry.height,
+			} );
+			child.getBoundingClientRect = () => ( {
+				top: spec.geometry.top,
+				bottom: spec.geometry.top + spec.geometry.height,
+				left: spec.geometry.left,
+				right: spec.geometry.left + spec.geometry.width,
+				width: spec.geometry.width,
+				height: spec.geometry.height,
 			} );
 			containerElement.appendChild( child );
 		} );
@@ -235,105 +280,39 @@ describe( 'Collage container "Arrange collage freely"', () => {
 
 		act( () => {
 			capturedContainerRef.current = containerElement;
-			// Re-render so the listener effect binds to the populated element.
-			reactRoot.render(
-				createElement( ContainerEdit, {
-					attributes: {
-						heightMode: 'fixed',
-						containerHeight: '',
-						stackOnMobile: false,
-					},
-					setAttributes: () => {},
-					clientId: CONTAINER_CLIENT_ID,
-				} )
-			);
+			renderEdit();
 		} );
 	};
 
-	it( 'promotes every child when a descendant requests the conversion', () => {
+	it( 'converts through one bulk dispatch with a single-undo snackbar', () => {
 		render();
 
+		const button = document.querySelector(
+			'[data-pc-convert-proportional]'
+		);
+		expect( button ).not.toBeNull();
+
 		act( () => {
-			requestArrangeFreely( containerElement, {
-				containerClientId: CONTAINER_CLIENT_ID,
-			} );
+			button.click();
 		} );
 
 		expect( mockUpdateBlockAttributes ).toHaveBeenCalledTimes( 1 );
 		const [ clientIds, updatesByClientId, unique ] =
 			mockUpdateBlockAttributes.mock.calls[ 0 ];
 
-		expect( clientIds ).toEqual( [
-			'image-one',
-			'frame-two',
-			CONTAINER_CLIENT_ID,
-		] );
-		// The container flips to auto height, so tops resolve against the
-		// projected height max(200, 30 + 180, 40 + 210) = 250.
-		expect( updatesByClientId[ 'image-one' ] ).toMatchObject( {
-			useAbsolutePosition: true,
-			left: '2%',
-			top: '12%',
-			width: '25%',
-		} );
-		expect( updatesByClientId[ 'frame-two' ] ).toMatchObject( {
-			useAbsolutePosition: true,
-			left: '30%',
-			top: '16%',
-			width: '32%',
-		} );
-		expect( updatesByClientId[ CONTAINER_CLIENT_ID ] ).toEqual( {
-			heightMode: 'auto',
-			containerHeight: '',
+		// Already-auto container: no container entry, only the px child.
+		// Basis: max(200, 120 + 280, 60 + 200) = 400.
+		expect( clientIds ).toEqual( [ 'pixel-image' ] );
+		expect( updatesByClientId[ 'pixel-image' ] ).toEqual( {
+			top: '30%',
+			left: '4%',
+			width: '50%',
 		} );
 		expect( unique ).toBe( true );
-		expect( mockCreateSuccessNotice ).toHaveBeenCalledTimes( 1 );
-	} );
-
-	it( 'ignores a request addressed to a different container', () => {
-		render();
-
-		act( () => {
-			requestArrangeFreely( containerElement, {
-				containerClientId: 'some-other-container',
-			} );
-		} );
-
-		expect( mockUpdateBlockAttributes ).not.toHaveBeenCalled();
-	} );
-
-	it( 'surfaces an error instead of silently doing nothing when a child is locked', () => {
-		mockCanMoveBlock.mockImplementation(
-			( clientId ) => clientId !== 'frame-two'
-		);
-		render();
-
-		act( () => {
-			requestArrangeFreely( containerElement, {
-				containerClientId: CONTAINER_CLIENT_ID,
-			} );
-		} );
-
-		expect( mockUpdateBlockAttributes ).not.toHaveBeenCalled();
-		expect( mockCreateErrorNotice ).toHaveBeenCalledWith(
-			'Unlock the responsive collage items before arranging them freely.',
-			{ type: 'snackbar' }
-		);
-	} );
-
-	it( 'holds auto-height measurement until the new coordinates have painted', () => {
-		render();
-
-		act( () => {
-			requestArrangeFreely( containerElement, {
-				containerClientId: CONTAINER_CLIENT_ID,
-			} );
-		} );
 
 		expect( containerElement.hasAttribute( 'data-pc-interacting' ) ).toBe(
 			true
 		);
-
 		const geometryEvents = [];
 		containerElement.addEventListener(
 			'photo-collage:canvas-geometry-change',
@@ -342,10 +321,72 @@ describe( 'Collage container "Arrange collage freely"', () => {
 		act( () => {
 			animationFrames.forEach( ( callback ) => callback( 0 ) );
 		} );
-
 		expect( containerElement.hasAttribute( 'data-pc-interacting' ) ).toBe(
 			false
 		);
 		expect( geometryEvents ).toHaveLength( 1 );
+
+		expect( mockCreateSuccessNotice ).toHaveBeenCalledTimes( 1 );
+		const [ , noticeOptions ] = mockCreateSuccessNotice.mock.calls[ 0 ];
+		expect( noticeOptions.type ).toBe( 'snackbar' );
+		expect( noticeOptions.actions[ 0 ].label ).toBe( 'Undo' );
+		noticeOptions.actions[ 0 ].onClick();
+		expect( mockUndo ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	it( 'hides the button once the collage is fully proportional', () => {
+		render( {
+			children: [
+				{
+					clientId: 'percent-image',
+					name: 'photo-collage/image',
+					attributes: {
+						useAbsolutePosition: true,
+						top: '10%',
+						bottom: 'auto',
+						left: '60%',
+						right: 'auto',
+						width: '30%',
+						height: 'auto',
+					},
+					geometry: { left: 600, top: 60, width: 300, height: 200 },
+				},
+			],
+		} );
+
+		expect(
+			document.querySelector( '[data-pc-convert-proportional]' )
+		).toBeNull();
+	} );
+
+	it( 'surfaces an error notice when nothing is convertible', () => {
+		// A lone near-bottom px offset is kept by the solver guard, so the
+		// plan is empty; the user must hear that instead of a silent no-op.
+		render( {
+			children: [
+				{
+					clientId: 'edge-image',
+					name: 'photo-collage/image',
+					attributes: {
+						useAbsolutePosition: true,
+						top: '595px',
+						bottom: 'auto',
+						left: '10%',
+						right: 'auto',
+						width: '30%',
+						height: 'auto',
+					},
+					geometry: { left: 100, top: 595, width: 300, height: 5 },
+				},
+			],
+		} );
+
+		act( () => {
+			document.querySelector( '[data-pc-convert-proportional]' ).click();
+		} );
+
+		expect( mockUpdateBlockAttributes ).not.toHaveBeenCalled();
+		expect( mockCreateSuccessNotice ).not.toHaveBeenCalled();
+		expect( mockCreateErrorNotice ).toHaveBeenCalledTimes( 1 );
 	} );
 } );

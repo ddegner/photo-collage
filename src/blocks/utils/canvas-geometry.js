@@ -113,6 +113,57 @@ export const pixelsToCanvasLength = (
 	return formatCanvasLength( pixels, 'px' );
 };
 
+// Viewport-width lengths scale with the window, so a fixed-height container
+// using one already behaves proportionally without auto height.
+const VIEWPORT_WIDTH_LENGTH_PATTERN =
+	/^\s*\d+(?:\.\d+)?\s*(?:vw|svw|lvw|dvw)\s*$/i;
+
+/**
+ * Check whether a CSS length scales with the viewport width.
+ *
+ * @param {string} value CSS length.
+ * @return {boolean} Whether the value uses a viewport-width unit.
+ */
+export const isViewportWidthLength = ( value ) =>
+	typeof value === 'string' && VIEWPORT_WIDTH_LENGTH_PATTERN.test( value );
+
+// Vertical percentages whose combined fraction (offset plus any percentage
+// height) reaches ~1 defeat the auto-height solver: its 1/(1 - fraction)
+// closed form diverges and both the JS and PHP solvers skip such children at
+// 99.5%. Writes against a solved auto basis keep the exact position as
+// pixels instead. Fixed-height bases have no solver to protect, so the guard
+// must not fire there.
+export const MAX_VERTICAL_FRACTION = 0.99;
+
+/**
+ * Convert a vertical pixel length, guarding solver-degenerate percentages.
+ *
+ * @param {number}      pixels                       Pixel length.
+ * @param {Object}      options                      Conversion options.
+ * @param {'%'|'px'}    options.unit                 Preferred output unit.
+ * @param {number}      options.basis                Percentage basis.
+ * @param {number|null} options.solverHeightFraction Post-commit percentage
+ *                                                   height fraction when the basis is a solved auto
+ *                                                   height; null when the basis is fixed (no guard).
+ * @return {string|null} Formatted CSS length.
+ */
+const pixelsToVerticalCanvasLength = (
+	pixels,
+	{ unit = 'px', basis = 0, solverHeightFraction = null }
+) => {
+	if (
+		unit === '%' &&
+		isFiniteNumber( solverHeightFraction ) &&
+		isFiniteNumber( basis ) &&
+		basis > 0 &&
+		pixels / basis + solverHeightFraction >= MAX_VERTICAL_FRACTION
+	) {
+		return formatCanvasLength( pixels, 'px' );
+	}
+
+	return pixelsToCanvasLength( pixels, { unit, basis } );
+};
+
 /**
  * Normalize a pointer delta from rendered pixels into canvas layout pixels.
  *
@@ -258,12 +309,21 @@ export const getPreferredCanvasUnit = ( values, fallback = 'px' ) => {
 /**
  * Build the canonical attribute update for an absolute move.
  *
- * @param {Object} options                 Commit options.
- * @param {Object} options.attributes      Starting block attributes.
- * @param {Object} options.rect            Resulting layout rectangle.
- * @param {number} options.containerWidth  Container width in pixels.
- * @param {number} options.containerHeight Container height in pixels.
- * @param {string} options.heightMode      Container height mode.
+ * Units are preserved per axis so stored pixel layouts stay pixel layouts;
+ * never-positioned axes fall back to percentages, which keep the layout
+ * proportional when the container width changes. In auto-height containers
+ * the percentage basis must be the height the container will resolve to
+ * after this commit, not the pre-commit height — callers are responsible
+ * for passing that predicted height.
+ *
+ * @param {Object}      options                      Commit options.
+ * @param {Object}      options.attributes           Starting block attributes.
+ * @param {Object}      options.rect                 Resulting layout rectangle.
+ * @param {number}      options.containerWidth       Container width in pixels.
+ * @param {number}      options.containerHeight      Vertical percent basis in pixels.
+ * @param {number|null} options.solverHeightFraction Post-commit percentage height
+ *                                                   fraction when committing against a solved auto height;
+ *                                                   null for fixed bases.
  * @return {Object} Block attribute update.
  */
 export const createMoveAttributes = ( {
@@ -271,19 +331,16 @@ export const createMoveAttributes = ( {
 	rect,
 	containerWidth,
 	containerHeight,
-	heightMode,
+	solverHeightFraction = null,
 } ) => {
 	const horizontalUnit = getPreferredCanvasUnit(
 		[ attributes.left, attributes.right ],
 		'%'
 	);
-	const verticalUnit =
-		heightMode === 'auto'
-			? 'px'
-			: getPreferredCanvasUnit(
-					[ attributes.top, attributes.bottom ],
-					'px'
-			  );
+	const verticalUnit = getPreferredCanvasUnit(
+		[ attributes.top, attributes.bottom ],
+		'%'
+	);
 
 	return {
 		useAbsolutePosition: true,
@@ -291,9 +348,10 @@ export const createMoveAttributes = ( {
 			unit: horizontalUnit,
 			basis: containerWidth,
 		} ),
-		top: pixelsToCanvasLength( rect.top, {
+		top: pixelsToVerticalCanvasLength( rect.top, {
 			unit: verticalUnit,
 			basis: containerHeight,
+			solverHeightFraction,
 		} ),
 		right: 'auto',
 		bottom: 'auto',
@@ -303,13 +361,19 @@ export const createMoveAttributes = ( {
 /**
  * Build the attribute update for a bottom-right resize.
  *
+ * Explicit heights preserve their stored unit but fall back to pixels: a
+ * percentage height consumes the same container fraction at every width, so
+ * it can never anchor the auto-height solver the way a pixel height or an
+ * aspect-driven automatic height does.
+ *
  * @param {Object}  options                    Commit options.
  * @param {Object}  options.attributes         Starting block attributes.
  * @param {Object}  options.rect               Resulting layout rectangle.
  * @param {number}  options.containerWidth     Container width in pixels.
- * @param {number}  options.containerHeight    Container height in pixels.
- * @param {string}  options.heightMode         Container height mode.
+ * @param {number}  options.containerHeight    Vertical percent basis in pixels.
  * @param {boolean} options.preserveAutoHeight Whether to retain automatic height.
+ * @param {boolean} options.isAutoBasis        Whether containerHeight is a solved
+ *                                             auto height (enables the vertical solver guard).
  * @return {Object} Block attribute update.
  */
 export const createResizeAttributes = ( {
@@ -317,30 +381,39 @@ export const createResizeAttributes = ( {
 	rect,
 	containerWidth,
 	containerHeight,
-	heightMode,
 	preserveAutoHeight,
+	isAutoBasis = false,
 } ) => {
 	const widthUnit = getPreferredCanvasUnit( [ attributes.width ], '%' );
-	const heightUnit =
-		heightMode === 'auto'
-			? 'px'
-			: getPreferredCanvasUnit( [ attributes.height ], 'px' );
+	const heightUnit = getPreferredCanvasUnit( [ attributes.height ], 'px' );
+	const keepsAutoHeight =
+		preserveAutoHeight &&
+		( ! attributes.height || attributes.height === 'auto' );
 	const updates = {
 		width: pixelsToCanvasLength( rect.width, {
 			unit: widthUnit,
 			basis: containerWidth,
 		} ),
-		height:
-			preserveAutoHeight &&
-			( ! attributes.height || attributes.height === 'auto' )
-				? 'auto'
-				: pixelsToCanvasLength( rect.height, {
-						unit: heightUnit,
-						basis: containerHeight,
-				  } ),
+		// Heights are never guarded: a preserved percentage height is a
+		// deliberate stored unit, and the solver guard exists only to keep
+		// positions solvable.
+		height: keepsAutoHeight
+			? 'auto'
+			: pixelsToCanvasLength( rect.height, {
+					unit: heightUnit,
+					basis: containerHeight,
+			  } ),
 	};
 
 	if ( attributes.useAbsolutePosition ) {
+		const committedHeightFraction =
+			! keepsAutoHeight &&
+			heightUnit === '%' &&
+			isFiniteNumber( containerHeight ) &&
+			containerHeight > 0
+				? rect.height / containerHeight
+				: 0;
+
 		Object.assign(
 			updates,
 			createMoveAttributes( {
@@ -348,7 +421,9 @@ export const createResizeAttributes = ( {
 				rect,
 				containerWidth,
 				containerHeight,
-				heightMode,
+				solverHeightFraction: isAutoBasis
+					? committedHeightFraction
+					: null,
 			} )
 		);
 	}
@@ -395,16 +470,21 @@ export const removeMoveLock = ( lock ) => {
  * different basis in padded containers, so both the horizontal position and
  * width are recalculated against the absolute padding-box width.
  *
- * @param {Object} options                Promotion options.
- * @param {Object} options.attributes     Starting block attributes.
- * @param {Object} options.borderRect     Measured border-box rectangle.
- * @param {number} options.containerWidth Absolute padding-box width.
+ * @param {Object}  options                 Promotion options.
+ * @param {Object}  options.attributes      Starting block attributes.
+ * @param {Object}  options.borderRect      Measured border-box rectangle.
+ * @param {number}  options.containerWidth  Absolute padding-box width.
+ * @param {number}  options.containerHeight Vertical percent basis in pixels.
+ * @param {boolean} options.isAutoBasis     Whether containerHeight is a solved
+ *                                          auto height (enables the vertical solver guard).
  * @return {Object|null} Per-block update, or null for invalid geometry.
  */
 export const createFlowToFreeformAttributes = ( {
 	attributes = {},
 	borderRect,
 	containerWidth,
+	containerHeight,
+	isAutoBasis = false,
 } ) => {
 	if (
 		! borderRect ||
@@ -448,7 +528,15 @@ export const createFlowToFreeformAttributes = ( {
 			unit: '%',
 			basis: containerWidth,
 		} ),
-		top: pixelsToCanvasLength( borderRect.top ),
+		// pixelsToCanvasLength keeps this in pixels when no valid height
+		// basis is available, matching the pre-proportional behavior.
+		// Promotion always persists explicit heights in pixels, so the
+		// solver-guard fraction is the offset fraction alone.
+		top: pixelsToVerticalCanvasLength( borderRect.top, {
+			unit: '%',
+			basis: containerHeight,
+			solverHeightFraction: isAutoBasis ? 0 : null,
+		} ),
 		right: 'auto',
 		bottom: 'auto',
 		width: pixelsToCanvasLength( borderRect.width, {

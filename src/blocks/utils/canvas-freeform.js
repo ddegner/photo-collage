@@ -3,6 +3,12 @@ import {
 	createFreeformContainerAttributes,
 	mergeMoveLock,
 } from './canvas-geometry';
+import {
+	MIN_AUTO_HEIGHT,
+	measureExtentForElement,
+	parseVerticalSlope,
+	solveMeasuredHeight,
+} from './height-solver';
 
 const POSITIONABLE_BLOCKS = new Set( [
 	'photo-collage/image',
@@ -12,7 +18,7 @@ const POSITIONABLE_BLOCKS = new Set( [
 const isFiniteNumber = ( value ) =>
 	typeof value === 'number' && Number.isFinite( value );
 
-const findDirectBlockElement = ( container, clientId ) => {
+export const findDirectBlockElement = ( container, clientId ) => {
 	for ( const child of container.children ) {
 		if ( child.dataset?.block === clientId ) {
 			return child;
@@ -66,6 +72,17 @@ export const captureFreeformSnapshot = ( {
 		return { error: 'container-unavailable' };
 	}
 
+	// Percentage tops resolve against the padding box, exactly what
+	// clientHeight measures.
+	const containerHeight = isFiniteNumber( container.clientHeight )
+		? container.clientHeight
+		: 0;
+	const containerRectHeight = container.getBoundingClientRect().height;
+	const scaleY =
+		containerRectHeight > 0 && container.offsetHeight > 0
+			? containerRectHeight / container.offsetHeight
+			: 1;
+
 	const items = [];
 
 	for ( const block of blocks ) {
@@ -82,6 +99,23 @@ export const captureFreeformSnapshot = ( {
 		};
 
 		if ( isAbsolute ) {
+			// Absolute siblings keep their coordinates, but their measured
+			// extents feed the post-promotion height projection. Extents are
+			// measured from the bounding box — the same measurement the
+			// auto-height solvers make — so rotated children project
+			// correctly. An unmeasurable absolute sibling only drops out of
+			// the projection; it must not reject the whole conversion.
+			const element = findDirectBlockElement( container, block.clientId );
+			if ( element ) {
+				const { anchor, slope } = parseVerticalSlope( attributes );
+				const extent = measureExtentForElement( container, element, {
+					scaleY,
+					anchor,
+				} );
+				if ( isFiniteNumber( extent ) ) {
+					item.heightCandidate = { extent, slope };
+				}
+			}
 			items.push( item );
 			continue;
 		}
@@ -134,6 +168,7 @@ export const captureFreeformSnapshot = ( {
 			blocks,
 			container,
 			containerWidth,
+			containerHeight,
 			items,
 			parentAttributes: { ...parentAttributes },
 			parentClientId,
@@ -160,6 +195,38 @@ export const createFreeformUpdatePlan = ( {
 		return null;
 	}
 
+	const containerUpdate = createFreeformContainerAttributes(
+		snapshot.parentAttributes
+	);
+	// Percentage tops need the height the container settles at after the
+	// promotion: for auto-height containers (already auto, or flipped by
+	// this plan) that is the solved projection over every item's final
+	// extent; a fixed container with an explicit height keeps that height.
+	const willBeAuto =
+		snapshot.parentAttributes?.heightMode === 'auto' ||
+		containerUpdate !== null;
+	let verticalBasis = snapshot.containerHeight;
+
+	if ( willBeAuto ) {
+		const candidates = snapshot.items.map( ( item ) => {
+			if ( item.isAbsolute ) {
+				return item.heightCandidate || null;
+			}
+
+			const rect =
+				item.clientId === movedClientId && movedBorderRect
+					? movedBorderRect
+					: item.borderRect;
+			return { extent: rect.top + rect.height, slope: 0 };
+		} );
+
+		verticalBasis = solveMeasuredHeight( {
+			candidates: candidates.filter( Boolean ),
+			currentHeight: snapshot.containerHeight,
+			minHeight: MIN_AUTO_HEIGHT,
+		} );
+	}
+
 	const updatesByClientId = {};
 
 	for ( const item of snapshot.items ) {
@@ -180,6 +247,8 @@ export const createFreeformUpdatePlan = ( {
 			attributes: item.attributes,
 			borderRect,
 			containerWidth: snapshot.containerWidth,
+			containerHeight: verticalBasis,
+			isAutoBasis: willBeAuto,
 		} );
 
 		if ( ! promotion ) {
@@ -192,13 +261,8 @@ export const createFreeformUpdatePlan = ( {
 		};
 	}
 
-	if ( snapshot.promotedCount > 0 ) {
-		const containerUpdate = createFreeformContainerAttributes(
-			snapshot.parentAttributes
-		);
-		if ( containerUpdate ) {
-			updatesByClientId[ snapshot.parentClientId ] = containerUpdate;
-		}
+	if ( snapshot.promotedCount > 0 && containerUpdate ) {
+		updatesByClientId[ snapshot.parentClientId ] = containerUpdate;
 	}
 
 	return {

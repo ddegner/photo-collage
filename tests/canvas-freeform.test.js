@@ -26,6 +26,14 @@ const createBlockElement = (
 		offsetTop: top,
 		offsetWidth: width,
 	} );
+	element.getBoundingClientRect = () => ( {
+		top,
+		bottom: top + height,
+		left,
+		right: left + width,
+		width,
+		height,
+	} );
 	return element;
 };
 
@@ -37,8 +45,18 @@ const createFixture = () => {
 	container.style.border = '10px solid transparent';
 	container.style.padding = '40px 50px';
 	defineGeometry( container, {
+		clientHeight: 500,
 		clientWidth: 1000,
+		offsetHeight: 500,
 		offsetWidth: 1020,
+	} );
+	container.getBoundingClientRect = () => ( {
+		top: 0,
+		bottom: 500,
+		left: 0,
+		right: 1020,
+		width: 1020,
+		height: 500,
 	} );
 
 	const imageElement = createBlockElement( 'image-a', {
@@ -182,15 +200,19 @@ describe( 'atomic flow-to-freeform planning', () => {
 
 		expect( capture.error ).toBeUndefined();
 		expect( capture.snapshot.containerWidth ).toBe( 1000 );
+		expect( capture.snapshot.containerHeight ).toBe( 500 );
 		expect( capture.snapshot.promotedCount ).toBe( 2 );
 		expect(
 			capture.snapshot.items.map( ( item ) => item.clientId )
 		).toEqual( [ 'image-a', 'frame-b', 'image-c' ] );
-		expect(
-			capture.snapshot.items.find(
-				( item ) => item.clientId === 'image-c'
-			)
-		).not.toHaveProperty( 'borderRect' );
+		const absoluteItem = capture.snapshot.items.find(
+			( item ) => item.clientId === 'image-c'
+		);
+		expect( absoluteItem ).not.toHaveProperty( 'borderRect' );
+		expect( absoluteItem.heightCandidate ).toEqual( {
+			extent: 410,
+			slope: 0,
+		} );
 
 		const plan = createFreeformUpdatePlan( {
 			snapshot: capture.snapshot,
@@ -204,6 +226,8 @@ describe( 'atomic flow-to-freeform planning', () => {
 		} );
 
 		expect( plan.promotedCount ).toBe( 2 );
+		// The absolute sibling's extent (260 + 150 = 410) binds the projected
+		// auto height, so percentage tops are written against 410px.
 		expect( plan.updatesByClientId[ 'image-a' ] ).toMatchObject( {
 			align: undefined,
 			bottom: 'auto',
@@ -211,7 +235,7 @@ describe( 'atomic flow-to-freeform planning', () => {
 			left: '21.5%',
 			lock: { move: true, remove: false },
 			right: 'auto',
-			top: '95px',
+			top: '23.171%',
 			useAbsolutePosition: true,
 			width: '38%',
 		} );
@@ -234,7 +258,7 @@ describe( 'atomic flow-to-freeform planning', () => {
 			left: '52%',
 			lock: { move: true },
 			right: 'auto',
-			top: '80px',
+			top: '19.512%',
 			useAbsolutePosition: true,
 			width: '30%',
 		} );
@@ -299,6 +323,62 @@ describe( 'atomic flow-to-freeform planning', () => {
 		expect( fixture.blocks[ 0 ].attributes.style.spacing.margin.left ).toBe(
 			'14%'
 		);
+	} );
+
+	it( 'keeps an explicit fixed height as the percent basis', () => {
+		const fixture = createFixture();
+		defineGeometry( fixture.container, { clientHeight: 800 } );
+
+		const capture = captureFreeformSnapshot( {
+			container: fixture.container,
+			parentClientId: 'container-parent',
+			parentAttributes: {
+				containerHeight: '800px',
+				heightMode: 'fixed',
+				stackOnMobile: true,
+			},
+			blocks: fixture.blocks,
+			canMoveBlock: () => true,
+		} );
+		const plan = createFreeformUpdatePlan( { snapshot: capture.snapshot } );
+
+		// The container stays fixed, so tops resolve against its rendered
+		// 800px height rather than a solved auto height.
+		expect( plan.updatesByClientId[ 'image-a' ] ).toMatchObject( {
+			top: '7.5%',
+		} );
+		expect( plan.updatesByClientId[ 'frame-b' ] ).toMatchObject( {
+			top: '10%',
+		} );
+		expect( plan.updatesByClientId ).not.toHaveProperty(
+			'container-parent'
+		);
+	} );
+
+	it( 'tolerates an unmeasurable absolute sibling in the height projection', () => {
+		const fixture = createFixture();
+		fixture.absoluteElement.remove();
+
+		const capture = captureFreeformSnapshot( {
+			container: fixture.container,
+			parentClientId: 'container-parent',
+			parentAttributes: fixture.parentAttributes,
+			blocks: fixture.blocks,
+			canMoveBlock: () => true,
+		} );
+
+		expect( capture.error ).toBeUndefined();
+		expect(
+			capture.snapshot.items.find(
+				( item ) => item.clientId === 'image-c'
+			)
+		).not.toHaveProperty( 'heightCandidate' );
+
+		// Projection falls back to the flow extents: max(200, 300, 280).
+		const plan = createFreeformUpdatePlan( { snapshot: capture.snapshot } );
+		expect( plan.updatesByClientId[ 'image-a' ] ).toMatchObject( {
+			top: '20%',
+		} );
 	} );
 
 	it.each( [

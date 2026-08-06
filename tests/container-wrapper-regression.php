@@ -149,4 +149,134 @@ foreach ( $pattern_files as $pattern_file ) {
 	);
 }
 
+/**
+ * Assert two floats match within a tolerance.
+ *
+ * @param float  $expected Expected value.
+ * @param float  $actual   Actual value.
+ * @param string $message  Failure message.
+ * @return void
+ */
+function photo_collage_test_assert_close( float $expected, float $actual, string $message ): void {
+	photo_collage_test_assert(
+		abs( $expected - $actual ) < 0.01,
+		$message . " (expected {$expected}, got {$actual})"
+	);
+}
+
+/**
+ * Build an absolute child block array for constraint tests.
+ *
+ * @param string               $block_name Block name.
+ * @param array<string, mixed> $attrs      Block attributes.
+ * @return array<string, mixed>
+ */
+function photo_collage_test_child( string $block_name, array $attrs ): array {
+	return array(
+		'blockName' => $block_name,
+		'attrs'     => array_merge( array( 'useAbsolutePosition' => true ), $attrs ),
+	);
+}
+
+// --- Auto-height constraint solver ---------------------------------------
+
+// Percentage top over a pixel-height base keeps the closed form b / (1 - p).
+$constraints = Photo_Collage_Renderer::get_auto_height_constraints(
+	array(
+		photo_collage_test_child(
+			'photo-collage/frame',
+			array(
+				'width'  => '40%',
+				'height' => '300px',
+				'top'    => '20%',
+			)
+		),
+	)
+);
+photo_collage_test_assert( 1 === count( $constraints ), 'Percent-top frame must yield one constraint.' );
+photo_collage_test_assert_close( 0.0, $constraints[0][0], 'Percent-top frame slope term must stay zero.' );
+photo_collage_test_assert_close( 375.0, $constraints[0][1], 'Percent-top frame constraint must solve 300 / 0.8.' );
+
+// Pixel offsets stay additive with no factor applied.
+$constraints = Photo_Collage_Renderer::get_auto_height_constraints(
+	array(
+		photo_collage_test_child(
+			'photo-collage/frame',
+			array(
+				'width'  => '40%',
+				'height' => '300px',
+				'top'    => '100px',
+			)
+		),
+	)
+);
+photo_collage_test_assert_close( 400.0, $constraints[0][1], 'Pixel-top frame constraint must stay additive.' );
+
+// A percentage height folds into the factor: top 100px + height 30% needs
+// height >= 100 / (1 - 0.3).
+$constraints = Photo_Collage_Renderer::get_auto_height_constraints(
+	array(
+		photo_collage_test_child(
+			'photo-collage/frame',
+			array(
+				'width'  => '40%',
+				'height' => '30%',
+				'top'    => '100px',
+			)
+		),
+	)
+);
+photo_collage_test_assert( 1 === count( $constraints ), 'Percent-height frame with a pixel top must yield a constraint.' );
+photo_collage_test_assert_close( 142.857, $constraints[0][1], 'Percent-height factor must divide the pixel offset.' );
+
+// A fully percentage-vertical child cannot constrain the container, and a
+// percentage-height image must never fall back to attachment metadata (this
+// stub environment has no wp_get_attachment_metadata, so a regression here
+// is a fatal error, not just a wrong number).
+$constraints = Photo_Collage_Renderer::get_auto_height_constraints(
+	array(
+		photo_collage_test_child(
+			'photo-collage/image',
+			array(
+				'id'          => 5,
+				'aspectRatio' => 'auto',
+				'width'       => '50%',
+				'height'      => '25%',
+				'top'         => '10%',
+			)
+		),
+	)
+);
+photo_collage_test_assert( array() === $constraints, 'Fully percentage-vertical children must yield no constraint.' );
+
+// Combined fractions at or past the solver guard are skipped entirely.
+$constraints = Photo_Collage_Renderer::get_auto_height_constraints(
+	array(
+		photo_collage_test_child(
+			'photo-collage/frame',
+			array(
+				'width'  => '40%',
+				'height' => '300px',
+				'top'    => '99.6%',
+			)
+		),
+	)
+);
+photo_collage_test_assert( array() === $constraints, 'Offsets past the 99.5% guard must yield no constraint.' );
+
+// Bottom anchors share the same combined factor.
+$constraints = Photo_Collage_Renderer::get_auto_height_constraints(
+	array(
+		photo_collage_test_child(
+			'photo-collage/frame',
+			array(
+				'width'  => '40%',
+				'height' => '300px',
+				'bottom' => '10%',
+			)
+		),
+	)
+);
+photo_collage_test_assert_close( 333.333, $constraints[0][1], 'Bottom-anchored constraint must solve 300 / 0.9.' );
+
 echo "Container wrapper regression tests passed.\n";

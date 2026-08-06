@@ -231,14 +231,13 @@ describe( 'canvas geometry', () => {
 			height: 'auto',
 		};
 
-		it( 'preserves percentage axes in fixed-height mode', () => {
+		it( 'preserves percentage axes', () => {
 			expect(
 				createMoveAttributes( {
 					attributes,
 					rect: { left: 300, top: 250, width: 300, height: 200 },
 					containerWidth: 1200,
 					containerHeight: 1000,
-					heightMode: 'fixed',
 				} )
 			).toEqual( {
 				useAbsolutePosition: true,
@@ -249,20 +248,92 @@ describe( 'canvas geometry', () => {
 			} );
 		} );
 
-		it( 'canonicalizes vertical position to pixels in auto-height mode', () => {
+		it( 'keeps stored pixel positions in pixels', () => {
+			// Legacy collages authored before proportional defaults must not be
+			// silently migrated by a drag.
 			expect(
 				createMoveAttributes( {
-					attributes,
+					attributes: { ...attributes, top: '180px' },
 					rect: { left: 300, top: 250, width: 300, height: 200 },
 					containerWidth: 1200,
 					containerHeight: 1000,
-					heightMode: 'auto',
 				} )
 			).toMatchObject( {
 				left: '25%',
 				top: '250px',
 				right: 'auto',
 				bottom: 'auto',
+			} );
+		} );
+
+		it( 'defaults never-positioned axes to percentages', () => {
+			expect(
+				createMoveAttributes( {
+					attributes: { ...attributes, top: 'auto', bottom: 'auto' },
+					rect: { left: 300, top: 250, width: 300, height: 200 },
+					containerWidth: 1200,
+					containerHeight: 1000,
+				} )
+			).toMatchObject( {
+				left: '25%',
+				top: '25%',
+			} );
+		} );
+
+		it( 'keeps near-bottom positions in pixels against auto bases', () => {
+			expect(
+				createMoveAttributes( {
+					attributes,
+					rect: { left: 300, top: 995, width: 300, height: 200 },
+					containerWidth: 1200,
+					containerHeight: 1000,
+					solverHeightFraction: 0,
+				} )
+			).toMatchObject( {
+				top: '995px',
+			} );
+			// The guard fires on the combined offset + percentage-height
+			// fraction, mirroring the solver's own skip.
+			expect(
+				createMoveAttributes( {
+					attributes,
+					rect: { left: 300, top: 600, width: 300, height: 400 },
+					containerWidth: 1200,
+					containerHeight: 1000,
+					solverHeightFraction: 0.4,
+				} )
+			).toMatchObject( {
+				top: '600px',
+			} );
+		} );
+
+		it( 'never guards fixed-height bases', () => {
+			// Fixed containers have no solver to protect; near-bottom
+			// percentages must survive (the 141vw manual fix relies on it).
+			expect(
+				createMoveAttributes( {
+					attributes,
+					rect: { left: 300, top: 995, width: 300, height: 200 },
+					containerWidth: 1200,
+					containerHeight: 1000,
+				} )
+			).toMatchObject( {
+				top: '99.5%',
+			} );
+		} );
+
+		it( 'preserves percentage heights unguarded on resize', () => {
+			expect(
+				createResizeAttributes( {
+					attributes: { ...attributes, height: '95%' },
+					rect: { left: 0, top: 0, width: 600, height: 796 },
+					containerWidth: 1200,
+					containerHeight: 800,
+					preserveAutoHeight: false,
+					isAutoBasis: true,
+				} )
+			).toMatchObject( {
+				height: '99.5%',
 			} );
 		} );
 
@@ -278,7 +349,6 @@ describe( 'canvas geometry', () => {
 					},
 					containerWidth: 1200,
 					containerHeight: 800,
-					heightMode: 'auto',
 					preserveAutoHeight: true,
 				} )
 			).toEqual( {
@@ -286,9 +356,36 @@ describe( 'canvas geometry', () => {
 				height: 'auto',
 				useAbsolutePosition: true,
 				left: '16.667%',
-				top: '100px',
+				top: '12.5%',
 				right: 'auto',
 				bottom: 'auto',
+			} );
+		} );
+
+		it( 'preserves explicit height units with a pixel fallback', () => {
+			expect(
+				createResizeAttributes( {
+					attributes: { ...attributes, top: '10px', height: '25%' },
+					rect: { left: 200, top: 100, width: 480, height: 320 },
+					containerWidth: 1200,
+					containerHeight: 800,
+					preserveAutoHeight: false,
+				} )
+			).toMatchObject( {
+				width: '40%',
+				height: '40%',
+				top: '100px',
+			} );
+			expect(
+				createResizeAttributes( {
+					attributes: { ...attributes, height: 'auto' },
+					rect: { left: 200, top: 100, width: 480, height: 320 },
+					containerWidth: 1200,
+					containerHeight: 800,
+					preserveAutoHeight: false,
+				} )
+			).toMatchObject( {
+				height: '320px',
 			} );
 		} );
 
@@ -309,7 +406,6 @@ describe( 'canvas geometry', () => {
 					},
 					containerWidth: 1000,
 					containerHeight: 800,
-					heightMode: 'fixed',
 					preserveAutoHeight: false,
 				} )
 			).toEqual( {
@@ -388,6 +484,27 @@ describe( 'canvas geometry', () => {
 			expect( attributes.style.spacing.margin.left ).toBe( '12%' );
 		} );
 
+		it( 'writes percentage tops against the supplied height basis', () => {
+			expect(
+				createFlowToFreeformAttributes( {
+					attributes: { width: '50%', height: 'auto' },
+					borderRect: {
+						left: 150,
+						top: 80,
+						width: 400,
+						height: 275,
+					},
+					containerWidth: 1000,
+					containerHeight: 1000,
+				} )
+			).toMatchObject( {
+				left: '15%',
+				top: '8%',
+				width: '40%',
+				height: 'auto',
+			} );
+		} );
+
 		it( 'persists an explicit measured height in pixels', () => {
 			expect(
 				createFlowToFreeformAttributes( {
@@ -402,10 +519,11 @@ describe( 'canvas geometry', () => {
 						height: 165.25,
 					},
 					containerWidth: 800,
+					containerHeight: 800,
 				} )
 			).toMatchObject( {
 				left: '-3.125%',
-				top: '-10px',
+				top: '-1.25%',
 				width: '30%',
 				height: '165.25px',
 			} );

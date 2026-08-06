@@ -175,12 +175,21 @@ final class Photo_Collage_Renderer {
 
 			$item_height            = isset( $item_attrs['height'] ) ? (string) $item_attrs['height'] : 'auto';
 			$explicit_height_pixels = self::parse_unit_value( $item_height, 'px' );
+			$height_percent         = self::parse_unit_value( $item_height, '%' );
 
 			$base_a   = 0.0;
 			$base_b   = 0.0;
 			$has_base = false;
 
-			if ( null !== $explicit_height_pixels && $explicit_height_pixels > 0 ) {
+			if ( null !== $height_percent && $height_percent > 0 ) {
+				// A percentage height consumes that fraction of the unknown
+				// container height instead of adding a fixed extent, so it
+				// folds into the offset factor below rather than the base
+				// term. The aspect branch must not run: CSS applies the
+				// explicit percentage regardless of the image's intrinsic
+				// ratio, so an aspect-based constraint would be wrong.
+				$has_base = true;
+			} elseif ( null !== $explicit_height_pixels && $explicit_height_pixels > 0 ) {
 				$base_b   = $explicit_height_pixels;
 				$has_base = true;
 			} else {
@@ -203,6 +212,10 @@ final class Photo_Collage_Renderer {
 			if ( ! $has_base ) {
 				continue;
 			}
+
+			$height_fraction_percent = ( null !== $height_percent && $height_percent > 0 )
+				? $height_percent
+				: 0.0;
 
 			$top_value    = isset( $item_attrs['top'] ) ? (string) $item_attrs['top'] : 'auto';
 			$bottom_value = isset( $item_attrs['bottom'] ) ? (string) $item_attrs['bottom'] : 'auto';
@@ -228,20 +241,26 @@ final class Photo_Collage_Renderer {
 				$constraint_a = $base_a;
 				$constraint_b = $base_b;
 
-				$percent_offset = $candidate[0];
-				if ( null !== $percent_offset ) {
-					if ( $percent_offset >= 99.5 ) {
-						continue;
-					}
+				// The percentage offset and a percentage height both scale
+				// with the solved container height, so they share one
+				// 1 / ( 1 - fraction ) factor; a child consuming ~the whole
+				// height can never constrain it and is skipped.
+				$percent_offset   = $candidate[0];
+				$combined_percent = $height_fraction_percent + ( null !== $percent_offset ? $percent_offset : 0.0 );
 
-					$factor        = 1 / ( 1 - ( $percent_offset / 100 ) );
-					$constraint_a *= $factor;
-					$constraint_b *= $factor;
+				if ( $combined_percent >= 99.5 ) {
+					continue;
 				}
 
 				$pixel_offset = $candidate[1];
 				if ( null !== $pixel_offset ) {
 					$constraint_b += $pixel_offset;
+				}
+
+				if ( 0.0 !== $combined_percent ) {
+					$factor        = 1 / ( 1 - ( $combined_percent / 100 ) );
+					$constraint_a *= $factor;
+					$constraint_b *= $factor;
 				}
 
 				if (

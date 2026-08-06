@@ -543,6 +543,173 @@ describe( 'CanvasTransformControls', () => {
 		expect( mockCreateSuccessNotice ).not.toHaveBeenCalled();
 	} );
 
+	it( 'commits auto-height moves against the projected post-commit height', () => {
+		const fixture = createFixture( {
+			specs: [
+				{
+					clientId: 'image-one',
+					name: 'photo-collage/image',
+					attributes: {
+						...BASE_ATTRIBUTES,
+						top: 'auto',
+					},
+					geometry: { left: 100, top: 80, width: 300, height: 200 },
+				},
+				{
+					clientId: 'image-two',
+					name: 'photo-collage/image',
+					attributes: {
+						...BASE_ATTRIBUTES,
+						left: '50%',
+						top: '40%',
+						width: '20%',
+					},
+					geometry: { left: 500, top: 240, width: 200, height: 150 },
+				},
+			],
+			selectedClientId: 'image-one',
+			parentAttributes: { heightMode: 'auto', containerHeight: '' },
+		} );
+
+		// The sibling's rendered percentage top gives it extent 390 at the
+		// current 600px height, i.e. a relaxing candidate (390 - 240)/0.6 =
+		// 250. The dragged item is measured live under its preview transform.
+		fixture.elements.get( 'image-two' ).style.top = '40%';
+		const dragged = fixture.selectedElement;
+		dragged.getBoundingClientRect = () => {
+			const match = /translate3d\((-?[\d.]+)px, (-?[\d.]+)px/.exec(
+				dragged.style.transform || ''
+			);
+			const deltaX = match ? Number.parseFloat( match[ 1 ] ) : 0;
+			const deltaY = match ? Number.parseFloat( match[ 2 ] ) : 0;
+
+			return {
+				bottom: 280 + deltaY,
+				height: 200,
+				left: 100 + deltaX,
+				right: 400 + deltaX,
+				top: 80 + deltaY,
+				width: 300,
+				x: 100 + deltaX,
+				y: 80 + deltaY,
+			};
+		};
+
+		renderControls( fixture );
+		const moveHandle = getControl( fixture, 'move' );
+
+		act( () => {
+			moveHandle.dispatchEvent(
+				createPointerEvent( 'pointerdown', {
+					clientX: 100,
+					clientY: 100,
+					buttons: 1,
+				} )
+			);
+			document.dispatchEvent(
+				createPointerEvent( 'pointermove', {
+					clientX: 150,
+					clientY: 120,
+					buttons: 1,
+				} )
+			);
+			document.dispatchEvent(
+				createPointerEvent( 'pointerup', {
+					clientX: 150,
+					clientY: 120,
+					buttons: 0,
+				} )
+			);
+		} );
+
+		expect( mockUpdateBlockAttributes ).toHaveBeenCalledTimes( 1 );
+		const [ , updatesByClientId ] =
+			mockUpdateBlockAttributes.mock.calls[ 0 ];
+
+		// Projected height: max(200, dragged bottom 300, sibling 250) = 300,
+		// so the 100px drop position commits as exactly 100/300.
+		expect( updatesByClientId ).toEqual( {
+			'image-one': {
+				useAbsolutePosition: true,
+				left: '15%',
+				top: '33.333%',
+				right: 'auto',
+				bottom: 'auto',
+			},
+		} );
+	} );
+
+	it( 'excludes a fully proportional dragged child from the commit basis', () => {
+		// A child whose committed top and height are both percentages can
+		// never constrain the auto height, so the basis must come from the
+		// siblings alone — here the pixel-anchored sibling's extent, 500.
+		const fixture = createFixture( {
+			specs: [
+				{
+					clientId: 'frame-one',
+					name: 'photo-collage/frame',
+					attributes: {
+						...BASE_ATTRIBUTES,
+						top: 'auto',
+						height: '50%',
+					},
+					geometry: { left: 100, top: 80, width: 300, height: 300 },
+				},
+				{
+					clientId: 'frame-two',
+					name: 'photo-collage/frame',
+					attributes: {
+						...BASE_ATTRIBUTES,
+						left: '50%',
+						top: '400px',
+						width: '20%',
+						height: '100px',
+					},
+					geometry: { left: 500, top: 400, width: 200, height: 100 },
+				},
+			],
+			selectedClientId: 'frame-one',
+			parentAttributes: { heightMode: 'auto', containerHeight: '' },
+		} );
+
+		renderControls( fixture, { preserveAutoHeight: false } );
+		const moveHandle = getControl( fixture, 'move' );
+
+		act( () => {
+			moveHandle.dispatchEvent(
+				createPointerEvent( 'pointerdown', {
+					clientX: 100,
+					clientY: 100,
+					buttons: 1,
+				} )
+			);
+			document.dispatchEvent(
+				createPointerEvent( 'pointermove', {
+					clientX: 100,
+					clientY: 120,
+					buttons: 1,
+				} )
+			);
+			document.dispatchEvent(
+				createPointerEvent( 'pointerup', {
+					clientX: 100,
+					clientY: 120,
+					buttons: 0,
+				} )
+			);
+		} );
+
+		expect( mockUpdateBlockAttributes ).toHaveBeenCalledTimes( 1 );
+		const [ , updatesByClientId ] =
+			mockUpdateBlockAttributes.mock.calls[ 0 ];
+
+		// Basis 500 (sibling), drop position 100: 100/500 = 20%, and the
+		// combined guard fraction 0.2 + 0.5 stays below the solver skip.
+		expect( updatesByClientId[ 'frame-one' ] ).toMatchObject( {
+			top: '20%',
+		} );
+	} );
+
 	it( 'atomically promotes all three flow siblings on the first drag without reordering them', () => {
 		const specs = createFlowSpecs();
 		const fixture = createFixture( {
@@ -592,11 +759,13 @@ describe( 'CanvasTransformControls', () => {
 			'image-three',
 			PARENT_CLIENT_ID,
 		] );
+		// Promotion writes percentage tops against the projected auto height:
+		// image-three's extent (260 + 240 = 500) binds the container.
 		expect( updatesByClientId ).toEqual( {
 			'image-one': {
 				useAbsolutePosition: true,
 				left: '2%',
-				top: '30px',
+				top: '6%',
 				right: 'auto',
 				bottom: 'auto',
 				width: '25%',
@@ -618,7 +787,7 @@ describe( 'CanvasTransformControls', () => {
 			'frame-two': {
 				useAbsolutePosition: true,
 				left: '35%',
-				top: '65px',
+				top: '13%',
 				right: 'auto',
 				bottom: 'auto',
 				width: '32%',
@@ -636,7 +805,7 @@ describe( 'CanvasTransformControls', () => {
 			'image-three': {
 				useAbsolutePosition: true,
 				left: '10%',
-				top: '260px',
+				top: '52%',
 				right: 'auto',
 				bottom: 'auto',
 				width: '50%',

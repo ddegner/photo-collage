@@ -18,6 +18,7 @@ import {
 	CANVAS_INTERACTION_ATTRIBUTE,
 	createMoveAttributes,
 	createResizeAttributes,
+	getPreferredCanvasUnit,
 	hasCanvasRectChanged,
 	moveCanvasRect,
 	normalizePointerDelta,
@@ -28,6 +29,14 @@ import {
 	captureFreeformSnapshot,
 	createFreeformUpdatePlan,
 } from '../utils/canvas-freeform';
+import {
+	MIN_AUTO_HEIGHT,
+	collectMeasuredCandidates,
+	getCollageItems,
+	measureExtentForElement,
+	parseVerticalSlope,
+	solveMeasuredHeight,
+} from '../utils/height-solver';
 import './canvas-transform-controls.scss';
 
 const COLLAGE_CONTAINER_SELECTOR = '.wp-block-photo-collage-container';
@@ -152,7 +161,10 @@ const getCanvasSnapshot = ( element, attributes ) => {
 		containerHeight: attributes.useAbsolutePosition
 			? paddingBoxHeight
 			: contentHeight || paddingBoxHeight,
-		heightMode: container.dataset.heightMode || 'auto',
+		// A missing dataset must resolve to fixed: the fixed path commits
+		// against the measured height, which is always safe, while the auto
+		// path projects a post-commit height that only auto containers apply.
+		heightMode: container.dataset.heightMode || 'fixed',
 		scaleX,
 		scaleY,
 		styles: getElementStyles( element ),
@@ -263,6 +275,59 @@ const getKeyboardMoveDelta = ( key, step ) => {
 		default:
 			return null;
 	}
+};
+
+/**
+ * Project the auto height the container resolves to after this commit.
+ *
+ * Committing a percentage top against the pre-commit height would let the
+ * post-commit solve shift the item: the drop changes the container height,
+ * which changes what the percentage resolves to. Solving the same system the
+ * auto-height solver will see — siblings at their attribute-driven slopes,
+ * the transformed element as a fixed pixel extent — yields a basis the solver
+ * reproduces exactly, so the item stays where it was dropped.
+ *
+ * Must run while the gesture preview styles are still applied; the dragged
+ * element is measured from its live bounding rectangle.
+ *
+ * @param {Object} snapshot Gesture snapshot.
+ * @return {number} Predicted container padding-box height in pixels.
+ */
+const getAutoHeightCommitBasis = ( snapshot ) => {
+	const { container, element, scaleY, attributes } = snapshot;
+	const siblings = getCollageItems( container ).filter(
+		( item ) => item !== element
+	);
+	const { candidates, currentHeight } = collectMeasuredCandidates(
+		container,
+		siblings,
+		{ scaleY }
+	);
+
+	// A child whose committed vertical unit and height are both percentages
+	// can never constrain the auto height (its extent is a fixed fraction of
+	// whatever the container resolves to); modeling it as a fixed pixel
+	// extent would overshoot the basis and shift the item after the solve.
+	const verticalUnit = getPreferredCanvasUnit(
+		[ attributes.top, attributes.bottom ],
+		'%'
+	);
+	const heightFraction = parseVerticalSlope( {
+		height: attributes.height,
+	} ).slope;
+
+	if ( verticalUnit !== '%' || heightFraction === 0 ) {
+		candidates.push( {
+			extent: measureExtentForElement( container, element, { scaleY } ),
+			slope: 0,
+		} );
+	}
+
+	return solveMeasuredHeight( {
+		candidates,
+		currentHeight,
+		minHeight: MIN_AUTO_HEIGHT,
+	} );
 };
 
 const releaseInteractionAfterCommit = ( snapshot ) => {
@@ -627,27 +692,39 @@ export default function CanvasTransformControls( {
 					updatesByClientId = plan.updatesByClientId;
 					promotedCount = plan.promotedCount;
 				}
-			} else if ( gesture.operation === 'move' ) {
-				updatesByClientId = {
-					[ clientId ]: createMoveAttributes( {
-						attributes: gesture.snapshot.attributes,
-						rect: gesture.resultRect,
-						containerWidth: gesture.snapshot.containerWidth,
-						containerHeight: gesture.snapshot.containerHeight,
-						heightMode: gesture.snapshot.heightMode,
-					} ),
-				};
 			} else {
-				updatesByClientId = {
-					[ clientId ]: createResizeAttributes( {
-						attributes: gesture.snapshot.attributes,
-						rect: gesture.resultRect,
-						containerWidth: gesture.snapshot.containerWidth,
-						containerHeight: gesture.snapshot.containerHeight,
-						heightMode: gesture.snapshot.heightMode,
-						preserveAutoHeight,
-					} ),
-				};
+				const isAutoBasis = gesture.snapshot.heightMode === 'auto';
+				const verticalBasis = isAutoBasis
+					? getAutoHeightCommitBasis( gesture.snapshot )
+					: gesture.snapshot.containerHeight;
+
+				if ( gesture.operation === 'move' ) {
+					updatesByClientId = {
+						[ clientId ]: createMoveAttributes( {
+							attributes: gesture.snapshot.attributes,
+							rect: gesture.resultRect,
+							containerWidth: gesture.snapshot.containerWidth,
+							containerHeight: verticalBasis,
+							solverHeightFraction: isAutoBasis
+								? parseVerticalSlope( {
+										height: gesture.snapshot.attributes
+											.height,
+								  } ).slope
+								: null,
+						} ),
+					};
+				} else {
+					updatesByClientId = {
+						[ clientId ]: createResizeAttributes( {
+							attributes: gesture.snapshot.attributes,
+							rect: gesture.resultRect,
+							containerWidth: gesture.snapshot.containerWidth,
+							containerHeight: verticalBasis,
+							preserveAutoHeight,
+							isAutoBasis,
+						} ),
+					};
+				}
 			}
 		}
 
