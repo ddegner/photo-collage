@@ -3,7 +3,7 @@
 **Contributors:** ddegner  
 **Tags:** block, photo collage, image gallery, overlapping images, visual design  
 **Tested up to:** 7.0
-**Stable tag:** 0.5.24
+**Stable tag:** 0.5.25
 **Requires at least:** 6.8  
 **Requires PHP:** 8.3  
 **License:** GPL-2.0-or-later  
@@ -106,6 +106,18 @@ Photo Collage is optimized for performance. It uses modern CSS for positioning a
 4.  Mobile-responsive stacking in action
 
 ## Changelog
+
+### 0.5.25
+*   NEW: Collage layouts are now proportional by default — positions written by dragging, resizing, and arranging are stored as percentages, so collages keep their composition at every screen width instead of overlapping when the browser is resized.
+*   NEW: Added a "Convert to proportional" button to Container Settings that rewrites an existing pixel-based collage as percentages in one undoable step, without moving anything at the current width. It also appears for collages the button can still improve, and hides once a collage is fully proportional.
+*   NEW: Added an editor notice on Collage Image and Frame blocks placed outside a Collage Container, explaining why the canvas handles are unavailable.
+*   FIX: Dragging an item in an auto-height collage no longer converts the percentage positions used by presets and bundled patterns into fixed pixels — the root cause of published collages drifting and overlapping on resize.
+*   FIX: Auto height now solves percentage-positioned layouts exactly in the editor and on the front end; previously deep layouts could render substantially too short.
+*   FIX: Items anchored to the container bottom now size the container correctly instead of freezing it at its current height.
+*   FIX: Items with explicit percentage heights no longer produce incorrect server-side height hints.
+*   IMPROVEMENT: Dropping or nudging an item in an auto-height collage accounts for the container-height change it causes, so the item lands exactly where it was released.
+*   IMPROVEMENT: Removed unused fixed heights from the bundled auto-height patterns.
+*   TEST: Added coverage for the shared height solver, the front-end auto-height loop, and the proportional conversion, plus constraint assertions in the PHP regression script.
 
 ### 0.5.24
 *   NEW: Added on-canvas move and resize handles to Collage Image and Collage Frame blocks, so items can be positioned by dragging them directly in the editor instead of typing coordinates.
