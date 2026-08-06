@@ -8,6 +8,7 @@ import { useInstanceId } from '@wordpress/compose';
 import { PanelBody, RangeControl } from '@wordpress/components';
 import { useRef } from '@wordpress/element';
 import BackgroundControls from '../components/BackgroundControls';
+import CanvasParentNotice from '../components/CanvasParentNotice';
 import CanvasTransformControls from '../components/CanvasTransformControls';
 import PositionSizeControls from '../components/PositionSizeControls';
 import useCanvasParent from '../components/useCanvasParent';
@@ -135,6 +136,10 @@ export default function Edit( {
 				</PanelBody>
 			</InspectorControls>
 			<div { ...innerBlocksRootProps }>
+				<CanvasParentNotice
+					isDirectCanvasChild={ isDirectCanvasChild }
+					itemName={ __( 'frame', 'photo-collage' ) }
+				/>
 				{ innerBlocks }
 				<CanvasTransformControls
 					attributes={ attributes }

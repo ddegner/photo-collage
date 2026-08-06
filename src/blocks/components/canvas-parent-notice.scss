@@ -1,0 +1,17 @@
+// Editor-only affordance: the notice sits inside the block wrapper, so it must
+// not inherit the freeform canvas styling the item carries for the frontend.
+.photo-collage-parent-notice.components-notice {
+	position: relative;
+	z-index: 1;
+	margin: 0 0 8px;
+	box-sizing: border-box;
+	max-width: 100%;
+	font-size: 12px;
+	line-height: 1.5;
+	transform: none;
+	opacity: 1;
+
+	.components-notice__content {
+		margin: 0;
+	}
+}

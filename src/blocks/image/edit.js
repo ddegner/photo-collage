@@ -41,6 +41,7 @@ import './editor.scss';
 import CaptionPositionControl from './components/caption-position-control';
 import CaptionEditor from './components/caption-editor';
 import BackgroundControls from '../components/BackgroundControls';
+import CanvasParentNotice from '../components/CanvasParentNotice';
 import CanvasTransformControls from '../components/CanvasTransformControls';
 import PositionSizeControls from '../components/PositionSizeControls';
 import useCanvasParent from '../components/useCanvasParent';
@@ -429,6 +430,10 @@ export default function Edit( {
 	if ( ! url ) {
 		return (
 			<div { ...blockProps }>
+				<CanvasParentNotice
+					isDirectCanvasChild={ isDirectCanvasChild }
+					itemName={ __( 'image', 'photo-collage' ) }
+				/>
 				<MediaPlaceholder
 					icon="format-image"
 					onSelect={ onSelectImage }
@@ -970,6 +975,10 @@ export default function Edit( {
 				</PanelBody>
 			</InspectorControls>
 			<div { ...blockProps }>
+				<CanvasParentNotice
+					isDirectCanvasChild={ isDirectCanvasChild }
+					itemName={ __( 'image', 'photo-collage' ) }
+				/>
 				<figure
 					className="photo-collage-image-figure"
 					style={ {

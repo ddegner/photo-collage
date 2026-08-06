@@ -93,6 +93,7 @@ jest.mock(
 );
 jest.mock( '../src/blocks/image/components/caption-editor', () => () => null );
 jest.mock( '../src/blocks/components/BackgroundControls', () => () => null );
+jest.mock( '../src/blocks/components/CanvasParentNotice', () => () => null );
 jest.mock(
 	'../src/blocks/components/CanvasTransformControls',
 	() => () => null
